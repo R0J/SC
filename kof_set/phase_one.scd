@@ -30,7 +30,7 @@ ProxyMixer.new(p,16);
 
 
 (
-    p.clock.tempo_(125/60);
+    p.clock.tempo_(127/60);
 
     ~offset = {(0..7)/8};
 
@@ -44,12 +44,12 @@ ProxyMixer.new(p,16);
 
 (
     ~moog.ar(2);
-    ~moog.quant=[4,1/2];
-    ~moog.fadeTime=6.2;
+    ~moog.quant=[4,1/4];
+    ~moog.fadeTime=4.2;
     ~moog={
-        var pat = 1/64/[1,2,16]*~tempo.kr;
+        var pat = 1/32/[1,2,16]*~tempo.kr;
         var harm = TChoose.kr(Impulse.kr(pat),[1,2,4,1.5,1,0.5]);
-        var f =  [60,57].midicps / 2 / {TChoose.kr(Impulse.kr(pat),[1,2,4,1.5,1.33333,1/2,1/4])}!4 + Mix.kr(LFSaw.kr((1..16)));
+        var f =  [60,63].midicps / 2 / {TChoose.kr(Impulse.kr(pat),[1,2,4,1.5,1.33333,1/2,1/4])}!4 + Mix.kr(LFSaw.kr((1..16)));
         var sig = LFSaw.ar(f,mul:[0.7,0.4,0.2]) * (LFTri.ar(pat,mul:0.9)**3) * SinOsc.ar(f.scramble);
         sig = CombL.ar(sig,1/f,1/f,1).softclip;
         sig = MoogFF.ar(sig,f*[2,4,1.5,10,20,15]*harm,LFNoise2.kr(1/4!3).range(0.5,3.5));
@@ -77,10 +77,10 @@ ProxyMixer.new(p,16);
         var mod = Duty.kr(4*~tempo.kr,0,Dseq([1,2,1.5,1.33333],inf));
         //         |       |       |       |       |
         var pat = [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0].rotate(1);
-        var imp = PulseDivider.kr(~tick.kr,[4,16,64],~counter.kr%pat.size);
+        var imp = PulseDivider.kr(~tick.kr,[4,16,64]*8,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.0001],[[1.602,4,16],0.15],[3,-3],curve:'exp'),imp * hit);
-        var sig = [] ++ LFSaw.ar([36.midicps,57.midicps*8/mod],mul:[1,0.1,0.05]) ++ (SinOsc.ar(57.midicps*16,mul:0.1) * Pulse.ar(8*~tempo.kr));
+        var env = EnvGen.ar(Env([0.001,1,0.0001],[[3.602,4,16],0.15],[3,-3],curve:'exp'),imp * hit);
+        var sig = [] ++ LFSaw.ar([36.midicps,72.midicps*8/mod],mul:[1,0.1,0.05]) ++ (SinOsc.ar(84.midicps*16,mul:0.1) * Pulse.ar(8*~tempo.kr));
         sig = sig * env;
         Splay.ar(sig,0.05,0.75);
     };
@@ -97,8 +97,8 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/beat.wav");
 
 (
     ~smp.ar(2);
-    ~smp.quant=[4,1/2];
-    ~smp.fadeTime=2.02;
+    ~smp.quant=[4,1/4];
+    ~smp.fadeTime=16.02;
     ~smp={
         var mod = 1/8/[1.5,1.25,1/1.3333];
         var spread = 0.0;
@@ -111,8 +111,8 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/beat.wav");
         var sig = PlayBuf.ar(b.numChannels,b.bufnum,BufRateScale.kr(b.bufnum)*mod+(env**0.01/100),imp, (pos) * BufFrames.kr(b.bufnum),2);
 
         sig = sig * env;
-        sig = Vibrato.ar(sig,[4,5],0.02);
-        Splay.ar(sig.flat,0.5,0.5);
+        sig = Vibrato.ar(sig,[4,5],0.22);
+        Splay.ar(sig.flat,0.5,0.35);
     };
     ~smp.play;
     ~smp[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),100),[4003,4013]),1500+LFSaw.kr(1/32!2).range(0,10000))+sig;};
@@ -165,7 +165,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/beat.wav");
 (
     b = Buffer.alloc(s,2048,1);
     ~a.ar(2);
-    ~a.quant=4;
+    ~a.quant=[4,1/4];
     ~a.fadeTime=8;
     ~a.mold(2);
     ~a =  { var in, chain,sig;
@@ -233,7 +233,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/beat.wav");
             0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
             0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
         ].rotate(1);
-        var imp = PulseDivider.kr(~tick.kr,8,~counter.kr%pat.size);
+        var imp = PulseDivider.kr(~tick.kr,32,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.000001,1,0.0001],[4.00002,0.005],[3,-3],curve:'exp'),imp * hit);
         var sig = Mix.fill(10,{|n| SinOsc.ar(50+(n/100),env**(10+(n*5))*8pi) + WhiteNoise.ar(env**4)})/2;
@@ -271,12 +271,12 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/beat.wav");
         var imp = PulseDivider.kr(~tick.kr,2,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.0002,2.75],[3,-3],curve:'exp'),imp * hit);
-        var sig = Mix.fill(4,{|n| SinOsc.ar(26.midicps+(env**0.5*2),env**(50+(n/200))*8pi) + BrownNoise.ar(env**46)});
+        var sig = Mix.fill(4,{|n| SinOsc.ar(29.midicps+(env**0.5*2),env**(50+(n/200))*8pi) + BrownNoise.ar(env**46)});
         //sig= Limiter.ar(sig,0.9);
         sig = sig * env/3.9;
         //sig = Clip.ar(sig,-0.95,0.95);
 
-        Splay.ar(sig,0.05,0.75);
+        Splay.ar(sig,0.05,0.25);
     };
     ~kick.play;
 );
