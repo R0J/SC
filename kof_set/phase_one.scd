@@ -51,7 +51,7 @@ p.arProxyNames.collect{|n| var snth = (p[n.asSymbol]);snth.clear};
         var env = EnvGen.ar(Env([0.001,1,0.0001],[[1.602,4,16],0.15],[3,-3],curve:'exp'),imp * hit);
         var sig = [] ++ LFSaw.ar([50,2500/mod],mul:[1,0.1,0.05]) ++ (SinOsc.ar(15000,mul:0.1) * Pulse.ar(8*~tempo.kr));
         sig = sig * env;
-        Splay.ar(sig,0.05,0.5);
+        Splay.ar(sig,0.05,0.75);
     };
     ~saw.play;
     ~saw[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),50),[4000,4010]),1500+LFSaw.kr(1/16).range(0,10000));};
@@ -61,7 +61,7 @@ p.arProxyNames.collect{|n| var snth = (p[n.asSymbol]);snth.clear};
 ~saw.pause;
 ~saw.resume;
 
-// player synth ///////////////////////////////////////
+// slowmo, player synth ///////////////////////////////////////
 
 b = Buffer.read(s,Platform.resourceDir ++ "/sounds/violin.wav");
 (
@@ -89,7 +89,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/violin.wav");
 ~smp.clear;
 
 
-// one synth ///////////////////////////////////////
+// first perlin noisy synth ///////////////////////////////////////
 (
     ~one_weird.ar(2);
     ~one_weird.quant=[4,1/2];
@@ -127,7 +127,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/violin.wav");
 ~one_weird_env.resume;
 
 
-///// FFT_WEIRDO ///////////////////////////////////////////////////////////////////////////
+///// second perlin noisy weirdo FFT_WEIRDO ///////////////////////////////////////////////////////////////////////////
 
 (
     b = Buffer.alloc(s,2048,1);
@@ -182,35 +182,6 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/violin.wav");
 ~a_env.clear;
 ~a_env.pause;
 ~a_env.resume;
-
-
-b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat2.wav");
-
-// player synth ///////////////////////////////////////
-
-(
-    ~mel.ar(2);
-    ~mel.quant=2;
-    ~mel.fadeTime=0.02;
-    ~mel={
-        var mod = 1/2/[1,1.3333,1.5,2];
-        var trate, dur, clk, pos, pan,sig;
-        trate = 120;
-        dur = BufDur.kr(b) / trate;
-        clk = Impulse.kr(trate);
-        pos = LFSaw.ar(1/4000/[1,2,4,8]).range(0,BufDur.kr(b)) + TRand.kr(0, 0.01, clk);
-        pan = WhiteNoise.kr(0.2);
-        sig = TGrains.ar(2, clk, b.bufnum, mod, pos, dur, pan, 0.3);
-        sig = sig * (LFSaw.ar(1/32/[1,2,3,4]*~tempo.kr)**90);
-        //sig = Resonz.ar(sig,2000,0.2);
-        sig = CompanderD.ar(sig,3/4,1,1/2);
-        Splay.ar(sig.flat,0.75,0.5);
-    };
-    ~mel.play;
-    ~mel[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),300),[4000,4010]),7000);};
-);
-~mel.stop(7);
-~mel.clear;
 
 
 
@@ -313,7 +284,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat2.wav");
 
 
 
-// hat synth (bad) ///////////////////////////////////////
+// spatny hat synth (bad) ///////////////////////////////////////
 
 (
     ~hat.ar(2);
