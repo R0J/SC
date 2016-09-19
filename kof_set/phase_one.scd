@@ -61,7 +61,73 @@ p.arProxyNames.collect{|n| var snth = (p[n.asSymbol]);snth.clear};
 ~saw.pause;
 ~saw.resume;
 
+// player synth ///////////////////////////////////////
 
+b = Buffer.read(s,Platform.resourceDir ++ "/sounds/violin.wav");
+(
+    ~smp.ar(2);
+    ~smp.quant=[2,1/2];
+    ~smp.fadeTime=2.02;
+    ~smp={
+        var mod = 1/8/[1.5,1.25,1/1.3333];
+        var spread = 0.0;
+        var pos = [0,0.5,0.25,0.6] + LFSaw.ar(1/4000);
+        //         |       |       |       |       |  
+        var pat = [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0].rotate(1);
+        var imp = PulseDivider.kr(~tick.kr,[8,4,2,1]*16,~counter.kr);
+        var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
+        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,6.05],[10,3],curve:'exp'),imp * hit);
+        var sig = PlayBuf.ar(b.numChannels,b.bufnum,BufRateScale.kr(b.bufnum)*mod,imp, (pos) * BufFrames.kr(b.bufnum),2);
+
+        sig = sig * env;
+        Splay.ar(sig.flat,0.5,0.85);
+    };
+    ~smp.play;
+    ~smp[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),100),[4000,4010]),1500+LFSaw.kr(1/32).range(0,10000));};
+);
+~smp.stop(7);
+~smp.clear;
+
+
+// one synth ///////////////////////////////////////
+(
+    ~one_weird.ar(2);
+    ~one_weird.quant=[4,1/2];
+    ~one_weird.fadeTime=8;
+    ~one_weird={
+        var t = LFTri.ar([1/64,50,1/32/(1..16)]) * (1..16);
+        var f = Perlin3.ar(t[0],t[1],t[2]);
+        var sig = Formant.ar(f.range(50,5000/[1,2,1.5,4]),f.range(50,5000).scramble,f.range(50,5000).reverse,mul:LFTri.kr(1/(1..16))**4 );
+        sig = sig ** 0.05;
+        sig = CompanderD.ar(BPF.ar(sig,1500/8*(1..8),0.5),3/4,1/LFNoise2.kr(1/4!8).range(1,4),1/2);
+       
+        Splay.ar(sig,0.95,0.495);
+    };
+
+    ~one_weird_env.ar(2);
+    ~one_weird_env.quant=[2,1/4];
+    ~one_weird_env.fadeTime=0.2;
+    ~one_weird_env={
+        //         |       |       |       |       |  
+        var pat = [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0].rotate(1);
+        var imp = PulseDivider.kr(~tick.kr,16,~counter.kr%pat.size);
+        var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
+        var env = EnvGen.ar(Env([0.001,1,0.0001],[7,0.005],[5,30],curve:'exp'),imp * hit);
+        var sig = ~one_weird.ar;
+        sig = sig * env;
+        Splay.ar(sig,0.75,0.95);
+    };
+    ~one_weird_env.play;
+    ~one_weird_env[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),300),[4000,4010]),7000);};
+
+);
+~one_weird_env.stop(4);
+~one_weird_env.clear;
+~one_weird_env.pause;
+~one_weird_env.resume;
+
+
+///// FFT_WEIRDO ///////////////////////////////////////////////////////////////////////////
 
 (
     b = Buffer.alloc(s,2048,1);
@@ -106,11 +172,11 @@ p.arProxyNames.collect{|n| var snth = (p[n.asSymbol]);snth.clear};
         //var sig = Mix.fill(10,{|n| SinOsc.ar(50!2,env**(n+10)*8pi)});
         var sig = ~a.ar;
         sig = sig * env;
-        Splay.ar(sig,0.85,0.85,SinOsc.ar(1/[4,5])/2);
+        Splay.ar(sig,0.85,0.95,SinOsc.ar(1/[4,5])/2);
     };
     ~a_env.play;
 
-    ~a_env[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),300),[4000,4010]),7000);};
+    ~a_env[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),60),[4000,4010]),7000);};
 );
 ~a_env.stop(4);
 ~a_env.clear;
@@ -118,43 +184,7 @@ p.arProxyNames.collect{|n| var snth = (p[n.asSymbol]);snth.clear};
 ~a_env.resume;
 
 
-// one synth ///////////////////////////////////////
-(
-    ~one_weird.ar(2);
-    ~one_weird.quant=[4,1/2];
-    ~one_weird.fadeTime=8;
-    ~one_weird={
-        var t = LFTri.ar([1/64,50,1/32/(1..16)]) * (1..8);
-        var f = Perlin3.ar(t[0],t[1],t[2]);
-        var sig = Formant.ar(f.range(50,5000/[1,2,1.5,4]),f.range(50,5000).scramble,f.range(50,5000).reverse,mul:LFTri.kr(1/(1..16))**4 );
-        sig = sig ** 0.05;
-        sig = CompanderD.ar(BPF.ar(sig,1500/8*(1..8),0.5),3/4,1/LFNoise2.kr(1/4!8).range(1,3),1/2);
-        Splay.ar(sig,0.95,0.195);
-    };
-
-    ~one_weird_env.ar(2);
-    ~one_weird_env.quant=[2,1/4];
-    ~one_weird_env.fadeTime=0.2;
-    ~one_weird_env={
-        //         |       |       |       |       |  
-        var pat = [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0].rotate(1);
-        var imp = PulseDivider.kr(~tick.kr,16,~counter.kr%pat.size);
-        var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.0001],[7,0.005],[5,30],curve:'exp'),imp * hit);
-        var sig = ~one_weird.ar;
-        sig = sig * env;
-        Splay.ar(sig,0.75,0.95);
-    };
-    ~one_weird_env.play;
-    ~one_weird_env[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),300),[4000,4010]),7000);};
-
-);
-~one_weird_env.stop(4);
-~one_weird_env.clear;
-~one_weird_env.pause;
-~one_weird_env.resume;
-
-b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
+b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat2.wav");
 
 // player synth ///////////////////////////////////////
 
@@ -184,7 +214,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 
 
 
-// kick synth ///////////////////////////////////////
+// dasli pila, synth ///////////////////////////////////////
 
 (
     ~sup.ar(2);
@@ -204,10 +234,10 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
         var sig = Mix.fill(10,{|n| SinOsc.ar(50+(n/100),env**(10+(n*5))*8pi) + WhiteNoise.ar(env**4)})/2;
 
         sig = sig * env;
-        Splay.ar(sig,0.05,0.25);
+        Splay.ar(sig,0.05,0.5);
     };
     ~sup.play;
-    ~sup[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),300),[4000,4010]),7000);};
+    ~sup[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),30),[4000,4010]),17000);};
 
 );
 ~sup.stop(4);
@@ -283,7 +313,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 
 
 
-// hat synth ///////////////////////////////////////
+// hat synth (bad) ///////////////////////////////////////
 
 (
     ~hat.ar(2);
@@ -296,7 +326,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
             1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
             1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1,
         ].rotate(1);
-        var imp = PulseDivider.kr(~tick.kr,[1,4],~counter.kr%pat.size);
+        var imp = PulseDivider.kr(~tick.kr,[3,4],~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.15*[1,2,3,4]],[3,-3],curve:'exp'),imp * hit);
         var sig = WhiteNoise.ar(0.17!4) + GrayNoise.ar(0.4!2);
@@ -311,15 +341,14 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 ~hat.clear;
 ~hat.pause;
 ~hat.resume;
-i
 
 
-// one synth ///////////////////////////////////////
+// one synth (too heavy CPU) ///////////////////////////////////////
 
 (
     ~one_puls.ar(2);
     ~one_puls.quant=[2,-1/2];
-    ~one_puls.fadeTime=8;
+    ~one_puls.fadeTime=2;
     ~one_puls={
         var t = LFSaw.ar([100,2000,[50,500,5000,1/4]]) * 20 ;
         var perl = Perlin3.ar(t[0],t[1],t[2]);
@@ -331,6 +360,7 @@ i
         Splay.ar(sig,0.75,0.1595);
     };
     ~one_puls.play;
+    ~one_puls[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),3000),[4000,4010]),15000);};
 );
 ~one_puls.stop(4);
 ~one_puls.clear;
@@ -339,29 +369,3 @@ i
 
 
 
-// player synth ///////////////////////////////////////
-
-b = Buffer.read(s,Platform.resourceDir ++ "/sounds/violin.wav");
-(
-    ~smp.ar(2);
-    ~smp.quant=[2,1/2];
-    ~smp.fadeTime=2.02;
-    ~smp={
-        var mod = 1/8/[1.5,1.25,1/1.3333];
-        var spread = 0.0;
-        var pos = [0,0.5,0.25,0.6] + LFSaw.ar(1/4000);
-        //         |       |       |       |       |  
-        var pat = [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0].rotate(1);
-        var imp = PulseDivider.kr(~tick.kr,[8,4,2,1]*16,~counter.kr);
-        var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,6.05],[10,3],curve:'exp'),imp * hit);
-        var sig = PlayBuf.ar(b.numChannels,b.bufnum,BufRateScale.kr(b.bufnum)*mod,imp, (pos) * BufFrames.kr(b.bufnum),2);
-
-        sig = sig * env;
-        Splay.ar(sig.flat,0.5,0.85);
-    };
-    ~smp.play;
-    ~smp[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),100),[4000,4010]),1500+LFSaw.kr(1/32).range(0,10000));};
-);
-~smp.stop(7);
-~smp.clear;
