@@ -30,17 +30,19 @@ ProxyMixer.new(p,16);
 
 
 (
-    //  p.clock.tempo_(125/60);
-
     p.clock.sched(0,{p.makeTempoClock(125/60)});
+)
 
+(
+    p.clock.sched(0,{
     ~offset = {(0..7)/8};
 
     ~tick.quant = 0;
     ~tick = {Mix(Impulse.kr( ~tempo / 2 , ~offset ))};
 
-    ~counter.quant=0;
+    ~counter.quant = 0;
     ~counter = {PulseCount.kr(~tick.kr)};
+});
 );
 
 // moog synth ///////////////////////////////////////
@@ -51,14 +53,14 @@ ProxyMixer.new(p,16);
     ~moog.fadeTime=8.2;
     ~moog={
         var pat = 1/128/[1,2,16]*~tempo.kr;
-        var harm = TChoose.kr(Impulse.kr(pat),[1,2,4,1.5,1,0.5]);
-        var f =  [60,63].midicps / 4 / {TChoose.kr(Impulse.kr(pat),[1,2,4,1.5,1.33333,1/2,1/4])}!4 + Mix.kr(LFSaw.kr((1..16)));
+        var harm = TChoose.kr(Impulse.kr(pat),[1,2,4,1.5,1,0.5,1.875,1.666666,1.3333333]);
+        var f =  [60,63].midicps / 4 * harm / {TChoose.kr(Impulse.kr(pat),[1,2,4,1.5,1.33333,1/2,1/4,1.875,1.6666666])}!4 + Mix.kr(LFSaw.kr((1..16)));
         var sig = LFSaw.ar(f,mul:[0.7,0.4,0.2]) * (LFTri.ar(pat,mul:0.9)**3) * SinOsc.ar(f.scramble);
         sig = CombL.ar(sig,1/f,1/f,1).softclip;
         sig = MoogFF.ar(sig,f*[2,4,1.5,10,20,15]*harm,LFNoise2.kr(1/4!3).range(0.5,3.5));
         sig = CompanderD.ar(sig,3/4,1/1.02,1/10);
         sig = LeakDC.ar(sig);
-        Splay.ar(sig,0.75,0.35);
+        Splay.ar(sig,0.75,0.25);
 
     };
     ~moog.play;
@@ -173,11 +175,11 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/beat.wav");
     ~a.fadeTime=8;
     ~a.mold(2);
     ~a =  { var in, chain,sig;
-        var mel = TChoose.kr(Impulse.kr(1/32*~tempo.kr),[1.5,1.3333,1,2]);//Duty.kr(1/50,0,Dseq([1,2,1.5,1.33333],inf));
+        var mel = TChoose.kr(Impulse.kr(1/32*~tempo.kr),[1.5,1.3333,1,2,1.666666,1.875]);//Duty.kr(1/50,0,Dseq([1,2,1.5,1.33333],inf));
         var mod = SinOsc.ar(1/50,mul:0.05);
         var t = LFSaw.ar([1/16,1/4000,29.midicps/mel]) * 480 * (LFTri.ar(1/32/[1,2,3])**8);
         in = Perlin3.ar(t[0],t[1],t[2]);
-        in = Normalizer.ar(in) + RLPF.ar(Pulse.ar(4),8000);
+        in = Normalizer.ar(in) + RLPF.ar(Pulse.ar(2*~tempo.kr),8000);
         chain = FFT(b.bufnum, in) ;
         chain = PV_MagFreeze(chain, Decay.kr(Dust.kr(0.15),0.1) );
         chain = PV_BrickWall(chain, mod);
@@ -243,7 +245,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/beat.wav");
         var sig = Mix.fill(10,{|n| SinOsc.ar(29.midicps+(n/100),env**(10+(n*5))*8pi) + WhiteNoise.ar(env**4)})/2;
 
         sig = sig * env;
-        Splay.ar(sig,0.05,0.5);
+        Splay.ar(sig,0.05,0.55);
     };
     ~sup.play;
     ~sup[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),30),[4004,4014]),LFNoise2.kr(1/4!2).range(10000,17000))+sig;};
@@ -334,10 +336,12 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/beat.wav");
         ~switch[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),5000),[4001,4011]),12000)+sig;};
     );
 )
+~switch.play;
 ~switch.stop(4);
 ~switch.clear;
-~switch.pause;
-~switch.resume;
+~primekick.clear;
+~primekick.stop(4);
+
 
 
 // pre-kick synth ///////////////////////////////////////
@@ -378,19 +382,20 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/violin.wav");
     ~violin.quant=2;
     ~violin.fadeTime=4.02;
     ~violin={
+        var speed = 1/64/[1,2,3,4] * ~tempo.kr;
         var mod = 1/[1,1.3333,1.5,2]/TChoose.kr(Impulse.ar(1/16/[1,2,3,4]*~tempo.kr),[1.5,1.33335,1,0.75,1.6666666,1.875])/[1,1.5];
         var trate, dur, clk, pos, pan,sig;
         trate = 120;
         2.do{
-            mod = mod / TChoose.kr(Impulse.ar(1/16/[1,2,3,4]),[1.5,1.33335,1,0.5]);
+            mod = mod / TChoose.kr(Impulse.ar(speed),[1.5,1.33335,1,0.5]);
         };
         dur = BufDur.kr(b) / trate;
         clk = Impulse.kr(trate);
-        pos = LFSaw.ar(1/400/[1,2,4,8]).range(0,BufDur.kr(b)) + TRand.kr(0, 0.0001, clk);
+        pos = LFSaw.ar(1/4000/[1,2,4,8]).range(0,BufDur.kr(b)) + TRand.kr(0, 0.0001, clk);
         pan = WhiteNoise.kr(0.6);
         sig = TGrains.ar(2, clk, b.bufnum, mod, pos, dur, pan, 0.3);
-        sig = sig * (LFSaw.ar(1/16/[1,2,3,4]*~tempo.kr)**8);
-        Splay.ar(sig.flat,0.95,0.85);
+        sig = sig * (LFTri.ar(speed)**8);
+        Splay.ar(sig.flat,0.95,0.65);
     };
     ~violin.play;
     ~violin[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),300),[3000,3010]),LFNoise2.kr(1/4!2).range(1000,7000));};
