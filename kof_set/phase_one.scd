@@ -30,14 +30,16 @@ ProxyMixer.new(p,16);
 
 
 (
-    p.clock.tempo_(125/60);
+    //  p.clock.tempo_(125/60);
+
+    p.clock.sched(0,{p.makeTempoClock(125/60)});
 
     ~offset = {(0..7)/8};
 
-    ~tick.quant = 2;
+    ~tick.quant = 0;
     ~tick = {Mix(Impulse.kr( ~tempo / 2 , ~offset ))};
 
-    ~counter.quant=2;
+    ~counter.quant=0;
     ~counter = {PulseCount.kr(~tick.kr)};
 );
 
