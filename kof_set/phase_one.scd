@@ -30,7 +30,6 @@ ProxyMixer.new(p,16);
 
 
 (
-    p.makeTempoClock;
     p.clock.tempo_(125/60);
 
     ~offset = {(0..7)/8};
@@ -296,11 +295,11 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/beat.wav");
         ~primekick={
             var pat = [1,0,0,0,1,1,0,0,1,0,0,0,1,0,0,0].rotate(1);
             //         |       |       |       |       |  
-            var imp = PulseDivider.kr(~tick.kr,[1,2,3,4,5,6,7,8].nthPrime,~counter.kr);
+            var imp = PulseDivider.kr(~tick.kr,[1,2,3,4,5,6,7,8].pyramid.scramble,~counter.kr);
             var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-            var env = EnvGen.ar(Env([0.001,1,0.0001],[0.005,0.25],[3,-3],curve:'exp'),imp * hit);
+            var env = EnvGen.ar(Env([0.001,1,0.0001],[0.005,4.25],[-4,-3],curve:'exp'),imp * hit);
             var sig = WhiteNoise.ar(1!8);
-            sig = Resonz.ar(sig,env**LFNoise2.kr(1/40!8).exprange(0.1,50.9)*1900+29.midicps,LFNoise2.kr(1/400!8).exprange(0.01,0.2));
+            sig = Resonz.ar(sig,env**LFNoise2.kr(1/40!8).exprange(0.1,50.9)*190+29.midicps,LFNoise2.kr(1/400!8).exprange(0.01,0.2));
             sig = sig * env;
             Splay.ar(sig,0.65,0.45);
         };
@@ -318,12 +317,12 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/beat.wav");
         ~switch.quant=[4];
         ~switch.fadeTime=0.2;
         ~switch={
-            var pat = [1,0,0,0,1,0,0,0,1,0,0,0,1,1,0,0].rotate(3);
+            var pat = [1,0,0,0,1,0,0,0,1,0,0,0,1,1,0,0].pyramid.rotate(3);
             //         |       |       |       |       |  
             //      var pat = [1,0,1,0,1,0,1,1,1,0,1,0,1,0,1,0].rotate(1);
-            var imp = PulseDivider.kr(~tick.kr,[1,2,3,4,5,6,7,8].nthPrime,~counter.kr%pat.size);
+            var imp = PulseDivider.kr(~tick.kr,[1,2,3,4,5,6,7,8].scramble,~counter.kr%pat.size);
             var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-            var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.1*[1,2,3,4]],[3,-3],curve:'exp'),imp * hit);
+            var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.1*[1,2,3,4]],[3,30],curve:'exp'),imp * hit);
             var sig = WhiteNoise.ar(0.4!4) * Pulse.ar(1000,50,2500,10);
             sig = RHPF.ar(sig,[1000,2500,12500,15000],LFNoise2.kr(1/4!4).range(0.1,0.9));
             sig = sig * env;
@@ -373,27 +372,25 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/violin.wav");
 // player synth ///////////////////////////////////////
 
 (
-  ~violin.ar(2);
-  ~violin.quant=2;
-  ~violin.fadeTime=4.02;
-  ~violin={
-    var mod = 2/[1,1.3333,1.5,2]/TChoose.kr(Impulse.ar(1/16/[1,2,3,4]*~tempo.kr),[1.5,1.33335,1,0.75,1.6666666,1.875])/[1,1.5];
-    var trate, dur, clk, pos, pan,sig;
-    trate = 120;
-    2.do{
-    mod = mod / TChoose.kr(Impulse.ar(1/16/[1,2,3,4]),[1.5,1.33335,1,0.5]);
-  };
-    dur = BufDur.kr(b) / trate;
-    clk = Impulse.kr(trate);
-    pos = LFSaw.ar(1/400/[1,2,4,8]).range(0,BufDur.kr(b)) + TRand.kr(0, 0.001, clk);
-    pan = WhiteNoise.kr(0.6);
-    sig = TGrains.ar(2, clk, b.bufnum, mod, pos, dur, pan, 0.3);
-    sig = sig * (LFSaw.ar(1/32/[1,2,3,4]*~tempo.kr)**8);
-    sig = PitchShift.ar(sig,0.25,SinOsc.kr(20*~tempo.kr).range(0.95,1.01));
-    sig = CompanderD.ar(sig,3/4,1,1/2) ;
-    Splay.ar(sig.flat,0.95,0.95);
-  };
-  ~violin.play;
+    ~violin.ar(2);
+    ~violin.quant=2;
+    ~violin.fadeTime=4.02;
+    ~violin={
+        var mod = 1/[1,1.3333,1.5,2]/TChoose.kr(Impulse.ar(1/16/[1,2,3,4]*~tempo.kr),[1.5,1.33335,1,0.75,1.6666666,1.875])/[1,1.5];
+        var trate, dur, clk, pos, pan,sig;
+        trate = 120;
+        2.do{
+            mod = mod / TChoose.kr(Impulse.ar(1/16/[1,2,3,4]),[1.5,1.33335,1,0.5]);
+        };
+        dur = BufDur.kr(b) / trate;
+        clk = Impulse.kr(trate);
+        pos = LFSaw.ar(1/400/[1,2,4,8]).range(0,BufDur.kr(b)) + TRand.kr(0, 0.0001, clk);
+        pan = WhiteNoise.kr(0.6);
+        sig = TGrains.ar(2, clk, b.bufnum, mod, pos, dur, pan, 0.3);
+        sig = sig * (LFSaw.ar(1/16/[1,2,3,4]*~tempo.kr)**8);
+        Splay.ar(sig.flat,0.95,0.85);
+    };
+    ~violin.play;
     ~violin[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),300),[3000,3010]),LFNoise2.kr(1/4!2).range(1000,7000));};
 );
 ~violin.stop(50);
