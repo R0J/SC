@@ -3,6 +3,7 @@ AutoIDE.end
 
 p = ProxySpace.push(s).makeTempoClock;
 p.clock.tempo_(127/60);
+p.clock.tempo_(160/60);
 
 /////////////////////////////////////////////////////////////
 
@@ -34,11 +35,8 @@ e.zastav(~drumKof, \stereo)
 	var aEnv = \amp.kr(0);
 	var sig = Mix.fill(num,{|i|
 		SinOsc.ar(
-			// freq: freq + (aEnv**0.5*2),
-			// freq: freq + (\fplus.kr(0)**0.5*2),
 			freq: freq + (\fplus.kr(0)),
-			// phase: aEnv**(200+(i/200))*8pi) + BrownNoise.ar(\noise.kr(0)**46)
-		phase: aEnv**(200+(i/200))*8pi) + BrownNoise.ar(\noise.kr(0))
+			phase: aEnv**(200+(i/200))*8pi) + BrownNoise.ar(\noise.kr(0))
 	});
 	sig = sig * aEnv/3.9;
 	Splay.ar(sig, 0, center:\stereo.kr(0));
@@ -53,24 +51,28 @@ e.zastav(~drumKof, \stereo)
 	earlyreflevel:0.1,
 	taillevel: 1.9,
 	maxroomsize:1500
-	// ,mul:\mulgverb.kr(1)*/
 ) };
-~drumExp[2] = \filter -> {|in| LPF.ar(in, \lpf_freq.kr(2800,8)) };
+~drumExp[2] = \filter -> {|in| LPF.ar(in, \lpf_freq.kr(600,8)) };
 )
 
-~drumExp.play(vol: 0.4, fadeTime: 4);
-~drumExp.stop(1);
+~drumExp.play(vol: 0.5, fadeTime: 1);
+~drumExp.stop();
 ~drumExp.scope;
-e.hraj(~drumExp, \amp, 1, Env([0.001,1,0.0001],[0.0002,0.75],[3,-3]));
-e.hraj(~drumExp, \fplus, 1, Env([0,1400,350,80,0], [0.005, 0.01, 0.03, 0.12], [\hold, \hold, -28, -2]))
-e.hraj(~drumExp, \noise, 1, Env([0.05,1,0.05], [0.0002,0.75],[3,-3]))
+e.hraj(~drumExp, \amp, 8, Env([0,1,0],[0.0002,7.75],[3,-3]));
+(
+e.hraj(~drumExp, \amp, [1,1,2,3],
+	Pswitch([
+		[Env([0.0,0.9,0.2], [0.0003, 0.50], [3,-3])],
+		[Env([0.0,0.7,0.3], [0.0005, 0.4], [3,-3])],
+		[Env([0.0,0.9,0.2], [0.0005, 0.70], \sin)],
+		[Env([0.0,0.9,0.0], [0.0095, 2.05], \sin)]
+	], Pseq([0,1,0,0,0,2,0,0,1,0,0,1,3],1 ))
+))
+e.hraj(~drumExp, \fplus, 2, Env([0,1400,350,80,0], [0.005, 0.01, 0.03, 0.12], [\hold, \hold, -28, -2]))
+e.hraj(~drumExp, \noise, 1, Env([0.05,1,0.05], [0.0002,0.25],[3,-3]))
 e.hraj(~drumExp, \stereo, 8, Env([-1,1,-1], [6,2] , \sin))
 e.zastav(~drumExp, \amp)
 e.zastav(~drumExp, \stereo)
-
-
-
-1**0.5*2
 
 /////////////////////////////////////////////////////////////
 
@@ -82,7 +84,7 @@ e.zastav(~drumExp, \stereo)
 	var num = 18;
 	var osc = Mix.fill(num, {|i| SinOsc.ar(f + \fplus.kr(0),0.005*i,1/num)});
 	var noise = BrownNoise.ar(\noise.kr(0), SinOsc.kr([8, 9, 32, 36.01], 0, 0.7));
-	var sig = osc * noise * \amp.kr(0);
+	var sig = (osc + noise) * \amp.kr(0);
 	Splay.ar(sig, 0, center:\stereo.kr(0));
 };
 ~drum[1] = \filter -> {|in| AllpassC.ar(in,0.06,0.01,0.75); };
@@ -93,14 +95,14 @@ e.zastav(~drumExp, \stereo)
 // ~drum[3] = nil;
 )
 
-~drum.play(vol: 0.5, fadeTime: 1);
+~drum.play(vol: 0.1, fadeTime: 1);
 ~drum.stop(4);
 ~drum.scope;
 e.hraj(~drum, \amp, 1, Env([0,1,0], [0.05, 0.95]))
 e.hraj(~drum, \fplus, 1, Env([0,2000,4000,80,0], [0.05, 0.01, 0.06, 0.22], [\hold, \step, -8, -2]))
 e.hraj(~drum, \lpf, 1, Env([4000,800,50], [0.17,1.2] , [\hold, \sin]))
 e.hraj(~drum, \noise, 1, Env([0.05,0.3,0.05], [0.1,0.4] , \sin))
-e.hraj(~drum, \stereo, 4, Env([-1,1,-1], [2,2] , \sin))
+e.hraj(~drum, \stereo, 0.5, Env([-1,1,-1], [0.25,0.25] , \sin))
 e.zastav(~drum, \amp)
 e.zastav(~drum, \fplus)
 e.zastav(~drum, \lpf)
