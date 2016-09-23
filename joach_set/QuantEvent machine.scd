@@ -40,7 +40,7 @@ e.hraj = {|e, node, control, quant, env|
 				if(p.clock.beats % quant > tolerance, {
 					e.hraj(node, control, quant, env);
 				});
-				("ProxyClock beats: " ++  p.clock.beats ++ " tempo: " ++ p.clock.tempo).postln;
+				// ("ProxyClock beats: " ++  p.clock.beats ++ " tempo: " ++ p.clock.tempo).postln;
 			}
 		}
 	}
@@ -128,6 +128,7 @@ e.zastav = {|e, node, control|
 	// bus.clear;
 	// e.makeFadeSynth(busIndex);
 	node[busIndex+30] = nil;
+	node.unmap(control.asSymbol);
 	// nodeMap.sendToNode(node);
 	/*
 	bus.stop(fadeTime, true);
