@@ -77,18 +77,21 @@ e.hraj = {|e, node, control, quant, env|
 					\proxyTempo: p.clock.tempo,
 					\env: [currentEnv]
 				]);
+				/*
 				("\nProxyClock beats: " ++  p.clock.beats ++ " tempo: " ++ p.clock.tempo).postln;
 				(
+
 					"currentQuant: " ++ currentQuant ++
 					"; currentIndex: " ++ currentIndex //++
 					// "; currentEnv:" ++ [currentEnv].asArray).toString
 				).postln;
+				*/
 				counter = counter + 1;
 				currentSumQuant = currentSumQuant + currentQuant;
 				currentQuant.wait;
 
 				if(sumQuant <= currentSumQuant, {
-
+/*
 					"END OF CYCLE".postln;
 					(
 					"beat:" + p.clock.beats +
@@ -98,10 +101,11 @@ e.hraj = {|e, node, control, quant, env|
 
 					if(p.clock.beats % (totalDur) > tolerance, {
 						"Reset CYCLE".postln;
-						e.hraj(node, control, quant, env);
+						// e.hraj(node, control, quant, env);
 					});
 
 					currentSumQuant = 0;
+					*/
 				});
 
 			}
@@ -117,6 +121,7 @@ e.zastav = {|e, node, control|
 	var nodeMap = node.nodeMap;
 	var fadeTime = 10;
 	var fadeTask;
+	/*
 	("Node:" + node.key).postln;
 	("Control:" + control).postln;
 	("BusIndex:" + busIndex).postln;
@@ -125,11 +130,13 @@ e.zastav = {|e, node, control|
 
 	("NodeMap:" + node.nodeMap).postln;
 	("NodeMap:" + node.nodeMap.at(control)).postln;
-	// bus.clear;
+	*/
+
 	// e.makeFadeSynth(busIndex);
 	node[busIndex+30] = nil;
 	node.unmap(control.asSymbol);
 	// nodeMap.sendToNode(node);
+
 	/*
 	bus.stop(fadeTime, true);
 	fadeTask = Task {
