@@ -54,22 +54,23 @@ p.clock.tempo_(127/60);
 
 (
     ~karplus.ar(2);
-    ~karplus.quant=2;
+    ~karplus.quant=[2,1/2];
     ~karplus.fadeTime=4;
     ~karplus={
-        var pat = 4/[1,2,3,4] * ~tempo.kr;
-        var sig = (PinkNoise.ar(0.81!2) * LFPulse.ar([4,3,2,1]/2*~tempo,0,0.006)) + LocalIn.ar(4);
+        var pat = 1/[1,2,3,4] * ~tempo.kr;
+        var sig = (PinkNoise.ar(0.91!2) * LFPulse.ar([4,4,2,1]*~tempo,0,0.005)) + LocalIn.ar(4);
         var mod = TChoose.kr(Impulse.kr(pat/4),[2,4,1,1/2]).lag(1/400);
         var mod2 = TChoose.kr(Impulse.kr(pat/16),[2,1.5,4,1,1.3333333]).lag(1/400);
         var base = [48,60].midicps.lag(1/400) * 2 * mod / mod2;
-        sig = BPF.ar(sig,base*[1,2,4,8],LFNoise1.kr(1/16!4).range(0.02,0.9));
-        sig = DelayN.ar(sig,1/4/base,1/base+SinOsc.ar(1/[3,4,5,6]).range(-0.00005,0.00005));
-        LocalOut.ar(sig/1.01);
+        sig = LPF.ar(sig,base*[1,2,4,16],mul:LFNoise1.kr(1/16!4).range(0.02,0.9));
+        sig = DelayN.ar(sig,1/base,1/base+SinOsc.ar(1/[3,4,5,6]).range(-0.00005,0.00005));
+        LocalOut.ar(sig/1.0001);
+        //sig = CombL.ar(sig,1/base,2/base,0.7);
         //sig = sig * (LFTri.ar(pat)**2);
         Splay.ar(sig,0.95,0.75);
     };
     ~karplus.play;
-    //~karplus[10] = \filter -> {|sig| LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),50),[4004,4014]),LFNoise2.kr(1/4!2).range(3000,15000))+sig;};
+    ~karplus[10] = \filter -> {|sig| LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),50),[4004,4014]),LFNoise2.kr(1/4!2).range(3000,15000))+sig;};
 );
 ~karplus.stop(4);
 ~karplus.clear;
@@ -82,22 +83,26 @@ p.clock.tempo_(127/60);
 
 (
     ~moog.ar(2);
-    ~moog.quant=[2,1];
+    ~moog.quant=[2];
     ~moog.fadeTime=8.2;
     ~moog={
+        var mul = 2;
+        var deviation = 0.333;
         var pat = 1/64/[1,2,3,4]*~tempo.kr;
         var harm = TChoose.kr(Impulse.kr(pat),[1,2,1,4,1,1,1,8,1,4]).lag(1/100);
-        var f =  ([60,63,51,48]).midicps * harm / {TChoose.kr(Impulse.kr(pat),[1,2,1.5,1.33333])}!4;
-        var sig = LFSaw.ar(f * [1,1.001],SinOsc.kr(1/4/[1,2,3,4],mul:pi),mul:[0.7,0.4,0.2,0.1]) * (LFTri.ar(pat*2,mul:0.9)**8);
+        var f =  ([60,63,51,48]).midicps * harm / {TChoose.kr(Impulse.kr(pat),[1,2,1.5,1.33333])}!4 * mul;
+        var sig = LFSaw.ar(f * [1,1.001] + SinOsc.kr(1/4/[1,2,3,4]*~tempo,mul:deviation),mul:[0.7,0.4,0.2,0.1]) * (LFTri.ar(pat*2,mul:0.9)**8);
         sig = Vibrato.ar(sig,[5,6,7,8],0.02);
-        sig = BMoog.ar(sig,f*[2,1/2],LFNoise2.kr(1/16!4).range(0.05,1));
+        sig = BMoog.ar(sig,f*[2,1/2,4],LFNoise2.kr(1/16!4).range(0.05,1),mul:[1,0.4,0.02]);
         sig = LPF.ar(sig,f*3);
         sig = HPF.ar(sig,40);
         sig = Limiter.ar(sig,0.8);
+        sig = LPF.ar(sig,7000);
+        sig = CompanderD.ar(sig,3/4,1/2,1);
         Splay.ar(sig,0.25,0.25);
     };
     ~moog.play;
-    ~moog[10] = \filter -> {|sig| LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),80),[4004,4014]),LFNoise2.kr(1/4!2).range(5000,15000))+sig;};
+    ~moog[10] = \filter -> {|sig| LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),80),[4004,4014]),LFNoise2.kr(1/4!2).range(5000,9000))+sig;};
 );
 ~moog.stop(16);
 ~moog.clear;
@@ -130,6 +135,60 @@ p.clock.tempo_(127/60);
 ~saw.pause;
 ~saw.resume;
 
+(
+    ~sell.kr(2);
+    ~sell.mold(2);
+    ~sell.quant=2;
+    ~sell.fadeTime=16;
+
+    ~sell={LFTri.kr(1/[4,16]*~tempo)**LFNoise2.kr(1/16!2).range(0.75,8)};
+)
+
+
+// scanner synth ///////////////////////////////////////
+
+(
+    ~scanner.ar(2);
+    ~scanner.quant=2;
+    ~scanner.fadeTime=0.2;
+    ~scanner={
+        //         |       |       |       |       |
+        var pat = [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0].rotate(1);
+        var imp = PulseDivider.kr(~tick.kr,4,~counter.kr % pat.size);
+        var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
+        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.005,0.5],[3,-3],curve:'exp'),imp * hit);
+        var sig = [
+            SinOsc.ar(50),
+            LFNoise2.ar(1500),
+            Pulse.ar(2),
+            LFNoise1.ar(16000),
+            LFSaw.ar(500!2,mul:0.1),
+            LFNoise2.ar(1500),
+            Pulse.ar(4),
+            Blip.ar(50,3);
+            WhiteNoise.ar(1),
+            SinOsc.ar(12500),
+            LFSaw.ar(75),
+            SinOsc.ar(50),
+        ];
+        sig = SelectX.ar(~sell*sig.size,sig);
+        sig = Resonz.ar(sig,LFNoise2.kr(1/4/[1,2,3,4]).exprange(100.01,1600),0.2,mul:2)+sig/2;
+        sig = HPF.ar(sig,100);
+        //sig = CombN.ar(sig,1/50,1/50+(~sell.kr/20),1)+sig;
+        sig = CompanderD.ar(sig,3/4,1/3,1/2);
+        sig = Limiter.ar(sig,0.95)/2;
+        //sig = LPF.ar(GVerb.ar(sig,90,3)/2,2000)+sig/2;
+        Splay.ar(sig,0.95,0.125,SinOsc.kr(1/4.01*~tempo));
+    };
+    ~scanner.play;
+    ~scanner[10] = \filter -> {|sig|DWGReverb.ar(HPF.ar(LPF.ar(NumChannels.ar(sig,2),LFNoise2.kr(1/4!2).range(5000,13000)),300),[3000,3010])/4+sig;};
+);
+~scanner.stop(4);
+~scanner.clear;
+~scanner.pause;
+~scanner.resume;
+
+
 // slowmo, player synth ///////////////////////////////////////
 b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 
@@ -140,10 +199,10 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
     ~smp={
         var mod = 1/4/[1,1.5,1.3333,2];
         var spread = 0.0;
-        var pos = [0,0.5,0.25,0.6] + LFSaw.ar(1/128*~tempo.kr).round(1/128);
+        var pos = [0,0.5,0.25,0.6] + LFSaw.ar(1/128/2*~tempo.kr).round(1/128/2);
         //         |       |       |       |       |
         var pat = [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0].rotate(3);
-        var imp = PulseDivider.kr(~tick.kr,[8,4,2,1]*4,~counter.kr);
+        var imp = PulseDivider.kr(~tick.kr,[8,4,2,1]*16,~counter.kr);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,6.05],[10,3],curve:'exp'),imp * hit);
         var sig = PlayBuf.ar(b.numChannels,b.bufnum,BufRateScale.kr(b.bufnum)*mod+(env**0.01/100),imp, (pos) * BufFrames.kr(b.bufnum),2);
@@ -294,6 +353,27 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 
 //////////////////////////////////////////////////////
 //////////////////////////////////////////////////////
+// hat synth ///////////////////////////////////////
+
+(
+    ~high_glitch.quant=[2,1/2];
+    ~high_glitch.fadeTime=8.02;
+    ~high_glitch={
+        var imp = PulseDivider.kr(~tick.kr,[1,4],~counter.kr);
+        //var imp = PulseDivider.kr(~tick.kr,[4,16]/4);
+        var env = EnvGen.ar(Env([0.001,1,0.001],[0.002,[0.05,0.2]],[3,-3]),imp);
+        var sig = WhiteNoise.ar(0.5!2);
+        sig = HPF.ar(sig,LFNoise2.kr(1/16!4).range(1000,16000)) * LFPulse.ar(1/4/[1,4]*~tempo,0,1/4);
+        sig = sig * env;
+        sig = sig + (CombN.ar(sig * LFPulse.ar(1/4/[1,2,3,4],0,0.15),1/50,1/50,0.5));
+        Splay.ar(sig,0.45,0.25);
+    };
+    ~high_glitch.play;
+    ~high_glitch[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),5000),[4001,4011]),12000)+sig;};
+);
+~high_glitch.stop(7);
+~high_glitch.clear;
+
 
 // kick synth ///////////////////////////////////////
 
@@ -309,10 +389,10 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
             1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
             1,0,0,0,1,0,0,0,1,0,0,0,1,1,0,0,
         ].rotate(1);
-        var imp = PulseDivider.kr(~tick.kr,4,~counter.kr%pat.size);
+        var imp = PulseDivider.kr(~tick.kr,8,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.0002,2.75],[3,-3],curve:'exp'),imp * hit);
-        var sig = Mix.fill(8,{|n| SinOsc.ar(29.midicps+(env**0.5*2),env**(200+(n/200))*8pi) + BrownNoise.ar(env**46)});
+        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.0002,2.75],[8,-10]),imp * hit);
+        var sig = Mix.fill(8,{|n| SinOsc.ar(29.midicps+(env**0.5*2),env**(80+(n/200))*8pi) + BrownNoise.ar(env**46)});
         //sig= Limiter.ar(sig,0.9);
         sig = sig * env/3.9;
         sig = CompanderD.ar(sig,3/4,1,1/3,0.0002);
@@ -400,27 +480,6 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 ~switch.stop(4);
 ~switch.clear;
 
-
-// hat synth ///////////////////////////////////////
-
-(
-    ~high.quant=[2,1/2];
-    ~high.fadeTime=8.02;
-    ~high={
-        var imp = PulseDivider.kr(~tick.kr,[1,4],~counter.kr);
-        //var imp = PulseDivider.kr(~tick.kr,[4,16]/4);
-        var env = EnvGen.ar(Env([0.001,1,0.001],[0.002,[0.05,0.2]],[3,-3]),imp);
-        var sig = WhiteNoise.ar(0.5!2);
-        sig = HPF.ar(sig,LFNoise2.kr(1/16!4).range(1000,16000)) * LFPulse.ar(1/4/[1,4]*~tempo,0,1/4);
-        sig = sig * env;
-        sig = sig + (CombN.ar(sig * LFPulse.ar(1/4/[1,2,3,4],0,0.15),1/50,1/50,0.5));
-        Splay.ar(sig,0.45,0.25);
-    };
-    ~high.play;
-    ~high[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),5000),[4001,4011]),12000)+sig;};
-);
-~high.stop(7);
-~high.clear;
 
 
 
@@ -513,7 +572,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/violin.wav");
         ];
         sig = SelectX.ar(LFSaw.ar(1/8/(1..8)*~tempo.kr)*sig.size,sig);
         sig = sig * (LFTri.ar(1/4/(1..8)*~tempo.kr)**4);
-        sig = CombN.ar(sig,1/base,2/base,4);
+        //sig = CombN.ar(sig,1/base,2/base,4);
         sig = CompanderD.ar(sig,3/4,1/1.5,1/2);
         sig = sig * env;
         Splay.ar(sig,0.15,0.75);
@@ -530,54 +589,5 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/violin.wav");
 
 
 
-
-
-(
-    ~sell.quant=2;
-    ~sell={LFTri.kr(1/64*~tempo)**4};
-)
-
-
-// scanner synth ///////////////////////////////////////
-
-(
-    ~scanner.ar(2);
-    ~scanner.quant=2;
-    ~scanner.fadeTime=0.2;
-    ~scanner={
-        //         |       |       |       |       |
-        var pat = [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0].rotate(1);
-        var imp = PulseDivider.kr(~tick.kr,4,~counter.kr % pat.size);
-        var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.005,0.25],[3,-3],curve:'exp'),imp * hit);
-        var sig = [
-            SinOsc.ar(50),
-            LFNoise2.ar(1500),
-            Pulse.ar(2),
-            LFNoise1.ar(16000),
-            LFSaw.ar(500!2,mul:0.1),
-            LFNoise2.ar(1500),
-            Pulse.ar(4),
-            Blip.ar(50,3);
-            WhiteNoise.ar(1),
-            SinOsc.ar(12500),
-            LFSaw.ar(75),
-            SinOsc.ar(50),
-        ];
-        sig = SelectX.ar(~sell*sig.size,sig);
-        sig = Resonz.ar(sig,LFNoise2.kr(1/4/[1,2,3,4]).exprange(100.01,16000),0.2,mul:2)+sig/2;
-        sig = CombN.ar(sig,1/50,1/50+(~sell.kr/20),1)+sig;
-        sig = CompanderD.ar(sig,3/4,1/3,1/2);
-        sig = Limiter.ar(sig,0.95)/2;
-        sig = LPF.ar(GVerb.ar(sig,90,3)/2,2000)+sig/2;
-        Splay.ar(sig,0.95,0.125,SinOsc.kr(4.1));
-    };
-    ~scanner.play;
-    ~scanner[10] = \filter -> {|sig|DWGReverb.ar(HPF.ar(LPF.ar(NumChannels.ar(sig,2),LFNoise2.kr(1/4!2).range(5000,13000)),300),[3000,3010])/4+sig;};
-);
-~scanner.stop(4);
-~scanner.clear;
-~scanner.pause;
-~scanner.resume;
 
 
