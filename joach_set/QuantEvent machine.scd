@@ -19,6 +19,20 @@ e.hraj = {|e, node, control, quant, env|
 	synthDef.asSynthDef(name:synthName).add;
 
 	case
+	{ envType == 'Integer' }  {
+		node[busIndex+30] = Task {
+			p.clock.timeToNextBeat(quant).wait;
+			node.set(control.asSymbol, env);
+			"Integer set".postln;
+		}
+	}
+	{ envType == 'Float' }  {
+		node[busIndex+30] = Task {
+			p.clock.timeToNextBeat(quant).wait;
+			node.set(control.asSymbol, env);
+			"Float set".postln;
+		}
+	}
 	{ envType == 'Env' }  {
 		"Env set".postln;
 		//e.envRange(env);

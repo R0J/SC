@@ -32,7 +32,7 @@ e.zastav(~drumKof, \stereo)
 ~drumExp[0] = {
 	var num = 4;
 	var freq = 43;
-	var aEnv = \amp.kr(0);
+	var aEnv = \amp.kr(0,8);
 	var sig = Mix.fill(num,{|i|
 		SinOsc.ar(
 			freq: freq + (\fplus.kr(0)),
