@@ -7,7 +7,6 @@ e.hraj = {|e, node, control, quant, env|
 	var busIndex = e.busIndex(node, control);
 	var tolerance = 0.001;
 
-	//e.makeSynthDef(synthName);
 	var synthDef = {|bus, proxyTempo = 1|
 		Out.kr( bus,
 			EnvGen.kr(
@@ -35,10 +34,10 @@ e.hraj = {|e, node, control, quant, env|
 					\env: [env]
 				]);
 
-
 				quant.wait;
+
 				if(p.clock.beats % quant > tolerance, {
-					e.hraj(node, control, quant, env);
+					//e.hraj(node, control, quant, env);
 				});
 				// ("ProxyClock beats: " ++  p.clock.beats ++ " tempo: " ++ p.clock.tempo).postln;
 			}
@@ -46,68 +45,53 @@ e.hraj = {|e, node, control, quant, env|
 	}
 	{ envType == 'Pswitch' }  {
 		var counter = 0;
-		var sumQuant = quant.sum;
-		var currentSumQuant = 0;
-		var patternSize = env.which.list.size;
 		var totalDur = 0;
 		var quantList = List.new();
+		var sumQuant = quant.sum;
+		var currentSumQuant = 0;
 
-		"Pswitch set".postln;
-		patternSize.do({|i|
-			var noSelect = env.which.list.at(i);
+		var pattern = env.which;
+		var repeats = pattern.repeats;
+		var selectArray;
+
+		if(repeats == inf){	pattern.repeats_(1); };
+		selectArray = pattern.asStream.all;
+
+		("Repeats: " + repeats).postln;
+		("SelectArray: " + selectArray).postln;
+
+		selectArray.do({|noSelect|
 			var selectQuant = quant.asArray.wrapAt(noSelect);
-			("id:"+noSelect+"; q:" + selectQuant).postln;
 			quantList.add(selectQuant);
 			totalDur = totalDur + selectQuant;
 		});
-		("quantList:"+quantList).postln;
 
-		node.set(control.asSymbol, BusPlug.for(busIndex));
+		("quantList:" + quantList).postln;
+
 		node[busIndex+30] = Task {
-			p.clock.timeToNextBeat(totalDur).wait;
-			loop {
-				var currentQuant = quantList.wrapAt(counter);
-				// var currentQuant = quant.asArray.wrapAt(counter%(patternSize-1));
-				var currentIndex = env.which.list[counter%patternSize];
-				var currentEnv = env.list[currentIndex];
+			// p.clock.timeToNextBeat(totalDur).wait;
+			quantList[0].wait;
+			node.set(control.asSymbol, BusPlug.for(busIndex));
 
+			loop {
+				var currentIndex = selectArray.wrapAt(counter);
+				var currentQuant = quantList.wrapAt(counter);
+				var currentEnv = env.list[currentIndex];
+				/*
+				(
+				"currentIndex:" + currentIndex +
+				"currentQuant:" + currentQuant +
+				"currentEnv:" + (currentEnv[0]).asArray
+				).postln;
+				*/
 
 				Synth(synthName, [
 					\bus: busIndex,
 					\proxyTempo: p.clock.tempo,
 					\env: [currentEnv]
 				]);
-				/*
-				("\nProxyClock beats: " ++  p.clock.beats ++ " tempo: " ++ p.clock.tempo).postln;
-				(
-
-					"currentQuant: " ++ currentQuant ++
-					"; currentIndex: " ++ currentIndex //++
-					// "; currentEnv:" ++ [currentEnv].asArray).toString
-				).postln;
-				*/
 				counter = counter + 1;
-				currentSumQuant = currentSumQuant + currentQuant;
 				currentQuant.wait;
-
-				if(sumQuant <= currentSumQuant, {
-/*
-					"END OF CYCLE".postln;
-					(
-					"beat:" + p.clock.beats +
-					"; totalDur:" + totalDur +
-					"; Mod: "++(p.clock.beats % totalDur)
-					).postln;
-
-					if(p.clock.beats % (totalDur) > tolerance, {
-						"Reset CYCLE".postln;
-						// e.hraj(node, control, quant, env);
-					});
-
-					currentSumQuant = 0;
-					*/
-				});
-
 			}
 		}
 	}
@@ -148,28 +132,6 @@ e.zastav = {|e, node, control|
 	fadeTask.start;
 	*/
 };
-
-e.makeSynth = {|e, name|
-	var synthDef = {|bus, proxyTempo = 1|
-		Out.kr( bus,
-			EnvGen.kr(
-				\env.kr( Env.newClear().asArray ),
-				timeScale: proxyTempo.reciprocal,
-				doneAction: 2
-			)
-		);
-	};
-	synthDef.asSynthDef(name:name).add;
-};
-
-/*
-e.makeFadeSynth = {|e, bus|
-var synthDef = {|bus, proxyTempo = 1|
-Out.kr( bus, InBus.kr(bus, 0) * Line.kr(1,0,10));
-};
-synthDef.asSynthDef(name:"fadeOut").add;
-};
-*/
 
 e.busIndex = {|e,node, control|
 	var busIndex;
