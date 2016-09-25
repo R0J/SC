@@ -15,15 +15,27 @@
 * Copyright (C) kof, 2016
 */
 
+Server.local.peakCPU
+p.arProxyNames;
 
-p.arProxyNames.collect{|n| var snth = (p[n.asSymbol]);if(true){snth.stop(10)}};
+(
+    ("fading" + p.arProxyNames.last).postln;
+    p[p.arProxyNames.last.asSymbol].stop(60);
+)
+
+
+(
+    ("clearing" + p.arProxyNames.last).postln;
+    p[p.arProxyNames.last.asSymbol].clear;
+)
+
+p.arProxyNames.collect{|n| var snth = (p[n.asSymbol]);if(true){snth.stop(20)}};
 
 p.arProxyNames.collect{|n| var snth = (p[n.asSymbol]);if(true){snth.play}};
 
 p.arProxyNames.collect{|n| var snth = (p[n.asSymbol]);snth.clear};
-p.clearAll;
+p.clear;
 
-Server.local.peakCPU
 
 
 (
@@ -45,8 +57,8 @@ ProxyMixer.new(p,16);
     //~counter.quant = 0;
     ~counter = {PulseCount.kr(~tick.kr)};
     p.clock.tempo_(127/60);
-
 );
+
 
 p.clock.tempo_(127/60);
 
@@ -84,10 +96,10 @@ p.clock.tempo_(127/60);
 (
     ~moog.ar(2);
     ~moog.quant=[2];
-    ~moog.fadeTime=8.2;
+    ~moog.fadeTime=10.2;
     ~moog={
         var mul = 2;
-        var deviation = 0.333;
+        var deviation = 1.33;
         var pat = 1/64/[1,2,3,4]*~tempo.kr;
         var harm = TChoose.kr(Impulse.kr(pat),[1,2,1,4,1,1,1,8,1,4]).lag(1/100);
         var f =  ([60,63,51,48]).midicps * harm / {TChoose.kr(Impulse.kr(pat),[1,2,1.5,1.33333])}!4 * mul;
@@ -99,7 +111,7 @@ p.clock.tempo_(127/60);
         sig = Limiter.ar(sig,0.8);
         sig = LPF.ar(sig,7000);
         sig = CompanderD.ar(sig,3/4,1/2,1);
-        Splay.ar(sig,0.25,0.25);
+        Splay.ar(sig,0.25,0.125);
     };
     ~moog.play;
     ~moog[10] = \filter -> {|sig| LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),80),[4004,4014]),LFNoise2.kr(1/4!2).range(5000,9000))+sig;};
@@ -141,7 +153,7 @@ p.clock.tempo_(127/60);
     ~sell.quant=2;
     ~sell.fadeTime=16;
 
-    ~sell={LFTri.kr(1/[4,16]*~tempo)**LFNoise2.kr(1/16!2).range(0.75,8)};
+    ~sell={LFTri.kr(1/[4,4]*~tempo)**LFNoise2.kr(1/160!2).range(0.75,8)};
 )
 
 
@@ -150,7 +162,7 @@ p.clock.tempo_(127/60);
 (
     ~scanner.ar(2);
     ~scanner.quant=2;
-    ~scanner.fadeTime=0.2;
+    ~scanner.fadeTime=8.2;
     ~scanner={
         //         |       |       |       |       |
         var pat = [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0].rotate(1);
@@ -418,7 +430,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
         var imp = PulseDivider.kr(~tick.kr,[4,4,2,1],~counter.kr);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.00001],[0.002,2.5],[3,-3],curve:'exp'),imp * hit);
-        var sig = SinOsc.ar(50+(env**40*LFNoise1.kr(1/32!4).range(50,350)),env**30*8pi);
+        var sig = SinOsc.ar(50+(env**50*LFNoise1.kr(1/32!4).range(50,350)),env**40*8pi);
         sig = sig * env;
         Splay.ar(sig,0.25,0.87);
     };
@@ -487,7 +499,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 
 (
     ~kick_even.ar(2);
-    ~kick_even.quant=[4,1/2];
+    ~kick_even.quant=[2,1/2];
     ~kick_even.fadeTime=0.02;
     ~kick_even={
         var mod = Duty.kr(8 * ~tempo.kr,0,Dseq([1,2,1.5,1.33333,1.875,1.666666],inf));
