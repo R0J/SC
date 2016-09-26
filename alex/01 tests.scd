@@ -3,11 +3,49 @@ p=ProxySpace.push(s);
 p.makeTempoClock;
 ProxySynthDef.sampleAccurate = true;
 
-p.clock.tempo = 127/60;
+p.clock.tempo = 60/60;
 p.gui;
 
 AutoIDE.run;
 
+
+ProxySynthDef(\tss, {
+	arg  sustain,  amp, pan, hpf, noise;
+	var sig, env, fenv;
+
+	env=EnvGen.kr(Env([0,1,1,0],[0.01,0.1,0.01]),timeScale:sustain,doneAction:2);
+	fenv=EnvGen.kr(Env([\freq.kr,\freq.kr*4,\freq.kr],[0.01,0.2],\welch),timeScale:sustain,doneAction:2);
+	sig=WhiteNoise.ar(noise)+GrayNoise.ar(noise);
+	sig=Splay.ar(sig);
+	sig=Pan2.ar(HPF.ar(sig,hpf+fenv), pan);
+	sig=sig*env*amp;
+}).add;
+
+ProxySynthDef(\piano1, { |out=0, freq=440, gate=1,sustain=1, amp=1|
+	var sig = MdaPiano.ar(freq, gate,decay:sustain*0.5,release:sustain*0.4, release: 0.9, stereo: 0.3, sustain: 0);
+	DetectSilence.ar(sig, 0.01, doneAction:2);
+	Out.ar(out, sig * 0.1);
+}).add;
+
+
+
+//////////////////////////////LOVELOVELOVE
+~piano1.clear;
+~piano1.stop(fadeTime:40);
+~piano1.play(vol:0.9, fadeTime:4, numChannels:2).quant_(4);
+(~piano1[0]=Pbind(
+	\instrument, \piano1,
+	\amp,1,
+	\octave, Pseq([[7,5],6,4,2,5],inf),
+	\degree, Prand([4,2,1],inf),
+	\dur,Pseq([Pseq([60,[0.25!2,-0.5,0.5,0.5,0.5,-1].flatten,1].convertRhythm)],inf),
+	\noise, 0.03,
+	\legato, 0.3,
+
+););
+~piano1[6]=\filter->{arg in; Limiter.ar(GVerb.ar(in,180,20,mul:0.9,add:(-1)*in),0.9)};
+~piano1[7]=\filter->{arg in; LPF.ar(in,SinOsc.kr(1/16).range(1800,740))};
+~piano1[6]=nil;
 
 
 
