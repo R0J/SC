@@ -32,21 +32,39 @@ ProxySynthDef(\piano1, { |out=0, freq=440, gate=1,sustain=1, amp=1|
 //////////////////////////////LOVELOVELOVE
 ~piano1.clear;
 ~piano1.stop(fadeTime:40);
-~piano1.play(vol:0.9, fadeTime:4, numChannels:2).quant_(4);
+~piano1.play(vol:0.2, fadeTime:4, numChannels:2).quant_(4);
 (~piano1[0]=Pbind(
 	\instrument, \piano1,
 	\amp,1,
 	\octave, Pseq([[7,5],6,4,2,5],inf),
-	\degree, Prand([4,2,1],inf),
-	\dur,Pseq([Pseq([60,[0.25!2,-0.5,0.5,0.5,0.5,-1].flatten,1].convertRhythm)],inf),
+	\degree, Pseq([4,2,1],inf), //or rand
+	\dur,Pseq([Pseq([4,[0.25!2,-0.5,0.5,0.5,0.5,-1].flatten,1].convertRhythm)],inf),
 	\noise, 0.03,
 	\legato, 0.3,
 
 ););
-~piano1[6]=\filter->{arg in; Limiter.ar(GVerb.ar(in,180,20,mul:0.9,add:(-1)*in),0.9)};
+~piano1[6]=\filter->{arg in; Limiter.ar(GVerb.ar(in,[180,120],20,mul:1,add:(-1)*in),0.9)};
 ~piano1[7]=\filter->{arg in; LPF.ar(in,SinOsc.kr(1/16).range(1800,740))};
-~piano1[6]=nil;
+//~piano1[8]=\filter->{arg in; HPF.ar(in,12000)};
+~piano1[8]=nil;
 
+
+~piano2.clear;
+~piano2.stop(fadeTime:40);
+~piano2.play(vol:0.2, fadeTime:4, numChannels:2).quant_(4);
+(~piano2[0]=Pbind(
+	\instrument, \piano1,
+	\amp,1,
+	\octave, Pseq([[7,5],6,4,2,5],inf),
+	\degree, Pseq([4,2,1],inf), //or rand
+	\dur,Pseq([Pseq([4,[0.25!2,-0.5,0.5,0.5,0.5,-1].flatten,1].convertRhythm)],inf),
+	\noise, 0.03,
+	\legato, 0.3,
+
+););
+~piano2[6]=\filter->{arg in; Limiter.ar(GVerb.ar(in,[90,80],20,mul:0.1),0.9)};
+~piano2[7]=\filter->{arg in; LPF.ar(in,SinOsc.kr(1/16).range(1800,740))};
+~piano2[7]=nil;
 
 
 ~bum1.clear;
