@@ -20,13 +20,12 @@
 		{ envType == 'Env' }
 		{
 			var controlProxy;
+			var oldControlProxy;
 			var krProxyCreate = block {|break|
 				currentEnvironment.krProxyNames.collect{|krProxy|
 					krProxy.postln;
 					if(krProxy.asSymbol == synthName.asSymbol)
 					{
-						// ("Found krProxy:"+control).postln;
-						//krProxyFound = true;
 						break.value(false);
 					}
 				};
@@ -38,55 +37,57 @@
 			if(krProxyCreate, {
 				synthName.asSymbol.envirPut( NodeProxy.new( Server.local,\control, 1));
 				controlProxy = synthName.asSymbol.envirGet;
+				// controlProxy.group_(this.group);
 
-				this.controlNames.collect{|cname|
-					// cname.name.postln;
-					// control.postln;
-					if(cname.name.asSymbol == control.asSymbol,
-						{
-							("cname FOUND" +  cname).postln;
-							("defaultValue" +  cname.defaultValue).postln;
-							controlProxy[0] = nil;
-							controlProxy[1] = [Env([cname.defaultValue, cname.defaultValue], [1])];
-						};
-					);
-				};
+				oldControlProxy = nil;
+
 			},
 			{
-				controlProxy = synthName.asSymbol.envirGet;
+				oldControlProxy = synthName.asSymbol.envirGet;
+				controlProxy = oldControlProxy.copy;
+				controlProxy.setGroup (this.group);
+				synthName.asSymbol.envirPut(controlProxy);
 			}
 			);
+			if(oldControlProxy != nil)
+			{
+				("oldControlProxy:" + oldControlProxy).postln;
+				("oldControlProxy.group:" + oldControlProxy.group).postln;
+				("oldControlProxy.source:" + oldControlProxy.source).postln;
+			};
 
+			("controlProxy:" + controlProxy).postln;
+			("controlProxy.group:" + controlProxy.group).postln;
+			("controlProxy.source:" + controlProxy.source).postln;
 
-			// controlProxy.fadeTime = 8;
-			// ("controlProxy" + controlProxy).postln;
-			// ("controlProxy.bus" + controlProxy.bus).postln;
-			("controlProxy[1]" + (controlProxy[1][0].levels)).postln;
+			controlProxy[0] = Task ({
+				currentEnvironment.clock.timeToNextBeat(quant).wait;
+				{
+					Synth(synthName, [
+						\bus: controlProxy.bus,
+						\proxyTempo: currentEnvironment.clock.tempo,
+						\env: [env],
+					], this.group);
 
-			controlProxy.source_(
+					/*
+					(
+					"ProxyClock beats: " ++  currentEnvironment.clock.beats ++
+					" tempo: " ++ currentEnvironment.clock.tempo
+					).postln;
+					*/
+					quant.wait;
+				}.loop;
+			});
+			if(oldControlProxy != nil)
+			{
+				("stoping old task:").postln;
+				oldControlProxy[0].stop;
+				oldControlProxy.free(8);
+			};
 
-				Task {
-					currentEnvironment.clock.timeToNextBeat(quant).wait;
-					loop {
-						Synth(synthName, [
-							\bus: controlProxy.bus,
-							\proxyTempo: currentEnvironment.clock.tempo,
-							\env: [env]
-						], this.group);
-						/*
-						(
-						"ProxyClock beats: " ++  currentEnvironment.clock.beats ++
-						" tempo: " ++ currentEnvironment.clock.tempo
-						).postln;
-						*/
-						quant.wait;
-					}
-				}
-			);
-			controlProxy[1] = [env];
-			// );
+			this.fadeTime_(8);
+			this.xset(control.asSymbol, controlProxy);
 
-			this.set(control.asSymbol, controlProxy);
 		};
 		// this.nodeMap.postln;
 	}
