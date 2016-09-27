@@ -19,34 +19,52 @@
 		case
 		{ envType == 'Env' }
 		{
-						var controlProxy;
-			var krProxyFound = block {|break|
+			var controlProxy;
+			var krProxyCreate = block {|break|
 				currentEnvironment.krProxyNames.collect{|krProxy|
 					krProxy.postln;
 					if(krProxy.asSymbol == synthName.asSymbol)
 					{
-						("Found krProxy:"+control).postln;
+						// ("Found krProxy:"+control).postln;
 						//krProxyFound = true;
-						break.value(true);
+						break.value(false);
 					}
 				};
-				break.value(false);
+				break.value(true);
 			};
 
 			// ("krProxyFound" + krProxyFound).postln;
 
-			if(krProxyFound, {},
-				{
-					synthName.asSymbol.envirPut( NodeProxy.new( Server.local,\control, 1));
-				}
+			if(krProxyCreate, {
+				synthName.asSymbol.envirPut( NodeProxy.new( Server.local,\control, 1));
+				controlProxy = synthName.asSymbol.envirGet;
+
+				this.controlNames.collect{|cname|
+					// cname.name.postln;
+					// control.postln;
+					if(cname.name.asSymbol == control.asSymbol,
+						{
+							("cname FOUND" +  cname).postln;
+							("defaultValue" +  cname.defaultValue).postln;
+							controlProxy[0] = nil;
+							controlProxy[1] = [Env([cname.defaultValue, cname.defaultValue], [1])];
+						};
+					);
+				};
+			},
+			{
+				controlProxy = synthName.asSymbol.envirGet;
+			}
 			);
 
-			controlProxy = synthName.asSymbol.envirGet;
-			controlProxy.fadeTime = 8;
+
+			// controlProxy.fadeTime = 8;
 			// ("controlProxy" + controlProxy).postln;
-			("controlProxy.bus" + controlProxy.bus).postln;
+			// ("controlProxy.bus" + controlProxy.bus).postln;
+			("controlProxy[1]" + (controlProxy[1][0].levels)).postln;
 
 			controlProxy.source_(
+
 				Task {
 					currentEnvironment.clock.timeToNextBeat(quant).wait;
 					loop {
@@ -65,6 +83,8 @@
 					}
 				}
 			);
+			controlProxy[1] = [env];
+			// );
 
 			this.set(control.asSymbol, controlProxy);
 		};
@@ -79,6 +99,7 @@
 		// ("controlProxy" + controlProxy).postln;
 
 		this.unmap(control.asSymbol);
+		controlProxy.bus.free(true);
 		controlProxy.clear;
 	}
 }
