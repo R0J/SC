@@ -33,7 +33,9 @@ ProxySynthDef(\piano1, { |out=0, freq=440, gate=1,sustain=1, amp=1|
 f=Group.new;
 ~piano1.clear;
 ~piano1.stop(fadeTime:40);
+
 ~piano1.play(vol:0.2, fadeTime:4, numChannels:2, group:f).quant_(4);
+
 (~piano1[0]=Pbind(
 	\instrument, \piano1,
 	\amp,1,
@@ -56,13 +58,13 @@ f=Group.new;
 
 ~piano2.clear;
 ~piano2.stop(fadeTime:40);
-~piano2.play(vol:0.2, fadeTime:4, numChannels:2).quant_(4);
+~piano2.play(vol:0.8, fadeTime:4, numChannels:2).quant_(4);
 (~piano2[0]=Pbind(
 	\instrument, \piano1,
 	\amp,1,
-	\octave, Pseq([[7,5],6,4,2,5],inf),
+	\octave, Pseq([[3,5],6,3,2,5],inf),
 	\degree, Pseq([4,2,1],inf), //or rand
-	\dur,Pseq([Pseq([4,[0.25!2,-0.5,0.5,0.5,0.5,-1].flatten,1].convertRhythm)],inf),
+	\dur,Pseq([Pseq([16,[0.25!2,-0.5,0.5,0.5,0.5,-1].flatten,1].convertRhythm)],inf),
 	\noise, 0.03,
 	\legato, 0.3,
 
