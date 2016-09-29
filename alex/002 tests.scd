@@ -30,9 +30,10 @@ ProxySynthDef(\piano1, { |out=0, freq=440, gate=1,sustain=1, amp=1|
 )
 
 //////////////////////////////piano stuff
+f=Group.new;
 ~piano1.clear;
 ~piano1.stop(fadeTime:40);
-~piano1.play(vol:0.2, fadeTime:4, numChannels:2).quant_(4);
+~piano1.play(vol:0.2, fadeTime:4, numChannels:2, group:f).quant_(4);
 (~piano1[0]=Pbind(
 	\instrument, \piano1,
 	\amp,1,
