@@ -8,7 +8,7 @@ p.gui;
 
 AutoIDE.run;
 
-
+(
 ProxySynthDef(\tss, {
 	arg  sustain,  amp, pan, hpf, noise;
 	var sig, env, fenv;
@@ -27,7 +27,7 @@ ProxySynthDef(\piano1, { |out=0, freq=440, gate=1,sustain=1, amp=1|
 	Out.ar(out, sig * 0.1);
 }).add;
 
-
+)
 
 //////////////////////////////piano stuff
 ~piano1.clear;
@@ -37,16 +37,20 @@ ProxySynthDef(\piano1, { |out=0, freq=440, gate=1,sustain=1, amp=1|
 	\instrument, \piano1,
 	\amp,1,
 	\octave, Pseq([[7,5],6,4,2,5],inf),
-	\degree, Pseq([4,2,1],inf), //or rand
-	\dur,Pseq([Pseq([4,[0.25!2,-0.5,0.5,0.5,0.5,-1].flatten,1].convertRhythm)],inf),
+	\degree, Pseq([4,2,1],inf),
+	\dur,Pseq([Pseq([2,[0.25!2,-0.5,0.5,0.5,0.5,-1].flatten,1].convertRhythm),
+		Pseq([8,[0.25!2,-0.5,0.5,0.5,0.5,-1].flatten,1].convertRhythm),
+		Pseq([4,[0.25!2,-0.5,0.5,0.5,0.5,-1].flatten,1].convertRhythm),
+		Pseq([32,[0.25!2,-0.5,0.5,0.5,0.5,-1].flatten,1].convertRhythm)
+	],inf),
 	\noise, 0.03,
 	\legato, 0.3,
 
-););
-~piano1[6]=\filter->{arg in; Limiter.ar(GVerb.ar(in,[180,120],20,mul:1,add:(-1)*in),0.9)};
-~piano1[7]=\filter->{arg in; LPF.ar(in,SinOsc.kr(1/16).range(1800,740))};
-//~piano1[8]=\filter->{arg in; HPF.ar(in,12000)};
-~piano1[8]=nil;
+);)
+~piano1[6]=\filter->{arg in; Limiter.ar(GVerb.ar(in,[180,120],20,mul:0.9,add:(-1)*in),0.9)};
+~piano1[7]=\filter->{arg in; LPF.ar(in,SinOsc.kr(1/32).range(1800,220))};
+~piano1[6]=nil;
+
 
 
 ~piano2.clear;
@@ -67,16 +71,52 @@ ProxySynthDef(\piano1, { |out=0, freq=440, gate=1,sustain=1, amp=1|
 ~piano2[7]=nil;
 
 
+
+
+
+////////////////////////SHORT BURSTS
+~dis4.clear;
+~dis4.stop(fadeTime:6);
+~dis4.play(vol:0.5, fadeTime:2, numChannels:2).quant_(2);
+(
+~dis4[0]={
+	var sig, env, fenv, noise;
+
+	noise=EnvGen.kr(Env([0.01,0.05,0.09,0.01],[0.1,0.02,0.1],curve:\welch),\trig.tr);
+	env=EnvGen.kr(Env(times:[1.4,0.01],curve:\welch),\trig.tr);
+	fenv=EnvGen.kr(Env([\freq.kr,\freq.kr*6,\freq.kr,\freq.kr+(fib(10)*2)], [0.001, 0.04,0.8] ,curve:\welch),\trig.tr);
+
+	sig=LFSaw.ar(fenv+fib(10)).lag([0.01,0.02,0.03,0.04,0.05]);
+	sig=(sig+ClipNoise.ar(noise*0.8))*env;
+};
+)
+
+~dis4[1]=\set-> Pbind(\args, [\trig], \dur,Prand([2, Rest(16)],inf), \trig, 1);
+(~dis4[2]=\set-> Pbind(\args, [\freq], \dur, 4, \octave, Pseq([
+	Pseq([[4,5],5,[6,4],[4,3][5,7],[6,2],Prand([[6,5],[7,6]],1)],60),
+	Pseq([[4,2],[5,3]],inf)]+3,1),
+\degree, [4,6,8]);)
+~dis4[29]=nil;
+~dis4[29]=\filter-> {arg in; CombN.ar(in,1,0.01)};
+~dis4[30]=\filter-> {arg in; GVerb.ar(Limiter.ar(in,0.1), [120,140],[8,12,4],earlyreflevel:0.2,mul:0.2)};
+~dis4[33]=\filter->{arg in; LPF.ar(in,\lpf.kr(900))};
+(~dis4[35]=\set->Pbind(\args, [\lpf], \dur, 16, \lpf, Pseq([Pseq([4000,3400,2800,2000,1200],60),
+	Pseq([800,900,700],inf)],1);)
+);
+~dis4[36]=\filter->{arg in; Limiter.ar(in,0.3)};
+
+
+
 ~bum1.clear;
 ~bum1.stop(fadeTime:40);
-~bum1.play(vol:0.9, fadeTime:4, numChannels:2).quant_(4);
+~bum1.play(vol:0.2, fadeTime:4, numChannels:2).quant_(4);
 (~bum1[0]=Pbind(
 	\instrument, \bum,
 	\amp,1,
 	\freq, [44,45],
-	\dur,1,
+	\dur,4,
 	\noise, 0.03,
-	\legato, 0.3,
+	\legato, 0.1,
 
 ););
 ~bum1[6]=\filter->{arg in; Limiter.ar(GVerb.ar(in,20,1,mul:0.1,add:in*0.9),0.9)};
