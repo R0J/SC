@@ -13,28 +13,28 @@
 			("ValueType:"+valueType).postln;
 
 			case
-			{ valueType == 'Integer' }
-			{
-				"JSEM INT".postln;
-			}
+			{ valueType == 'Integer' }	{ "JSEM INT".postln; }
 			{ valueType == 'Float' }
 			{
-				var bus = this.nodeMap.get(\qMachine).at(control.asSymbol,\bus);
-				var oldFadeSynth = this.nodeMap.get(\qMachine).at(control.asSymbol,\fadeSynth);
+				var library = this.nodeMap.get(\qMachine);
+				var bus = library.at(control.asSymbol,\bus);
+				var oldFadeSynth = library.at(control.asSymbol,\fadeSynth);
+
+				"JSEM FLOAT".postln;
+
 				if((oldFadeSynth != nil),
 					{
-						this.nodeMap.get(\qMachine).at(control.asSymbol,\fadeTask).stop;
-						this.nodeMap.get(\qMachine).at(control.asSymbol,\fadeSynth).free;
-						this.nodeMap.get(\qMachine).at(control.asSymbol,\bus).get({|busValue| bus.setAt(2, busValue[0]); });
+						library.at(control.asSymbol,\fadeTask).stop;
+						library.at(control.asSymbol,\fadeSynth).free;
+						library.at(control.asSymbol,\bus).get({|busValue| bus.setAt(2, busValue[0]); });
 					}
 				);
 
-				"JSEM FLOAT".postln;
-				this.nodeMap.get(\qMachine).put(control.asSymbol,\fadeTask,
+				library.put(control.asSymbol,\fadeTask,
 					Task({
 						bus.setAt(1,value);
 
-						this.nodeMap.get(\qMachine).put(control.asSymbol,\fadeSynth,
+						library.put(control.asSymbol,\fadeSynth,
 							Synth(fadeName.asSymbol, [
 								\controlBus: bus,
 								\fadeTime: fadeTime
@@ -50,82 +50,88 @@
 			}
 			{ valueType == 'Env' }
 			{
+				var library = this.nodeMap.get(\qMachine);
+				var bus = library.at(control.asSymbol,\bus);
+
 				"JSEM ENV".postln;
+
+				library.put(control.asSymbol,\fadeTask,
+					Task({
+
+						if((library.at(control.asSymbol,\currentTask) != nil),
+							{
+								library.at(control.asSymbol,\currentTask).stop;
+								library.at(control.asSymbol,\oldTask).stop;
+
+								library.put(control.asSymbol,\oldTask, library.at(control.asSymbol,\newTask));
+								library.put(control.asSymbol,\oldQuant, library.at(control.asSymbol,\newQuant));
+								library.put(control.asSymbol,\oldEnv, library.at(control.asSymbol,\newEnv));
+
+							}
+						);
+
+						library.put(control.asSymbol,\newQuant, quant);
+						library.put(control.asSymbol,\newEnv, value);
+
+						if((library.at(control.asSymbol,\currentTask) != nil),
+							{
+								library.put(control.asSymbol,\oldTask,
+									Task ({
+										currentEnvironment.clock.timeToNextBeat(
+											library.at(control.asSymbol,\oldQuant)
+										).wait;
+
+										{
+											Synth(synthName, [
+												\controlBus: bus,
+												\subIndex: 3,
+												\proxyTempo: currentEnvironment.clock.tempo,
+												\env: [library.at(control.asSymbol,\oldEnv)],
+											], this.group);
+											library.at(control.asSymbol,\oldQuant).wait;
+										}.loop;
+									}).play;
+								);
+						});
+
+						library.put(control.asSymbol,\currentTask,
+							Task ({
+								currentEnvironment.clock.timeToNextBeat(
+									library.at(control.asSymbol,\newQuant)
+								).wait;
+								{
+									Synth(synthName, [
+										\controlBus: bus,
+										\subIndex: 2,
+										\proxyTempo: currentEnvironment.clock.tempo,
+										\env: [library.at(control.asSymbol,\newEnv)],
+									], this.group);
+									library.at(control.asSymbol,\newQuant).wait;
+								}.loop;
+							}).play;
+						);
+						library.put(control.asSymbol,\fadeSynth,
+							Synth(fadeName.asSymbol, [
+								\controlBus: bus,
+								\fadeTime: fadeTime
+							], this.group);
+						);
+
+						fadeTime.wait;
+
+						this.set(
+							control.asSymbol,
+							(library.at(control.asSymbol,\bus).index+1).asMap
+						);
+
+						("FadeTime" + fadeTime + "END").postln;
+					}).play;
+				);
+
+				library.at(control.asSymbol).postln;
 			};
+
 		}.fork;
-		/*
-		var controlProxy;
-		var oldControlProxy;
-		var krProxyCreate = block {|break|
-		currentEnvironment.krProxyNames.collect{|krProxy|
-		krProxy.postln;
-		if(krProxy.asSymbol == synthName.asSymbol)
-		{
-		break.value(false);
-		}
-		};
-		break.value(true);
-		};
-
-		// ("krProxyFound" + krProxyFound).postln;
-
-		if(krProxyCreate, {
-		synthName.asSymbol.envirPut( NodeProxy.new( Server.local,\control, 1));
-		controlProxy = synthName.asSymbol.envirGet;
-		// controlProxy.group_(this.group);
-
-		oldControlProxy = nil;
-
-		},
-		{
-		oldControlProxy = synthName.asSymbol.envirGet;
-		controlProxy = oldControlProxy.copy;
-		controlProxy.setGroup (this.group);
-		synthName.asSymbol.envirPut(controlProxy);
-		}
-		);
-		if(oldControlProxy != nil)
-		{
-		("oldControlProxy:" + oldControlProxy).postln;
-		("oldControlProxy.group:" + oldControlProxy.group).postln;
-		("oldControlProxy.source:" + oldControlProxy.source).postln;
-		};
-
-		("controlProxy:" + controlProxy).postln;
-		("controlProxy.group:" + controlProxy.group).postln;
-		("controlProxy.source:" + controlProxy.source).postln;
-
-		controlProxy[0] = Task ({
-		currentEnvironment.clock.timeToNextBeat(quant).wait;
-		{
-		Synth(synthName, [
-		\bus: controlProxy.bus,
-		\proxyTempo: currentEnvironment.clock.tempo,
-		\env: [env],
-		], this.group);
-
-		/*
-		(
-		"ProxyClock beats: " ++  currentEnvironment.clock.beats ++
-		" tempo: " ++ currentEnvironment.clock.tempo
-		).postln;
-		*/
-		quant.wait;
-		}.loop;
-		});
-		if(oldControlProxy != nil)
-		{
-		("stoping old task:").postln;
-		oldControlProxy[0].stop;
-		oldControlProxy.free(8);
-		};
-
-		this.fadeTime_(8);
-		this.xset(control.asSymbol, controlProxy);
-
-		};
-		// this.nodeMap.postln;
-		*/
 	}
 
 	qstop { |control|
@@ -149,17 +155,18 @@
 			{
 
 				var library = MultiLevelIdentityDictionary.new;
-				var synthDef = {|bus, proxyTempo = 1|
-					Out.kr( bus,
+				var synthDef = {|controlBus, subIndex, proxyTempo = 1|
+					// var envControlBus = In.kr(controlBus, 3);
+					Out.kr( subIndex,
 						EnvGen.kr(
-							\env.kr( Env.newClear().asArray ),
+							\env.kr(Env.newClear().asArray),
 							timeScale: proxyTempo.reciprocal,
 							doneAction: 2
 						)
 					);
 				};
 				var fadeDef = {|controlBus, fadeTime|
-					Out.kr( controlBus,
+					ReplaceOut.kr( controlBus,
 						SelectX.kr(
 							EnvGen.kr(
 								Env([0,1], fadeTime, \lin),
@@ -188,7 +195,7 @@
 			}
 		);
 
-		this.nodeMap.postln;
+
 	}
 }
 
