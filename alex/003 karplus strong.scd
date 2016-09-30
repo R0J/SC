@@ -73,7 +73,7 @@
 )
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 (
-ProxySynthDef(\combP, {
+ProxySynthDef(\string, {
 	arg  sustain,  amp, pan, feedback=0.2, freq;
 	var sig, env, renv, senv, local;
 
@@ -98,7 +98,7 @@ ProxySynthDef(\combP, {
 ~comb2.stop(freeTime:60);
 ~comb2.play(vol:0.02, fadeTime:4, numChannels:2).quant_(4);
 (~comb2[0]=Pbind(
-	\instrument, \combP,
+	\instrument, \string,
 	\amp, 1,
 	\legato, 1.2,
 	\pan, 0,
@@ -118,3 +118,27 @@ ProxySynthDef(\combP, {
 ~comb2[9]=\filter->{arg in; Limiter.ar(GVerb.ar(Mix.new(in),[40,60],[6,8],mul:0.2)+in,0.2)};
 )
 ~comb2[9]=nil;
+
+
+~comb3.clear;
+~comb3.stop(freeTime:60);
+~comb3.play(vol:0.0002, fadeTime:4, numChannels:2).quant_(4);
+(~comb3[0]=Pbind(
+	\instrument, \combP,
+	\amp, 1,
+	\legato, 1.7,
+	\pan, 0,
+	//\octave,Pseq([[3,4],[5,4]],inf)+3,
+	//\degree,1,
+	\freq, Pseq([Pseq([3200,[0.6!2,-0.5,0.4,0.8,0.6,-1].flatten,4].convertRhythm),
+	],inf),
+	\dur,Prand([8,6],inf),//Pseq([Pseq([8,[0.25!2,-0.5,0.5,0.5,0.5,-1].flatten,1].convertRhythm)],inf),
+
+);)
+(
+~comb3[3]=\filter->{arg in; HPF.ar(in,60)};
+~comb3[6]=\filter->{arg in; LPF.ar(in,\lpfc.kr(2400,2))};
+~comb3[7]=\set->Pbind(\args, [\lpfc], \dur, 8, \lpfc, Pseq([280,420,400,440,480,800,620],inf));
+~comb3[9]=\filter->{arg in; Limiter.ar(GVerb.ar(Mix.new(in),[40,60],[6,8],mul:0.2)+in.softclip,0.2)};
+)
+~comb3[9]=nil;
