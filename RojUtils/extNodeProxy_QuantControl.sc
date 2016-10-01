@@ -1,6 +1,6 @@
 + NodeProxy {
 
-	qset { |control, quant, value, fadeTime = 1|
+	qset { |control, quant, value, fTime = 1|
 		var nodeKey = this.key;
 		var synthName = nodeKey ++ "_" ++ control;
 		var fadeName = "Fade_" ++ this.key ++ "_" ++ control;
@@ -10,125 +10,73 @@
 			this.prInitQuantMachine(control);
 			Server.default.sync;
 
-			("ValueType:"+valueType).postln;
+			// ("ValueType:" + valueType).postln;
 
 			case
-			{ valueType == 'Integer' }	{ "JSEM INT".postln; }
+			{ valueType == 'Integer' }	{
+				this.prCrossFadeTask(control, fTime, value);
+			}
 			{ valueType == 'Float' }
 			{
-				var library = this.nodeMap.get(\qMachine);
-				var bus = library.at(control.asSymbol,\bus);
-				var oldFadeSynth = library.at(control.asSymbol,\fadeSynth);
-
-				"JSEM FLOAT".postln;
-
-				if((oldFadeSynth != nil),
-					{
-						library.at(control.asSymbol,\fadeTask).stop;
-						library.at(control.asSymbol,\fadeSynth).free;
-						library.at(control.asSymbol,\bus).get({|busValue| bus.setAt(2, busValue[0]); });
-					}
-				);
-
-				library.put(control.asSymbol,\fadeTask,
-					Task({
-						bus.setAt(1,value);
-
-						library.put(control.asSymbol,\fadeSynth,
-							Synth(fadeName.asSymbol, [
-								\controlBus: bus,
-								\fadeTime: fadeTime
-							], this.group);
-						);
-
-						fadeTime.wait;
-
-						("FadeTime" + fadeTime + "END").postln;
-						bus.setAt(2, value);
-					}).play;
-				);
+				this.prCrossFadeTask(control, fTime, value);
 			}
 			{ valueType == 'Env' }
 			{
-				var library = this.nodeMap.get(\qMachine);
-				var bus = library.at(control.asSymbol,\bus);
+				var library = this.nodeMap.get(\qMachine).at(control.asSymbol);
+				var bus = Bus.control(Server.default,1);
+				var busIndex = bus.index;
+				var taskName = "task_" ++ busIndex;
 
-				"JSEM ENV".postln;
+				Task({
+					var nodeFadeTime = this.fadeTime;
+					var oldTasks = List.new;
 
-				library.put(control.asSymbol,\fadeTask,
-					Task({
-
-						if((library.at(control.asSymbol,\currentTask) != nil),
+					library.treeDo({|branchName|
+						if((branchName[0].asSymbol != nil.asSymbol),
 							{
-								library.at(control.asSymbol,\currentTask).stop;
-								library.at(control.asSymbol,\oldTask).stop;
-
-								library.put(control.asSymbol,\oldTask, library.at(control.asSymbol,\newTask));
-								library.put(control.asSymbol,\oldQuant, library.at(control.asSymbol,\newQuant));
-								library.put(control.asSymbol,\oldEnv, library.at(control.asSymbol,\newEnv));
-
-							}
-						);
-
-						library.put(control.asSymbol,\newQuant, quant);
-						library.put(control.asSymbol,\newEnv, value);
-
-						if((library.at(control.asSymbol,\currentTask) != nil),
-							{
-								library.put(control.asSymbol,\oldTask,
-									Task ({
-										currentEnvironment.clock.timeToNextBeat(
-											library.at(control.asSymbol,\oldQuant)
-										).wait;
-
-										{
-											Synth(synthName, [
-												\controlBus: bus,
-												\subIndex: 3,
-												\proxyTempo: currentEnvironment.clock.tempo,
-												\env: [library.at(control.asSymbol,\oldEnv)],
-											], this.group);
-											library.at(control.asSymbol,\oldQuant).wait;
-										}.loop;
-									}).play;
-								);
+								("oldTasks" + branchName[0]).postln;
+								oldTasks.add(branchName[0]);
 						});
+					});
 
-						library.put(control.asSymbol,\currentTask,
-							Task ({
-								currentEnvironment.clock.timeToNextBeat(
-									library.at(control.asSymbol,\newQuant)
-								).wait;
-								{
-									Synth(synthName, [
-										\controlBus: bus,
-										\subIndex: 2,
-										\proxyTempo: currentEnvironment.clock.tempo,
-										\env: [library.at(control.asSymbol,\newEnv)],
-									], this.group);
-									library.at(control.asSymbol,\newQuant).wait;
-								}.loop;
-							}).play;
-						);
-						library.put(control.asSymbol,\fadeSynth,
-							Synth(fadeName.asSymbol, [
-								\controlBus: bus,
-								\fadeTime: fadeTime
-							], this.group);
-						);
+					library.put(taskName.asSymbol, \bus, bus);
+					library.put(taskName.asSymbol, \task,
+						Task ({
+							currentEnvironment.clock.timeToNextBeat(quant).wait;
+							{
+								Synth(synthName, [
+									\controlBus: bus,
+									\proxyTempo: currentEnvironment.clock.tempo,
+									\env: [value],
+								], this.group);
+								quant.wait;
+							}.loop;
+						}).play;
+					);
 
-						fadeTime.wait;
+					this.fadeTime = fTime;
+					this.xset( control.asSymbol, bus.asMap );
+					this.fadeTime = nodeFadeTime;
 
-						this.set(
-							control.asSymbol,
-							(library.at(control.asSymbol,\bus).index+1).asMap
-						);
+					fTime.wait;
+					("CrossFadeTask" + fTime + "DONE").postln;
 
-						("FadeTime" + fadeTime + "END").postln;
-					}).play;
-				);
+					oldTasks.do({|branchName|
 
-				library.at(control.asSymbol).postln;
+						var deleteBus = library.at(branchName.asSymbol, \bus);
+						var deleteTask = library.at(branchName.asSymbol, \task);
+
+						deleteBus.free;
+						deleteTask.stop;
+
+						library.put(branchName.asSymbol, \bus, nil);
+						library.put(branchName.asSymbol, \task, nil);
+						library.put(branchName.asSymbol, nil);
+					});
+
+					this.nodeMap.get(\qMachine).at(control.asSymbol).postTree;
+
+				}).play;
 			};
 
 		}.fork;
@@ -146,18 +94,38 @@
 		controlProxy.clear;
 	}
 
+
+	prCrossFadeTask { |control, fTime, value|
+
+		Task({
+			var nodeFadeTime = this.fadeTime;
+			this.fadeTime = fTime;
+			this.xset( control.asSymbol, value );
+
+			this.fadeTime = nodeFadeTime;
+
+			fTime.wait;
+			("CrossFadeTask" + fTime + "DONE").postln;
+			this.nodeMap.at(\qMachine);
+
+		}).play;
+
+	}
+
 	prInitQuantMachine { |control|
-
 		var synthName = this.key ++ "_" ++ control;
-		var fadeName = "Fade_" ++ this.key ++ "_" ++ control;
 
-		if((this.nodeMap.at(control.asSymbol) == nil),
+		if((this.nodeMap.get(\qMachine) == nil), {
+			var library = MultiLevelIdentityDictionary.new;
+			this.nodeMap.put(\qMachine, library);
+			("NodeMap qMachine prepared").postln;
+		});
+
+		if((this.nodeMap.get(\qMachine).at(control.asSymbol) == nil),
 			{
-
-				var library = MultiLevelIdentityDictionary.new;
-				var synthDef = {|controlBus, subIndex, proxyTempo = 1|
-					// var envControlBus = In.kr(controlBus, 3);
-					Out.kr( subIndex,
+				var controlLibrary = MultiLevelIdentityDictionary.new;
+				var synthDef = {|controlBus, proxyTempo = 1|
+					Out.kr( controlBus,
 						EnvGen.kr(
 							\env.kr(Env.newClear().asArray),
 							timeScale: proxyTempo.reciprocal,
@@ -165,37 +133,10 @@
 						)
 					);
 				};
-				var fadeDef = {|controlBus, fadeTime|
-					ReplaceOut.kr( controlBus,
-						SelectX.kr(
-							EnvGen.kr(
-								Env([0,1], fadeTime, \lin),
-								timeScale: currentEnvironment.clock.tempo.reciprocal,
-								doneAction: 2
-							),
-							[ In.kr(controlBus, 3)[2], In.kr(controlBus, 3)[1] ]
-						)
-					);
-				};
-
 				synthDef.asSynthDef(name:synthName.asSymbol).add;
-				fadeDef.asSynthDef(name:fadeName.asSymbol).add;
-
-				// "SynthDefy ulozeny".postln;
-
-				this.nodeMap.put(\qMachine, library);
-
-				library.put(control.asSymbol, \bus, Bus.control(Server.default,3));
-				library.put(control.asSymbol, \fadeTime, 0);
-
-				this.set(
-					control.asSymbol,
-					this.nodeMap.get(\qMachine).at(control.asSymbol,\bus).asMap
-				);
-			}
-		);
-
-
+				("SynthDef" + synthName + "ulozen").postln;
+				this.nodeMap.get(\qMachine).put(control.asSymbol, controlLibrary);
+		});
 	}
 }
 
