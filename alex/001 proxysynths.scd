@@ -1,4 +1,20 @@
 (
+ProxySynthDef(\string, {
+	arg  sustain,  amp, pan, feedback=0.2, freq;
+	var sig, env, renv, senv, local;
+
+	env=EnvGen.kr(Env([0,1,0],[1,0.1],[\welch,\lin]),timeScale:sustain,doneAction:2);
+	renv=EnvGen.kr(Env([0.01,5,0.01],[0.8,0.3],[\welch,\lin]),timeScale:sustain,doneAction:2);
+	feedback=EnvGen.kr(Env([0.3,0.1,0.3]+feedback,[0.9,0.3],[\welch,\lin]),timeScale:sustain,doneAction:2);
+
+	sig=CombL.ar(WhiteNoise.ar(0.5!2),freq.reciprocal,freq.reciprocal,10)*env;
+	local=LocalIn.ar(2)+sig;
+	sig=DelayN.ar(local,renv, renv);
+	LocalOut.ar(sig*feedback);
+	sig=MoogFF.ar(sig, freq,2,mul:0.2)+sig;
+	sig=Pan2.ar(sig,pan)*env*amp;
+
+}).add;
 
 ProxySynthDef(\imp, {
 	arg  sustain,  amp, pan, den,hpf;
@@ -159,7 +175,16 @@ ProxySynthDef(\mel, {
 }).add;
 
 
+ProxySynthDef(\kickfill,{
+	arg  sustain,  amp, pan=0, top=40;
+	var sig, env, fenv;
 
+	env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2.5],[3,-3],curve:'exp'),timeScale:sustain, doneAction:2);
+
+	sig = Mix.fill(10,{|n| SinOsc.ar(50!2,env**(n+10)*8pi)});
+	sig = Pan2.ar(sig * env*amp,pan);
+	Splay.ar(sig,0.75,0.25);
+}).add;
 
 ProxySynthDef(\kick,{
 	arg  sustain,  amp, pan=0, top=40;

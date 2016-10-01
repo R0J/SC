@@ -1,95 +1,85 @@
 + NodeProxy {
 
-	qset { |control, quant, env|
+	qset { |control, quant, value, fTime = 1|
 		var nodeKey = this.key;
 		var synthName = nodeKey ++ "_" ++ control;
-		var envType = env.class.asSymbol;
+		var fadeName = "Fade_" ++ this.key ++ "_" ++ control;
+		var valueType = value.class.asSymbol;
 
-		var synthDef = {|bus, proxyTempo = 1|
-			Out.kr( bus,
-				EnvGen.kr(
-					\env.kr( Env.newClear().asArray ),
-					timeScale: proxyTempo.reciprocal,
-					doneAction: 2
-				)
-			);
-		};
-		synthDef.asSynthDef(name:synthName).add;
-
-		case
-		{ envType == 'Env' }
 		{
-			var controlProxy;
-			var oldControlProxy;
-			var krProxyCreate = block {|break|
-				currentEnvironment.krProxyNames.collect{|krProxy|
-					krProxy.postln;
-					if(krProxy.asSymbol == synthName.asSymbol)
-					{
-						break.value(false);
-					}
-				};
-				break.value(true);
-			};
+			this.prInitQuantMachine(control);
+			Server.default.sync;
 
-			// ("krProxyFound" + krProxyFound).postln;
+			// ("ValueType:" + valueType).postln;
 
-			if(krProxyCreate, {
-				synthName.asSymbol.envirPut( NodeProxy.new( Server.local,\control, 1));
-				controlProxy = synthName.asSymbol.envirGet;
-				// controlProxy.group_(this.group);
-
-				oldControlProxy = nil;
-
-			},
-			{
-				oldControlProxy = synthName.asSymbol.envirGet;
-				controlProxy = oldControlProxy.copy;
-				controlProxy.setGroup (this.group);
-				synthName.asSymbol.envirPut(controlProxy);
+			case
+			{ valueType == 'Integer' }	{
+				this.prCrossFadeTask(control, fTime, value);
 			}
-			);
-			if(oldControlProxy != nil)
+			{ valueType == 'Float' }
 			{
-				("oldControlProxy:" + oldControlProxy).postln;
-				("oldControlProxy.group:" + oldControlProxy.group).postln;
-				("oldControlProxy.source:" + oldControlProxy.source).postln;
+				this.prCrossFadeTask(control, fTime, value);
+			}
+			{ valueType == 'Env' }
+			{
+				var library = this.nodeMap.get(\qMachine).at(control.asSymbol);
+				var bus = Bus.control(Server.default,1);
+				var busIndex = bus.index;
+				var taskName = "task_" ++ busIndex;
+
+				Task({
+					var nodeFadeTime = this.fadeTime;
+					var oldTasks = List.new;
+
+					library.treeDo({|branchName|
+						if((branchName[0].asSymbol != nil.asSymbol),
+							{
+								("oldTasks" + branchName[0]).postln;
+								oldTasks.add(branchName[0]);
+						});
+					});
+
+					library.put(taskName.asSymbol, \bus, bus);
+					library.put(taskName.asSymbol, \task,
+						Task ({
+							currentEnvironment.clock.timeToNextBeat(quant).wait;
+							{
+								Synth(synthName, [
+									\controlBus: bus,
+									\proxyTempo: currentEnvironment.clock.tempo,
+									\env: [value],
+								], this.group);
+								quant.wait;
+							}.loop;
+						}).play;
+					);
+
+					this.fadeTime = fTime;
+					this.xset( control.asSymbol, bus.asMap );
+					this.fadeTime = nodeFadeTime;
+
+					fTime.wait;
+					("CrossFadeTask" + fTime + "DONE").postln;
+
+					oldTasks.do({|branchName|
+
+						var deleteBus = library.at(branchName.asSymbol, \bus);
+						var deleteTask = library.at(branchName.asSymbol, \task);
+
+						deleteBus.free;
+						deleteTask.stop;
+
+						library.put(branchName.asSymbol, \bus, nil);
+						library.put(branchName.asSymbol, \task, nil);
+						library.put(branchName.asSymbol, nil);
+					});
+
+					this.nodeMap.get(\qMachine).at(control.asSymbol).postTree;
+
+				}).play;
 			};
 
-			("controlProxy:" + controlProxy).postln;
-			("controlProxy.group:" + controlProxy.group).postln;
-			("controlProxy.source:" + controlProxy.source).postln;
-
-			controlProxy[0] = Task ({
-				currentEnvironment.clock.timeToNextBeat(quant).wait;
-				{
-					Synth(synthName, [
-						\bus: controlProxy.bus,
-						\proxyTempo: currentEnvironment.clock.tempo,
-						\env: [env],
-					], this.group);
-
-					/*
-					(
-					"ProxyClock beats: " ++  currentEnvironment.clock.beats ++
-					" tempo: " ++ currentEnvironment.clock.tempo
-					).postln;
-					*/
-					quant.wait;
-				}.loop;
-			});
-			if(oldControlProxy != nil)
-			{
-				("stoping old task:").postln;
-				oldControlProxy[0].stop;
-				oldControlProxy.free(8);
-			};
-
-			this.fadeTime_(8);
-			this.xset(control.asSymbol, controlProxy);
-
-		};
-		// this.nodeMap.postln;
+		}.fork;
 	}
 
 	qstop { |control|
@@ -103,4 +93,52 @@
 		controlProxy.bus.free(true);
 		controlProxy.clear;
 	}
+
+
+	prCrossFadeTask { |control, fTime, value|
+
+		Task({
+			var nodeFadeTime = this.fadeTime;
+			this.fadeTime = fTime;
+			this.xset( control.asSymbol, value );
+
+			this.fadeTime = nodeFadeTime;
+
+			fTime.wait;
+			("CrossFadeTask" + fTime + "DONE").postln;
+			this.nodeMap.at(\qMachine);
+
+		}).play;
+
+	}
+
+	prInitQuantMachine { |control|
+		var synthName = this.key ++ "_" ++ control;
+
+		if((this.nodeMap.get(\qMachine) == nil), {
+			var library = MultiLevelIdentityDictionary.new;
+			this.nodeMap.put(\qMachine, library);
+			("NodeMap qMachine prepared").postln;
+		});
+
+		if((this.nodeMap.get(\qMachine).at(control.asSymbol) == nil),
+			{
+				var controlLibrary = MultiLevelIdentityDictionary.new;
+				var synthDef = {|controlBus, proxyTempo = 1|
+					Out.kr( controlBus,
+						EnvGen.kr(
+							\env.kr(Env.newClear().asArray),
+							timeScale: proxyTempo.reciprocal,
+							doneAction: 2
+						)
+					);
+				};
+				synthDef.asSynthDef(name:synthName.asSymbol).add;
+				("SynthDef" + synthName + "ulozen").postln;
+				this.nodeMap.get(\qMachine).put(control.asSymbol, controlLibrary);
+		});
+	}
 }
+
+
+
