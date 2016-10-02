@@ -93,15 +93,66 @@
 	qenv { |control, symbol, duration, env|
 		var envLibrary;
 		var stage = \default;
-
 		this.prInitQuantMachine(control);
-
 		envLibrary = this.nodeMap.get(\qMachine).at(control.asSymbol, \envLibrary);
-		("envLibrary" + envLibrary).postln;
+
+		("\nControl:" + control).postln;
 		envLibrary.put(stage.asSymbol, \envelopes, symbol.asSymbol, env);
 		envLibrary.put(stage.asSymbol, \durations, symbol.asSymbol, duration);
 
 		this.nodeMap.get(\qMachine).at(control.asSymbol, \envLibrary).postTree;
+	}
+
+	qselect {|control, symbol, stream|
+		var envLibrary;
+		var stage = \default;
+		this.prInitQuantMachine(control);
+		envLibrary = this.nodeMap.get(\qMachine).at(control.asSymbol, \envLibrary);
+
+		("\nControl:" + control).postln;
+		envLibrary.put(stage.asSymbol, \streams, symbol.asSymbol, stream);
+
+		this.nodeMap.get(\qMachine).at(control.asSymbol, \envLibrary).postTree;
+	}
+
+	qplot {|control, symbol|
+		// this.prConnectEnvelopes
+		var arrEnv = this.prEvelopesArray(control, symbol);
+		("ArrEnv:" + arrEnv).postln;
+	}
+
+	prEvelopesArray { |control, symbol|
+		var stage = \default;
+		var envLibrary = this.nodeMap.get(\qMachine).at(control.asSymbol, \envLibrary);
+		var stream = envLibrary.at(stage.asSymbol, \streams, symbol.asSymbol);
+		var arrEnv = List.new;
+
+		// ("stream:" + stream).postln;
+
+		stream.do({|selector|
+			var selectedEnv = envLibrary.at(stage.asSymbol, \envelopes, selector.asSymbol);
+			var selectedDuration = envLibrary.at(stage.asSymbol, \durations, selector.asSymbol);
+
+			// if((envCouter > 0), {selectedEnv.levels.removeAt(0)});
+			arrEnv.add(selectedEnv);
+
+			(
+				"\n////////////////////"
+				"\n selector:" + selector +
+				// "\n\t env:" + selectedEnv.asArrayForInterpolation +
+				// "\n\t env:" + selectedEnv.asControlInput +
+				"\n\t env:" + selectedEnv +
+				"\n\t dur:" + selectedDuration
+			).postln;
+			// which.postln;
+			// envCouter = envCouter + 1;
+		});
+		^arrEnv.asArray;
+	}
+
+	prConnectEnvelopes { |stream|
+
+		^"connectedEnv";
 	}
 
 	prCrossFadeTask { |control, fTime, value|
