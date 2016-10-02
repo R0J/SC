@@ -123,7 +123,7 @@
 
 		outEnv.plot(segments, name:winName);
 
-		this.qset(control, outEnv.duration+1, outEnv, 1);
+		this.qset(control, outEnv.duration, outEnv, 4);
 	}
 
 	prEvelopesArray { |control, symbol|
@@ -145,7 +145,7 @@
 
 					levels = levels.insert(levels.size,levels[levels.size-1]);
 					times = times.insert(times.size,endGap);
-					curves = curves.insert(curves.size,\step);
+					curves = curves.insert(curves.size,0);
 
 					("Levels:" + levels).postln;
 					("Times:" + times).postln;
@@ -171,20 +171,20 @@
 		var times = List.new;
 		var curves = List.new;
 
-
 		levels.add(arrEnv[0].levels[0]);
 
 		arrEnv.do({|env|
 			var oneL = env.levels;
 			var oneT = env.times;
 			var oneC = env.curves;
-			oneL = oneL[1..oneL.size];
+			oneL = oneL[1..oneL.size-1];
 
 			oneL.size.do({|i|
 				levels.add(oneL[i]);
 				times.add(oneT.wrapAt(i));
 				curves.add(oneC.wrapAt(i));
 			});
+
 			(
 				"\n////////////////////"
 				"\n oneL:" + oneL +
@@ -193,11 +193,15 @@
 			).postln;
 		});
 
-		("Levels:" + levels).postln;
-		("Times:" + times).postln;
-		("Curves:" + curves).postln;
+		("Levels:" + levels.array).postln;
+		("Times:" + times.array).postln;
+		("Curves:" + curves.array).postln;
 
-		connectedEnv = Env(levels, times, curves);
+		// connectedEnv = Env(levels.array, times.array, curves.array);
+		connectedEnv = Env();
+		connectedEnv.levels = levels.array;
+		connectedEnv.times = times.array;
+		connectedEnv.curves = curves.array;
 		connectedEnv.duration.postln;
 
 		^connectedEnv;
@@ -233,10 +237,12 @@
 			{
 				var envLibrary = MultiLevelIdentityDictionary.new;
 				var controlLibrary = MultiLevelIdentityDictionary.new;
+
 				var synthDef = {|controlBus, proxyTempo = 1|
 					Out.kr( controlBus,
 						EnvGen.kr(
-							\env.kr(Env.newClear().asArray),
+							\env.kr(Env.newClear(200,1).asArray),
+								// \env.kr(Env.newClear().asArray),
 							timeScale: proxyTempo.reciprocal,
 							doneAction: 2
 						)
