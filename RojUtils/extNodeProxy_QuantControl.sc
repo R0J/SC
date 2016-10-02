@@ -90,6 +90,19 @@
 		controlProxy.clear;
 	}
 
+	qenv { |control, symbol, duration, env|
+		var envLibrary;
+		var stage = \default;
+
+		this.prInitQuantMachine(control);
+
+		envLibrary = this.nodeMap.get(\qMachine).at(control.asSymbol, \envLibrary);
+		("envLibrary" + envLibrary).postln;
+		envLibrary.put(stage.asSymbol, \envelopes, symbol.asSymbol, env);
+		envLibrary.put(stage.asSymbol, \durations, symbol.asSymbol, duration);
+
+		this.nodeMap.get(\qMachine).at(control.asSymbol, \envLibrary).postTree;
+	}
 
 	prCrossFadeTask { |control, fTime, value|
 
@@ -119,6 +132,7 @@
 
 		if((this.nodeMap.get(\qMachine).at(control.asSymbol) == nil),
 			{
+				var envLibrary = MultiLevelIdentityDictionary.new;
 				var controlLibrary = MultiLevelIdentityDictionary.new;
 				var synthDef = {|controlBus, proxyTempo = 1|
 					Out.kr( controlBus,
@@ -131,7 +145,8 @@
 				};
 				synthDef.asSynthDef(name:synthName.asSymbol).add;
 				("SynthDef" + synthName + "ulozen").postln;
-				this.nodeMap.get(\qMachine).put(control.asSymbol, controlLibrary);
+				this.nodeMap.get(\qMachine).put(control.asSymbol, \envLibrary, envLibrary);
+				this.nodeMap.get(\qMachine).put(control.asSymbol, \controlLibrary, controlLibrary);
 		});
 	}
 }
