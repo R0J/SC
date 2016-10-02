@@ -24,42 +24,40 @@
 			{
 				var library = this.nodeMap.get(\qMachine).at(control.asSymbol);
 				var bus = Bus.control(Server.default,1);
-				var busIndex = bus.index;
-				var taskName = "task_" ++ busIndex;
+				var taskName = "task_" ++ bus.index;
+				var nodeFadeTime = this.fadeTime;
+				var oldTasks = List.new;
+
+				library.treeDo({|branchName|
+					if((branchName[0].asSymbol != nil.asSymbol),
+						{
+							("oldTasks" + branchName[0]).postln;
+							oldTasks.add(branchName[0]);
+					});
+				});
+
+				library.put(taskName.asSymbol, \bus, bus);
+				library.put(taskName.asSymbol, \task,
+					Task ({
+						currentEnvironment.clock.timeToNextBeat(quant).wait;
+						{
+							Synth(synthName, [
+								\controlBus: bus,
+								\proxyTempo: currentEnvironment.clock.tempo,
+								\env: [value],
+							], this.group);
+							quant.wait;
+						}.loop;
+					}).play;
+				);
+
+				this.fadeTime = fTime;
+				this.xset( control.asSymbol, bus.asMap );
+				this.fadeTime = nodeFadeTime;
 
 				Task({
-					var nodeFadeTime = this.fadeTime;
-					var oldTasks = List.new;
-
-					library.treeDo({|branchName|
-						if((branchName[0].asSymbol != nil.asSymbol),
-							{
-								("oldTasks" + branchName[0]).postln;
-								oldTasks.add(branchName[0]);
-						});
-					});
-
-					library.put(taskName.asSymbol, \bus, bus);
-					library.put(taskName.asSymbol, \task,
-						Task ({
-							currentEnvironment.clock.timeToNextBeat(quant).wait;
-							{
-								Synth(synthName, [
-									\controlBus: bus,
-									\proxyTempo: currentEnvironment.clock.tempo,
-									\env: [value],
-								], this.group);
-								quant.wait;
-							}.loop;
-						}).play;
-					);
-
-					this.fadeTime = fTime;
-					this.xset( control.asSymbol, bus.asMap );
-					this.fadeTime = nodeFadeTime;
-
 					fTime.wait;
-					("CrossFadeTask" + fTime + "DONE").postln;
+					("CrossFade" + control ++ fTime + "DONE").postln;
 
 					oldTasks.do({|branchName|
 
@@ -75,10 +73,8 @@
 					});
 
 					this.nodeMap.get(\qMachine).at(control.asSymbol).postTree;
-
 				}).play;
 			};
-
 		}.fork;
 	}
 
