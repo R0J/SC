@@ -22,7 +22,7 @@
 			}
 			{ valueType == 'Env' }
 			{
-				var library = this.nodeMap.get(\qMachine).at(control.asSymbol);
+				var library = this.nodeMap.get(\qMachine).at(control.asSymbol, \controlLibrary);
 				var bus = Bus.control(Server.default,1);
 				var taskName = "task_" ++ bus.index;
 				var nodeFadeTime = this.fadeTime;
@@ -72,7 +72,7 @@
 						library.put(branchName.asSymbol, nil);
 					});
 
-					this.nodeMap.get(\qMachine).at(control.asSymbol).postTree;
+					this.nodeMap.get(\qMachine).at(control.asSymbol, \controlLibrary).postTree;
 				}).play;
 			};
 		}.fork;
@@ -115,12 +115,15 @@
 		this.nodeMap.get(\qMachine).at(control.asSymbol, \envLibrary).postTree;
 	}
 
-	qplot {|control, symbol|
-		// this.prConnectEnvelopes
+	qplot {|control, symbol, segments = 400|
+		var stage = \default;
+		var winName = control.asString + "[ stage:" + stage.asString + "|| symbol:" + symbol.asString + "]";
 		var arrEnv = this.prEvelopesArray(control, symbol);
 		var outEnv = this.prConnectEnvelopes(arrEnv);
-		("ArrEnv:" + arrEnv).postln;
-		outEnv.plot(name:control.asSymbol);
+
+		outEnv.plot(segments, name:winName);
+
+		this.qset(control, outEnv.duration+1, outEnv, 1);
 	}
 
 	prEvelopesArray { |control, symbol|
@@ -129,25 +132,35 @@
 		var stream = envLibrary.at(stage.asSymbol, \streams, symbol.asSymbol);
 		var arrEnv = List.new;
 
-		// ("stream:" + stream).postln;
-
 		stream.do({|selector|
 			var selectedEnv = envLibrary.at(stage.asSymbol, \envelopes, selector.asSymbol);
 			var selectedDuration = envLibrary.at(stage.asSymbol, \durations, selector.asSymbol);
+			var envDur = selectedEnv.duration;
+			if((selectedDuration > envDur),
+				{
+					var endGap = selectedDuration - envDur;
+					var levels = selectedEnv.levels;
+					var times = selectedEnv.times;
+					var curves = selectedEnv.curves;
 
-			// if((envCouter > 0), {selectedEnv.levels.removeAt(0)});
+					levels = levels.insert(levels.size,levels[levels.size-1]);
+					times = times.insert(times.size,endGap);
+					curves = curves.insert(curves.size,\step);
+
+					("Levels:" + levels).postln;
+					("Times:" + times).postln;
+					("Curves:" + curves).postln;
+				}
+			);
+
 			arrEnv.add(selectedEnv);
 
 			(
 				"\n////////////////////"
 				"\n selector:" + selector +
-				// "\n\t env:" + selectedEnv.asArrayForInterpolation +
-				// "\n\t env:" + selectedEnv.asControlInput +
 				"\n\t env:" + selectedEnv +
 				"\n\t dur:" + selectedDuration
 			).postln;
-			// which.postln;
-			// envCouter = envCouter + 1;
 		});
 		^arrEnv.asArray;
 	}
@@ -160,8 +173,6 @@
 
 
 		levels.add(arrEnv[0].levels[0]);
-
-// env.levels.removeAt(0);
 
 		arrEnv.do({|env|
 			var oneL = env.levels;
