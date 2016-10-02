@@ -115,6 +115,14 @@
 		this.nodeMap.get(\qMachine).at(control.asSymbol, \envLibrary).postTree;
 	}
 
+	qplay {|control, symbol, quant, fadeTime|
+		var stage = \default;
+		var arrEnv = this.prEvelopesArray(control, symbol);
+		var outEnv = this.prConnectEnvelopes(arrEnv);
+		("Connected evelope duration:" + outEnv.duration).postln;
+		this.qset(control, quant, outEnv, fadeTime);
+	}
+
 	qplot {|control, symbol, segments = 400|
 		var stage = \default;
 		var winName = control.asString + "[ stage:" + stage.asString + "|| symbol:" + symbol.asString + "]";
@@ -122,8 +130,6 @@
 		var outEnv = this.prConnectEnvelopes(arrEnv);
 
 		outEnv.plot(segments, name:winName);
-
-		this.qset(control, outEnv.duration, outEnv, 4);
 	}
 
 	prEvelopesArray { |control, symbol|
@@ -202,7 +208,7 @@
 		connectedEnv.levels = levels.array;
 		connectedEnv.times = times.array;
 		connectedEnv.curves = curves.array;
-		connectedEnv.duration.postln;
+		// connectedEnv.duration.postln;
 
 		^connectedEnv;
 	}
