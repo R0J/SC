@@ -118,7 +118,9 @@
 	qplot {|control, symbol|
 		// this.prConnectEnvelopes
 		var arrEnv = this.prEvelopesArray(control, symbol);
+		var outEnv = this.prConnectEnvelopes(arrEnv);
 		("ArrEnv:" + arrEnv).postln;
+		outEnv.plot(name:control.asSymbol);
 	}
 
 	prEvelopesArray { |control, symbol|
@@ -150,9 +152,44 @@
 		^arrEnv.asArray;
 	}
 
-	prConnectEnvelopes { |stream|
+	prConnectEnvelopes { |arrEnv|
+		var connectedEnv;
+		var levels = List.new;
+		var times = List.new;
+		var curves = List.new;
 
-		^"connectedEnv";
+
+		levels.add(arrEnv[0].levels[0]);
+
+// env.levels.removeAt(0);
+
+		arrEnv.do({|env|
+			var oneL = env.levels;
+			var oneT = env.times;
+			var oneC = env.curves;
+			oneL = oneL[1..oneL.size];
+
+			oneL.size.do({|i|
+				levels.add(oneL[i]);
+				times.add(oneT.wrapAt(i));
+				curves.add(oneC.wrapAt(i));
+			});
+			(
+				"\n////////////////////"
+				"\n oneL:" + oneL +
+				"\n oneT:" + oneT +
+				"\n oneC:" + oneC
+			).postln;
+		});
+
+		("Levels:" + levels).postln;
+		("Times:" + times).postln;
+		("Curves:" + curves).postln;
+
+		connectedEnv = Env(levels, times, curves);
+		connectedEnv.duration.postln;
+
+		^connectedEnv;
 	}
 
 	prCrossFadeTask { |control, fTime, value|
