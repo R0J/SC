@@ -48,7 +48,7 @@
 							], this.group);
 							quant.wait;
 						}.loop;
-					}).play;
+					}).play(currentEnvironment.clock);
 				);
 
 				this.fadeTime = fTime;
@@ -73,22 +73,11 @@
 					});
 
 					this.nodeMap.get(\qMachine).at(control.asSymbol, \controlLibrary).postTree;
-				}).play;
+				}).play(currentEnvironment.clock);
 			};
 		}.fork;
 	}
 
-	qstop { |control|
-		// var busIndex = this.controlBusIndex(control);
-		var nodeKey = this.key;
-		var synthName = nodeKey ++ "_" ++ control;
-		var controlProxy = synthName.asSymbol.envirGet;
-		// ("controlProxy" + controlProxy).postln;
-
-		this.unmap(control.asSymbol);
-		controlProxy.bus.free(true);
-		controlProxy.clear;
-	}
 
 	qenv { |control, symbol, duration, env|
 		var envLibrary;
@@ -121,6 +110,18 @@
 		var outEnv = this.prConnectEnvelopes(arrEnv);
 		("Connected evelope duration:" + outEnv.duration).postln;
 		this.qset(control, quant, outEnv, fadeTime);
+	}
+
+	qstop { |control|
+		// var busIndex = this.controlBusIndex(control);
+		var nodeKey = this.key;
+		var synthName = nodeKey ++ "_" ++ control;
+		var controlProxy = synthName.asSymbol.envirGet;
+		// ("controlProxy" + controlProxy).postln;
+
+		this.unmap(control.asSymbol);
+		controlProxy.bus.free(true);
+		controlProxy.clear;
 	}
 
 	qplot {|control, symbol, segments = 400|
@@ -190,25 +191,27 @@
 				times.add(oneT.wrapAt(i));
 				curves.add(oneC.wrapAt(i));
 			});
-
+/*
 			(
 				"\n////////////////////"
 				"\n oneL:" + oneL +
 				"\n oneT:" + oneT +
 				"\n oneC:" + oneC
 			).postln;
+			*/
 		});
 
 		("Levels:" + levels.array).postln;
 		("Times:" + times.array).postln;
 		("Curves:" + curves.array).postln;
 
-		// connectedEnv = Env(levels.array, times.array, curves.array);
+		connectedEnv = Env(levels.array, times.array, curves.array);
+		/*
 		connectedEnv = Env();
 		connectedEnv.levels = levels.array;
 		connectedEnv.times = times.array;
 		connectedEnv.curves = curves.array;
-		// connectedEnv.duration.postln;
+		*/
 
 		^connectedEnv;
 	}
@@ -226,7 +229,7 @@
 			("CrossFadeTask" + fTime + "DONE").postln;
 			this.nodeMap.at(\qMachine);
 
-		}).play;
+		}).play(currentEnvironment.clock);
 
 	}
 
