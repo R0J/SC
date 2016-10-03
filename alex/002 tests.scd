@@ -3,12 +3,22 @@ p=ProxySpace.push(s);
 p.makeTempoClock;
 ProxySynthDef.sampleAccurate = true;
 
-p.clock.tempo = 127/60;
+p.clock.tempo = 60/60;
 p.gui;
 
 AutoIDE.run;
 
 (
+
+ProxySynthDef(\ping, {
+	arg  sustain,  amp;
+	var sig, env, fenv;
+
+	env=EnvGen.kr(Env([0,1,0],[0.01,0.3,0.01]),timeScale:sustain,doneAction:2);
+		sig=SinOsc.ar(\freq.kr!2);
+	sig=sig*env*amp;
+}).add;
+
 ProxySynthDef(\tss, {
 	arg  sustain,  amp, pan, hpf, noise;
 	var sig, env, fenv;
@@ -21,7 +31,7 @@ ProxySynthDef(\tss, {
 	sig=sig*env*amp;
 }).add;
 
-ProxySynthDef(\piano1, { |out=0, freq=440, gate=1,sustain=1, amp=1|
+ProxySynthDef(\piano, { |out=0, freq=440, gate=1,sustain=1, amp=1|
 	var sig = MdaPiano.ar(freq, gate,decay:sustain*0.5,release:sustain*0.4, release: 0.9, stereo: 0.3, sustain: 0);
 	DetectSilence.ar(sig, 0.01, doneAction:2);
 	Out.ar(out, sig * 0.1);
@@ -46,7 +56,6 @@ f=Group.new;
 		Pseq([4,[0.25!2,-0.5,0.5,0.5,0.5,-1].flatten,1].convertRhythm),
 		Pseq([32,[0.25!2,-0.5,0.5,0.5,0.5,-1].flatten,1].convertRhythm)
 	],inf),
-	\noise, 0.03,
 	\legato, 0.3,
 
 );)
@@ -65,7 +74,6 @@ f=Group.new;
 	\octave, Pseq([[3,5],6,3,2,5],inf),
 	\degree, Pseq([4,2,1],inf), //or rand
 	\dur,Pseq([Pseq([16,[0.25!2,-0.5,0.5,0.5,0.5,-1].flatten,1].convertRhythm)],inf),
-	\noise, 0.03,
 	\legato, 0.3,
 
 ););
@@ -75,7 +83,41 @@ f=Group.new;
 
 
 
+~piano4.clear;
+~piano4.stop(fadeTime:40);
+(~piano4[0]=Pbind(
+	\instrument, \ping,
+	\amp,1,
+	\octave, 8,
+	\degree, [6,2,8],
+	\dur,Pseq([Pseq([1,[1,-1,1,-1],1].convertRhythm)],inf),
+	\legato, 0.5,
 
+););
+~piano4[6]=\filter->{arg in; Limiter.ar(GVerb.ar(in,[90,80],2,mul:0.1),0.9)};
+~piano4[7]=\filter->{arg in; LPF.ar(in,SinOsc.kr(1/16).range(1800,440))};
+~piano4[7]=nil;
+
+
+~piano5.clear;
+~piano5.stop(fadeTime:40);
+(~piano5[0]=Pbind(
+	\instrument, \ping,
+	\amp,1,
+	\octave, 5,
+	\degree, [1,3,4],
+	\dur,Pseq([Pseq([1,[1,1,-1,1],1].convertRhythm)],inf),
+	\legato, 0.5,
+
+););
+
+~piano5[6]=\filter->{arg in; Limiter.ar(GVerb.ar(in,[90,80],2,mul:0.1),0.9)};
+~piano5[7]=\filter->{arg in; LPF.ar(in,SinOsc.kr(1/16).range(1800,440))};
+~piano5[7]=nil;
+(
+~piano5.play(vol:0.3, fadeTime:4, numChannels:2).quant_(4);
+~piano4.play(vol:0.3, fadeTime:4, numChannels:2).quant_(4);
+)
 
 ////////////////////////SHORT BURSTS
 ~dis4.clear;
@@ -127,6 +169,20 @@ f=Group.new;
 ~bum1[6]=nil;
 
 
+~m.play(vol:0.2, fadeTime:4, numChannels:2).quant_(4);
+(
+~m[0]=Pbind(\instrument, \onion,
+	\dur, 8,
+	\sustain,4,
+	\freq, 65,
+	\amp, 0.2,
+	\fsaw, Prand([2,4,10,80,60],inf),
+);)
+~m[30]=\filter->{arg in; GVerb.ar(in,[80,60],[4,3],maxroomsize:120,add:in)};
+
+
+
+
 
 ~ts1.clear;
 ~ts1.stop(fadeTime:40);
@@ -139,7 +195,7 @@ f=Group.new;
 	\legato, 0.2,
 	\pan, 0,//Pseq([-1,1,0],inf),
 	\noise, 1,
-	\hpf, 800,
+	\hpf, 1800,
 
 ););
 ~ts1[6]=\filter->{arg in; HPF.ar(in,SinOsc.kr(1/8).range(2000,14000))};
@@ -152,15 +208,15 @@ f=Group.new;
 (~tshi[0]=Pbind(
 	\instrument, \tss,
 	\amp,1,
-	\freq, 200+Prand([1000,200,400,(-500),400],inf),
-	\dur, 2,
+	\freq, 200+Pseq([1000,200],inf),
+	\dur, 0.2,
 	\legato, 0.1,
 	\pan, 0,//Pseq([-1,1,0],inf),
 	\noise, 1,
 	\hpf, 800,
 
 ););
-~tshi[6]=\filter->{arg in; HPF.ar(in,SinOsc.kr(1/8).range(2000,14000))};
+~tshi[6]=\filter->{arg in; HPF.ar(in,SinOsc.kr(1/8).range(2000,4000))};
 ~tshi[7]=nil;
 
 
