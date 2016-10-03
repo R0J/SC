@@ -72,44 +72,58 @@
 						library.put(branchName.asSymbol, nil);
 					});
 
-					this.nodeMap.get(\qMachine).at(control.asSymbol, \controlLibrary).postTree;
+					// this.nodeMap.get(\qMachine).at(control.asSymbol, \controlLibrary).postTree;
 				}).play(currentEnvironment.clock);
 			};
 		}.fork;
 	}
 
 
-	qenv { |control, symbol, duration, env|
-		var envLibrary;
+	qenv { |control, envName, env, duration = nil|
+		var library = this.prGetLibrary(control);
 		var stage = \default;
-		this.prInitQuantMachine(control);
-		envLibrary = this.nodeMap.get(\qMachine).at(control.asSymbol, \envLibrary);
+		var path = [control.asSymbol, stage.asSymbol, \envelopes, envName.asSymbol];
 
-		("\nControl:" + control).postln;
-		envLibrary.put(stage.asSymbol, \envelopes, symbol.asSymbol, env);
-		envLibrary.put(stage.asSymbol, \durations, symbol.asSymbol, duration);
+		if((duration == nil), {duration = env.duration});
 
-		this.nodeMap.get(\qMachine).at(control.asSymbol, \envLibrary).postTree;
+		library.putAtPath(path ++ \env, env);
+		library.putAtPath(path ++ \dur, duration);
+
+		library.postTree;
 	}
 
-	qselect {|control, symbol, stream|
-		var envLibrary;
+	qcycle {|control, cycleName, pattern|
+		var library = this.prGetLibrary(control);
 		var stage = \default;
-		this.prInitQuantMachine(control);
-		envLibrary = this.nodeMap.get(\qMachine).at(control.asSymbol, \envLibrary);
+		var path = [control.asSymbol, stage.asSymbol, \cycles, cycleName.asSymbol];
 
-		("\nControl:" + control).postln;
-		envLibrary.put(stage.asSymbol, \streams, symbol.asSymbol, stream);
+		var stream = pattern.asStream;
+		var arrEnv, cycleEnv;
 
-		this.nodeMap.get(\qMachine).at(control.asSymbol, \envLibrary).postTree;
+		case
+		{ stream.isKindOf(Routine) } { stream = stream.all; } // Pseq([\aaa, \bbb], 3) ++ \ccc
+		{ stream.isKindOf(Symbol) }	{ stream = stream.asArray; }
+		{ stream.isKindOf(Integer) } { stream = stream.asSymbol.asArray; }
+		{ stream.isKindOf(String) }	{ stream = stream.asSymbol.asArray; }
+		;
+
+		library.putAtPath(path ++ \pattern, stream);
+
+		arrEnv = this.prEvelopesArray(control, cycleName);
+		cycleEnv = this.prConnectEnvelopes(arrEnv);
+
+		library.putAtPath(path ++ \cycleEnv, cycleEnv);
+		library.putAtPath(path ++ \cycleDur, cycleEnv.duration);
+
+		library.postTree;
 	}
 
-	qplay {|control, symbol, quant, fadeTime|
+	qplay {|control, cycleName, quant, fadeTime|
+		var library = this.prGetLibrary(control);
 		var stage = \default;
-		var arrEnv = this.prEvelopesArray(control, symbol);
-		var outEnv = this.prConnectEnvelopes(arrEnv);
-		("Connected evelope duration:" + outEnv.duration).postln;
-		this.qset(control, quant, outEnv, fadeTime);
+		var cycleEnv = library.at(control.asSymbol, stage.asSymbol, \cycles, cycleName.asSymbol, \cycleEnv);
+
+		this.qset(control, quant, cycleEnv, fadeTime);
 	}
 
 	qstop { |control|
@@ -124,56 +138,66 @@
 		controlProxy.clear;
 	}
 
-	qplot {|control, symbol, segments = 400|
+	qplot {|control, cycleName, segments = 400|
+		var library = this.prGetLibrary(control);
 		var stage = \default;
-		var winName = control.asString + "[ stage:" + stage.asString + "|| symbol:" + symbol.asString + "]";
-		var arrEnv = this.prEvelopesArray(control, symbol);
-		var outEnv = this.prConnectEnvelopes(arrEnv);
+		var winName = control.asString + "[ stage:" + stage.asString + "|| cycleName:" + cycleName.asString + "]";
 
-		outEnv.plot(segments, name:winName);
+		library.at(control.asSymbol, stage.asSymbol, \cycles, cycleName.asSymbol, \cycleEnv).plot(segments, name:winName);
 	}
 
-	prEvelopesArray { |control, symbol|
+	prEvelopesArray { |control, cycleName|
+		var library = this.prGetLibrary(control);
 		var stage = \default;
-		var envLibrary = this.nodeMap.get(\qMachine).at(control.asSymbol, \envLibrary);
-		var stream = envLibrary.at(stage.asSymbol, \streams, symbol.asSymbol);
+		var cyclesPath = [control.asSymbol, stage.asSymbol, \cycles];
+		var envelopesPath = [control.asSymbol, stage.asSymbol, \envelopes];
+
+		var pattern = library.atPath(cyclesPath ++ cycleName.asSymbol ++ \pattern);
+		var envelopes = library.atPath(envelopesPath);
 		var arrEnv = List.new;
 
-		stream.do({|selector|
-			var selectedEnv = envLibrary.at(stage.asSymbol, \envelopes, selector.asSymbol);
-			var selectedDuration = envLibrary.at(stage.asSymbol, \durations, selector.asSymbol);
-			var envDur = selectedEnv.duration;
-			if((selectedDuration > envDur),
-				{
-					var endGap = selectedDuration - envDur;
-					var levels = selectedEnv.levels;
-					var times = selectedEnv.times;
-					var curves = selectedEnv.curves;
+		pattern.do({|selector|
+			var selectedEnv = library.atPath(envelopesPath ++ selector ++ \env);
+			var selectedDuration = library.atPath(envelopesPath ++ selector ++ \dur);
 
-					levels = levels.insert(levels.size,levels[levels.size-1]);
-					times = times.insert(times.size,endGap);
-					curves = curves.insert(curves.size,0);
+			if((selectedEnv != nil), {
+				var envDur = selectedEnv.duration;
 
-					("Levels:" + levels).postln;
-					("Times:" + times).postln;
-					("Curves:" + curves).postln;
-				}
-			);
+				if((selectedDuration > envDur),
+					{
+						var endGap = selectedDuration - envDur;
+						var levels = selectedEnv.levels;
+						var times = selectedEnv.times;
+						var curves = selectedEnv.curves;
 
-			arrEnv.add(selectedEnv);
+						levels = levels.insert(levels.size,levels[levels.size-1]);
+						times = times.insert(times.size,endGap);
+						curves = curves.insert(curves.size,0);
+						/*
+						("Levels:" + levels).postln;
+						("Times:" + times).postln;
+						("Curves:" + curves).postln;
+						*/
+					}
+				);
 
-			(
+				arrEnv.add(selectedEnv);
+				/*
+				(
 				"\n////////////////////"
 				"\n selector:" + selector +
 				"\n\t env:" + selectedEnv +
 				"\n\t dur:" + selectedDuration
-			).postln;
+				).postln;
+				*/
+			});
 		});
+
 		^arrEnv.asArray;
 	}
 
 	prConnectEnvelopes { |arrEnv|
-		var connectedEnv;
+		// var connectedEnv;
 		var levels = List.new;
 		var times = List.new;
 		var curves = List.new;
@@ -191,29 +215,23 @@
 				times.add(oneT.wrapAt(i));
 				curves.add(oneC.wrapAt(i));
 			});
-/*
+			/*
 			(
-				"\n////////////////////"
-				"\n oneL:" + oneL +
-				"\n oneT:" + oneT +
-				"\n oneC:" + oneC
+			"\n////////////////////"
+			"\n oneL:" + oneL +
+			"\n oneT:" + oneT +
+			"\n oneC:" + oneC
 			).postln;
 			*/
 		});
-
+		/*
 		("Levels:" + levels.array).postln;
 		("Times:" + times.array).postln;
 		("Curves:" + curves.array).postln;
-
-		connectedEnv = Env(levels.array, times.array, curves.array);
-		/*
-		connectedEnv = Env();
-		connectedEnv.levels = levels.array;
-		connectedEnv.times = times.array;
-		connectedEnv.curves = curves.array;
 		*/
+		// connectedEnv = Env(levels.array, times.array, curves.array);
 
-		^connectedEnv;
+		^Env(levels.array, times.array, curves.array);
 	}
 
 	prCrossFadeTask { |control, fTime, value|
@@ -233,35 +251,31 @@
 
 	}
 
-	prInitQuantMachine { |control|
+	prGetLibrary { |control|
 		var synthName = this.key ++ "_" ++ control;
+		var library = this.nodeMap.get(\qMachine);
 
-		if((this.nodeMap.get(\qMachine) == nil), {
-			var library = MultiLevelIdentityDictionary.new;
-			this.nodeMap.put(\qMachine, library);
-			("NodeMap qMachine prepared").postln;
+		if((library == nil), {
+			this.nodeMap.put(\qMachine, MultiLevelIdentityDictionary.new);
+			library = this.nodeMap.get(\qMachine);
+			("NodeMap library qMachine prepared").postln;
 		});
 
-		if((this.nodeMap.get(\qMachine).at(control.asSymbol) == nil),
+		if((library.at(control.asSymbol) == nil),
 			{
-				var envLibrary = MultiLevelIdentityDictionary.new;
-				var controlLibrary = MultiLevelIdentityDictionary.new;
-
 				var synthDef = {|controlBus, proxyTempo = 1|
 					Out.kr( controlBus,
 						EnvGen.kr(
 							\env.kr(Env.newClear(200,1).asArray),
-								// \env.kr(Env.newClear().asArray),
 							timeScale: proxyTempo.reciprocal,
 							doneAction: 2
 						)
 					);
 				};
 				synthDef.asSynthDef(name:synthName.asSymbol).add;
-				("SynthDef" + synthName + "ulozen").postln;
-				this.nodeMap.get(\qMachine).put(control.asSymbol, \envLibrary, envLibrary);
-				this.nodeMap.get(\qMachine).put(control.asSymbol, \controlLibrary, controlLibrary);
+				("SynthDef" + synthName + "added").postln;
 		});
+		^library;
 	}
 }
 
