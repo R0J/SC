@@ -10,14 +10,14 @@ AutoIDE.run;
 
 ~imp.clear;
 ~imp.stop(freeTime:60);
-~imp.play(vol:0.8, fadeTime:4, numChannels:2, group:t).quant_(4);
+~imp.play(vol:0.1, fadeTime:4, numChannels:2, group:t).quant_(4);
 (~imp[0]=Pbind(
 	\instrument, \imp,
 	\amp, 2,
-	\legato, Pseq([0.1,0.2],inf)/2,
+	\legato, Pseq([0.1,0.2],inf),
 	\den,26,
 	\hpf,280,
-	\dur, 64,
+	\dur, 32,
 );
 t=Group.new;
 )
@@ -48,7 +48,7 @@ t=Group.new;
 
 ~bum1.clear;
 ~bum1.stop(fadeTime:40);
-~bum1.play(vol:0.07, fadeTime:4, numChannels:2).quant_(4);
+~bum1.play(vol:0.05, fadeTime:4, numChannels:2).quant_(4);
 (~bum1[0]=Pbind(
 	\instrument, \bum,
 	\amp,1,
@@ -65,7 +65,7 @@ t=Group.new;
 
 ~tsh.clear;
 ~tsh.stop(fadeTime:40);
-~tsh.play(vol:0.01, fadeTime:4, numChannels:2).quant_(4);
+~tsh.play(vol:0.1, fadeTime:4, numChannels:2).quant_(4);
 (~tsh[0]=Pbind(
 	\instrument, \tss,
 	\amp,0.5,
@@ -99,13 +99,13 @@ t=Group.new;
 
 ~kickf.clear;
 ~kickf.stop(fadeTime:40);
-~kickf.play(vol:0.1, fadeTime:4, numChannels:2).quant_(4);
+~kickf.play(vol:0.05, fadeTime:4, numChannels:2).quant_(4);
 (~kickf[0]=Pbind(
 	\instrument, \kickfill,
 	\amp,1,
 	\freq, [46,48],
 	\dur,2,
-	\legato, 0.6,
+	\legato, 0.5,
 
 ););
 ~kickf[6]=\filter->{arg in; Limiter.ar(GVerb.ar(in,30,mul:0.2,add:in*0.5),0.6)};
@@ -136,7 +136,7 @@ t=Group.new;
 //////////////////////nice rhm these two
 ~kick2.clear;
 ~kick2.stop(fadeTime:40);
-~kick2.play(vol:0.2, fadeTime:4, numChannels:2).quant_(4);
+~kick2.play(vol:0.5, fadeTime:4, numChannels:2).quant_(4);
 (~kick2[0]=Pbind(
 	\instrument, \kick,
 	\amp,1,
@@ -156,7 +156,7 @@ t=Group.new;
 
 ~kick3.clear;
 ~kick3.stop(fadeTime:4);
-~kick3.play(vol:0.051, fadeTime:4, numChannels:2).quant_(4);
+~kick3.play(vol:0.1, fadeTime:4, numChannels:2).quant_(4);
 (~kick3[0]=Pbind(
 	\instrument, \kickfill,
 	\amp,1,
@@ -165,7 +165,7 @@ t=Group.new;
 		//Pseq([4,[0.25!4,-1,0.5,-2].flatten,1].convertRhythm)
 	].flatten	,inf),
 	\top, 40,
-	\legato, 0.3,
+	\legato, 0.2,
 
 ););
 ~kick3[6]=\filter->{arg in; Limiter.ar(GVerb.ar(in,30,mul:0.2,add:in*0.5),0.6)};
@@ -198,13 +198,13 @@ t=Group.new;
 
 ~comb3.clear;
 ~comb3.stop(freeTime:60);
-~comb3.play(vol:0.2, fadeTime:4, numChannels:2).quant_(4);
+~comb3.play(vol:0.01, fadeTime:4, numChannels:2).quant_(4);
 (~comb3[0]=Pbind(
 	\instrument, \string,
 	\amp, 1,
 	\legato, 1.7,
 	\pan, 0,
-	\freq,Pseq([Pseq([2400,[0.6!2,0.2,0.6,0.8].flatten,4].convertRhythm),],inf),
+	\freq,Pseq([Pseq([800,[0.6!2,0.2,0.6,0.8].flatten,4].convertRhythm),],inf),
 	\dur,Prand([8,4],inf),//Pseq([Pseq([8,[0.25!2,-0.5,0.5,0.5,0.5,-1].flatten,1].convertRhythm)],inf),
 
 );)
