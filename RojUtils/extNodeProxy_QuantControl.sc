@@ -79,7 +79,7 @@
 	}
 
 
-	qenv { |control, envName, env, duration = nil|
+	qenv { |control, envName, env, duration = nil, fTime = 4|
 		var library = this.prGetLibrary(control);
 		var stage = \default;
 		var path = [control.asSymbol, \stages, stage.asSymbol, \envelopes, envName.asSymbol];
@@ -99,7 +99,7 @@
 					);
 
 					var fade = EnvGen.kr(
-						Env([ \fromVal.kr(1), \toVal.kr(1)], \fadeTime.kr(4), \sin),
+						Env([ \fromVal.kr(0), \toVal.kr(0)], \fadeTime.kr(4), \sin),
 						gate:\fadeTrig.tr(0)
 					);
 
@@ -108,8 +108,23 @@
 				envSynthDef.asSynthDef(name:envSynthName.asSymbol).add;
 				("SynthDef" + envSynthName + "added").postln;
 			},{
-				var oldSynth = library.atPath(path ++ \synth);
-				oldSynth.free;
+				Task({
+					var oldSynth = library.atPath(path ++ \synth);
+					var oldDur = library.atPath(path ++ \dur);
+					var oldTrigTask = Task({
+						currentEnvironment.clock.timeToNextBeat(oldDur).wait;
+						{
+							oldSynth.set(\envTrig, 1);
+							("oldTask" ++ currentEnvironment.clock.beats).postln;
+							oldDur.wait;
+						}.loop;
+					}).play(currentEnvironment.clock);
+
+					oldSynth.set(\fromVal, 1, \toVal, 0, \fadeTime, fTime, \fadeTrig, 1);
+					fTime.wait;
+					oldTrigTask.stop;
+					oldSynth.free;
+				}).play(currentEnvironment.clock);
 			}
 		);
 
@@ -118,12 +133,16 @@
 		Task({
 			Server.default.sync;
 
-			currentEnvironment.clock.timeToNextBeat(quant).wait;
+			currentEnvironment.clock.timeToNextBeat(duration).wait;
 
 			library.putAtPath(path ++ \synth,
 				Synth(envSynthName.asSymbol, [
 					\cBus: controlBus,
 					\env: [env],
+					\fromVal, 0,
+					\toVal, 1,
+					\fadeTime, fTime,
+					\fadeTrig, 1
 				], this.group)
 			);
 
@@ -197,13 +216,14 @@
 		});
 		library.putAtPath(path ++ \cycleTask,
 			Task ({
+				currentEnvironment.clock.timeToNextBeat(1).wait;
 				{
 					var selector = stream[0].asSymbol;
 					var selectedSynth = library.atPath(envelopesPath ++ selector ++ \synth);
 					var selectedDuration = library.atPath(envelopesPath ++ selector ++ \dur);
 					// selectedSynth.postln;
 					// stream.postln;
-
+					("newTask" ++ currentEnvironment.clock.beats).postln;
 					selectedSynth.set(\envTrig, 1);
 					stream = stream.rotate(-1);
 					selectedDuration.wait;
