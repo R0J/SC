@@ -79,7 +79,7 @@
 	}
 
 
-	qenv { |control, envName, env, duration = nil, fTime = 4|
+	qenv { |control, envName, env, duration = nil, fTime = 0|
 		var library = this.prGetLibrary(control);
 		var stage = \default;
 		var path = [control.asSymbol, \stages, stage.asSymbol, \envelopes, envName.asSymbol];
@@ -99,7 +99,7 @@
 					);
 
 					var fade = EnvGen.kr(
-						Env([ \fromVal.kr(0), \toVal.kr(0)], \fadeTime.kr(4), \sin),
+						Env([ \fromVal.kr(0), \toVal.kr(0)], \fadeTime.kr(fTime), \sin),
 						gate:\fadeTrig.tr(0)
 					);
 
@@ -115,7 +115,7 @@
 						currentEnvironment.clock.timeToNextBeat(oldDur).wait;
 						{
 							oldSynth.set(\envTrig, 1);
-							("oldTask" ++ currentEnvironment.clock.beats).postln;
+							// ("oldTask" ++ currentEnvironment.clock.beats).postln;
 							oldDur.wait;
 						}.loop;
 					}).play(currentEnvironment.clock);
@@ -157,13 +157,12 @@
 	qcycle {|control, cycleName, pattern|
 		var library = this.prGetLibrary(control);
 		var stage = \default;
-		var path = [control.asSymbol, \stages, stage.asSymbol, \cycles, cycleName.asSymbol];
+		var cyclesPath = [control.asSymbol, \stages, stage.asSymbol, \cycles, cycleName.asSymbol];
 		var envelopesPath = [control.asSymbol, \stages, stage.asSymbol, \envelopes];
 		var synthName = this.key ++ "_" ++ control;
 
 		var stream = pattern.asStream;
 		var cycleDuration = 0;
-		// var arrEnv, cycleEnv, previousEnv;
 
 		case
 		{ stream.isKindOf(Routine) } { stream = stream.all; } // Pseq([\aaa, \bbb], 3) ++ \ccc
@@ -172,61 +171,60 @@
 		{ stream.isKindOf(String) }	{ stream = stream.asSymbol.asArray; }
 		;
 
-		library.putAtPath(path ++ \envPattern, stream);
-
-		// arrEnv = this.prEvelopesArray(control, cycleName);
-		// cycleEnv = this.prConnectEnvelopes(arrEnv);
-
-		/*
-		if((library.atPath(path ++ \cycleEnv) != nil), {
-		previousEnv = library.atPath(path ++ \cycleEnv);
-		});
-
-		library.putAtPath(path ++ \cycleEnv, cycleEnv);
-		library.putAtPath(path ++ \cycleDur, cycleEnv.duration);
-
-		if((library.atPath(path ++ \cycleBus) == nil), {
-		library.putAtPath(path ++ \cycleBus,  Bus.control(Server.default, 1));
-		});
-
-		if((library.atPath(path ++ \cycleSynth) == nil), {
-		library.putAtPath(path ++ \cycleSynth,
-		Synth(synthName, [
-		\controlBus: library.atPath(path ++ \cycleBus),
-		\proxyTempo: currentEnvironment.clock.tempo,
-		\env: [cycleEnv]
-		], this.group)
-		);
-		});
-		*/
-
-		// var pattern = library.atPath(cyclesPath ++ cycleName.asSymbol ++ \envPattern);
-		// var envelopes = library.atPath(envelopesPath);
-		// var arrEnv = List.new;
+		library.putAtPath(cyclesPath ++ \envPattern, stream);
 
 		stream.do({|selector|
 			var selectedDuration = library.atPath(envelopesPath ++ selector ++ \dur);
 			cycleDuration = cycleDuration + selectedDuration;
 		});
-		library.putAtPath(path ++ \cycleDur, cycleDuration);
+		library.putAtPath(cyclesPath ++ \cycleDur, cycleDuration);
 
+		library.postTree;
+	}
 
-		if((library.atPath(path ++ \cycleTask) != nil), {
-			library.atPath(path ++ \cycleTask).stop;
-		});
-		library.putAtPath(path ++ \cycleTask,
+	qplay {|control, pattern|
+		var library = this.prGetLibrary(control);
+		var stage = \default;
+		var stagePath = [control.asSymbol, \stages, stage.asSymbol];
+		var cyclePath = [control.asSymbol, \stages, stage.asSymbol, \cycles];
+		var envPath = [control.asSymbol, \stages, stage.asSymbol, \envelopes];
+		var stream = pattern.asStream;
+		var controlDuration = 0;
+
+		case
+		{ stream.isKindOf(Routine) } { stream = stream.all; } // Pseq([\aaa, \bbb], 3) ++ \ccc
+		{ stream.isKindOf(Symbol) }	{ stream = stream.asArray; }
+		{ stream.isKindOf(Integer) } { stream = stream.asSymbol.asArray; }
+		{ stream.isKindOf(String) }	{ stream = stream.asSymbol.asArray; }
+		;
+
+		library.putAtPath(stagePath ++ \cyclePattern, stream);
+
+		if((library.atPath(stagePath ++ \stageTask) != nil), {
+			var fisrtCycleDuration = library.atPath(cyclePath ++ stream[0].asSymbol ++ \cycleDur );
 			Task ({
-				currentEnvironment.clock.timeToNextBeat(1).wait;
+				currentEnvironment.clock.timeToNextBeat(fisrtCycleDuration).wait;
+				library.atPath(stagePath ++ \stageTask).stop;
+			}).play(currentEnvironment.clock);
+		});
+		library.putAtPath(stagePath ++ \stageTask,
+			Task ({
+				var fisrtCycleDuration = library.atPath(cyclePath ++ stream[0].asSymbol ++ \cycleDur );
+				currentEnvironment.clock.timeToNextBeat(fisrtCycleDuration).wait;
 				{
-					var selector = stream[0].asSymbol;
-					var selectedSynth = library.atPath(envelopesPath ++ selector ++ \synth);
-					var selectedDuration = library.atPath(envelopesPath ++ selector ++ \dur);
-					// selectedSynth.postln;
-					// stream.postln;
-					("newTask" ++ currentEnvironment.clock.beats).postln;
-					selectedSynth.set(\envTrig, 1);
+					var selectedCycle = stream[0].asSymbol;
+					var cyclePattern = library.atPath(cyclePath ++ selectedCycle ++ \envPattern );
+					var cycleDuration = library.atPath(cyclePath ++ selectedCycle ++ \cycleDur );
+
+					cyclePattern.do({|selectedEnv|
+						var envDuration = library.atPath(envPath ++ selectedEnv ++ \dur );
+						var selectedSynth = library.atPath(envPath ++ selectedEnv ++ \synth );
+						selectedSynth.set(\envTrig, 1);
+
+						envDuration.wait;
+					});
+
 					stream = stream.rotate(-1);
-					selectedDuration.wait;
 				}.loop;
 			}).play(currentEnvironment.clock);
 		);
@@ -234,24 +232,20 @@
 		library.postTree;
 	}
 
-	qplay {|control, cycleName, quant, fadeTime|
+	qstop { |control|
 		var library = this.prGetLibrary(control);
 		var stage = \default;
-		var cycleEnv = library.at(control.asSymbol, \stages, stage.asSymbol, \cycles, cycleName.asSymbol, \cycleEnv);
 
-		this.qset(control, quant, cycleEnv, fadeTime);
-	}
-
-	qstop { |control|
+		library.at(control.asSymbol, \stages, stage.asSymbol, \stageTask).stop;
 		// var busIndex = this.controlBusIndex(control);
-		var nodeKey = this.key;
-		var synthName = nodeKey ++ "_" ++ control;
-		var controlProxy = synthName.asSymbol.envirGet;
+		// var nodeKey = this.key;
+		// var synthName = nodeKey ++ "_" ++ control;
+		// var controlProxy = synthName.asSymbol.envirGet;
 		// ("controlProxy" + controlProxy).postln;
 
-		this.unmap(control.asSymbol);
-		controlProxy.bus.free(true);
-		controlProxy.clear;
+		// this.unmap(control.asSymbol);
+		// controlProxy.bus.free(true);
+		// controlProxy.clear;
 	}
 
 	qplot {|control, cycleName, segments = 400|
@@ -259,7 +253,10 @@
 		var stage = \default;
 		var winName = control.asString + "[ stage:" + stage.asString + "|| cycleName:" + cycleName.asString + "]";
 
-		library.at(control.asSymbol, \stages, stage.asSymbol, \cycles, cycleName.asSymbol, \cycleEnv).plot(segments, name:winName);
+		var arrEnv = this.prEvelopesArray(control, cycleName);
+		var cycleEnv = this.prConnectEnvelopes(arrEnv);
+
+		cycleEnv.plot(segments, name:winName);
 	}
 
 	prEvelopesArray { |control, cycleName|
@@ -289,23 +286,10 @@
 						levels = levels.insert(levels.size,levels[levels.size-1]);
 						times = times.insert(times.size,endGap);
 						curves = curves.insert(curves.size,0);
-						/*
-						("Levels:" + levels).postln;
-						("Times:" + times).postln;
-						("Curves:" + curves).postln;
-						*/
 					}
 				);
 
 				arrEnv.add(selectedEnv);
-				/*
-				(
-				"\n////////////////////"
-				"\n selector:" + selector +
-				"\n\t env:" + selectedEnv +
-				"\n\t dur:" + selectedDuration
-				).postln;
-				*/
 			});
 		});
 
@@ -330,31 +314,10 @@
 				times.add(oneT.wrapAt(i));
 				curves.add(oneC.wrapAt(i));
 			});
-			/*
-			(
-			"\n////////////////////"
-			"\n oneL:" + oneL +
-			"\n oneT:" + oneT +
-			"\n oneC:" + oneC
-			).postln;
-			*/
 		});
-		/*
-		("Levels:" + levels.array).postln;
-		("Times:" + times.array).postln;
-		("Curves:" + curves.array).postln;
-		*/
 
 		^Env(levels.array, times.array, curves.array);
 	}
-
-	prCrossFadeControl { |control, fTime, newEnv|
-		var library = this.prGetLibrary(control);
-		var stage = \default;
-		var cyclesPath = [control.asSymbol, \stages, stage.asSymbol, \cycles];
-
-	}
-
 
 	prCrossFadeTask { |control, fTime, value|
 
@@ -374,7 +337,6 @@
 	}
 
 	prGetLibrary { |control|
-		var synthName = this.key ++ "_" ++ control;
 		var library = this.nodeMap.get(\qMachine);
 
 		if((library == nil), {
@@ -386,27 +348,6 @@
 		if((library.at(control.asSymbol) == nil),
 			{
 				var controlBus = Bus.control(Server.default, 1);
-				var synthDef = {|controlBus, proxyTempo = 1|
-					ReplaceOut.kr( controlBus,
-						EnvGen.kr(
-							\env.kr(Env.newClear(200,1).asArray),
-							gate: \cycleTrig.tr(0),
-							timeScale: proxyTempo.reciprocal,
-							doneAction: 0
-						)
-					);
-					/*
-					Out.kr( controlBus,
-					EnvGen.kr(
-					\env.kr(Env.newClear(200,1).asArray),
-					timeScale: proxyTempo.reciprocal,
-					doneAction: 2
-					)
-					);
-					*/
-				};
-				synthDef.asSynthDef(name:synthName.asSymbol).add;
-				("SynthDef" + synthName + "added").postln;
 
 				library.put(control.asSymbol, \controlBus, controlBus);
 				this.set( control.asSymbol, controlBus.asMap );
