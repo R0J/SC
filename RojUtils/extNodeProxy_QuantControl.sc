@@ -1,6 +1,6 @@
 + NodeProxy {
 
-	qenv { |control, envName, env, duration = nil, fTime = 0|
+	qenv { |control, envName, env, duration = nil, fTime = 1|
 		var library = this.prGetLibrary(control);
 		var stage = \default;
 		var path = [control.asSymbol, \stages, stage.asSymbol, \envelopes, envName.asSymbol];
@@ -81,7 +81,7 @@
 		library.postTree;
 	}
 
-	qplay {|control, pattern|
+	qplay {|control, pattern, repeats = inf|
 		var library = this.prGetLibrary(control);
 		var stage = \default;
 		var stagePath = [control.asSymbol, \stages, stage.asSymbol];
@@ -102,33 +102,42 @@
 			;
 
 			library.putAtPath(stagePath ++ \cyclePattern, stream);
+			library.putAtPath(stagePath ++ \stageLoopEnd, repeats);
+			library.putAtPath(stagePath ++ \stageLoopNum, 0);
 
-			if((library.atPath(stagePath ++ \stageTask) != nil), {
+			if((library.atPath(stagePath ++ \stageTask).isPlaying), {
 				var firstCycleDuration = library.atPath(cyclePath ++ stream[0].asSymbol ++ \cycleDur );
 				Task ({
+					"Task isplaying".postln;
 					currentEnvironment.clock.timeToNextBeat(firstCycleDuration).wait;
 					library.atPath(stagePath ++ \stageTask).stop;
+					library.putAtPath(stagePath ++ \stageTask, nil);
 				}).play(currentEnvironment.clock);
 			});
+
 			library.putAtPath(stagePath ++ \stageTask,
 				Task ({
 					var firstCycleDuration = library.atPath(cyclePath ++ stream[0].asSymbol ++ \cycleDur );
 					currentEnvironment.clock.timeToNextBeat(firstCycleDuration).wait;
-					{
+
+					while ( { library.atPath(stagePath ++ \stageLoopNum) < library.atPath(stagePath ++ \stageLoopEnd) }, {
 						var selectedCycle = stream[0].asSymbol;
 						var cyclePattern = library.atPath(cyclePath ++ selectedCycle ++ \envPattern );
 
+
 						cyclePattern.do({|selectedEnv|
 							var envDuration = library.atPath(envPath ++ selectedEnv.asSymbol ++ \dur );
-							// var selectedSynth = library.atPath(envPath ++ selectedEnv ++ \synth );
-
 							this.prTrigSynths(control, selectedEnv);
-
 							envDuration.wait;
 						});
 
 						stream = stream.rotate(-1);
-					}.loop;
+
+						if((library.atPath(stagePath ++ \cyclePattern) == stream), {
+							var numLoop = library.atPath(stagePath ++ \stageLoopNum);
+							library.putAtPath(stagePath ++ \stageLoopNum, numLoop + 1);
+						});
+					});
 				}).play(currentEnvironment.clock);
 			);
 		});
@@ -196,13 +205,8 @@
 					\fadeTrig, 1
 				);
 				fTime.wait;
-
 				selectedSynth.free;
 				library.putAtPath(envPath ++ \synths ++ nodeID.asSymbol, nil);
-
-				"FadeDone".postln;
-				library.postTree;
-
 			}).play(currentEnvironment.clock);
 		});
 	}
