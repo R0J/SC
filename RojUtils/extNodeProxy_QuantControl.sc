@@ -87,8 +87,8 @@
 		var envSynthName = this.key ++ "_" ++ control ++ "_" ++ envName;
 		var controlBus = library.at(control.asSymbol, \controlBus);
 
-		if((library.atPath(path ++ \synth) == nil),
-			{
+		{
+			if((library.atPath(path ++ \synth) == nil), {
 				envSynthDef = {|cBus, proxyTempo = 1|
 
 					var envelope = EnvGen.kr(
@@ -107,51 +107,56 @@
 				};
 				envSynthDef.asSynthDef(name:envSynthName.asSymbol).add;
 				("SynthDef" + envSynthName + "added").postln;
-			},{
-				Task({
-					var oldSynth = library.atPath(path ++ \synth);
-					var oldDur = library.atPath(path ++ \dur);
-					var oldTrigTask = Task({
-						currentEnvironment.clock.timeToNextBeat(oldDur).wait;
-						{
-							oldSynth.set(\envTrig, 1);
-							// ("oldTask" ++ currentEnvironment.clock.beats).postln;
-							oldDur.wait;
-						}.loop;
-					}).play(currentEnvironment.clock);
+			});
 
-					oldSynth.set(\fromVal, 1, \toVal, 0, \fadeTime, fTime, \fadeTrig, 1);
-					fTime.wait;
-					oldTrigTask.stop;
-					oldSynth.free;
-				}).play(currentEnvironment.clock);
-			}
-		);
-
-		if((duration == nil), {duration = env.duration});
-
-		Task({
 			Server.default.sync;
 
-			currentEnvironment.clock.timeToNextBeat(duration).wait;
+			if((duration == nil), {duration = env.duration});
 
-			library.putAtPath(path ++ \synth,
-				Synth(envSynthName.asSymbol, [
-					\cBus: controlBus,
-					\env: [env],
-					\fromVal, 0,
-					\toVal, 1,
-					\fadeTime, fTime,
-					\fadeTrig, 1
-				], this.group)
+
+			if((library.atPath(path ++ \synth) != nil),
+				{
+					Task({
+						var oldSynth = library.atPath(path ++ \synth);
+						var oldDur = library.atPath(path ++ \dur);
+						var oldTrigTask = Task({
+							currentEnvironment.clock.timeToNextBeat(oldDur).wait;
+							{
+								oldSynth.set(\envTrig, 1);
+								// ("oldTask" ++ currentEnvironment.clock.beats).postln;
+								oldDur.wait;
+							}.loop;
+						}).play(currentEnvironment.clock);
+
+						oldSynth.set(\fromVal, 1, \toVal, 0, \fadeTime, fTime, \fadeTrig, 1);
+						fTime.wait;
+						oldTrigTask.stop;
+						oldSynth.free;
+					}).play(currentEnvironment.clock);
+				}
 			);
 
-			library.putAtPath(path ++ \env, env);
-			library.putAtPath(path ++ \dur, duration);
+			Task({
+				// currentEnvironment.clock.timeToNextBeat(duration).wait;
 
-			library.postTree;
+				library.putAtPath(path ++ \synth,
+					Synth(envSynthName.asSymbol, [
+						\cBus: controlBus,
+						\env: [env],
+						\fromVal, 0,
+						\toVal, 1,
+						\fadeTime, fTime,
+						\fadeTrig, 1
+					], this.group)
+				);
 
-		}).play(currentEnvironment.clock);
+				library.putAtPath(path ++ \env, env);
+				library.putAtPath(path ++ \dur, duration);
+
+				library.postTree;
+
+			}).play(currentEnvironment.clock)
+		}.fork;
 	}
 
 	qcycle {|control, cycleName, pattern|
@@ -173,8 +178,10 @@
 
 		library.putAtPath(cyclesPath ++ \envPattern, stream);
 
-		stream.do({|selector|
-			var selectedDuration = library.atPath(envelopesPath ++ selector ++ \dur);
+		stream.do({|selectedEnv|
+			var selectedDuration = library.atPath(envelopesPath ++ selectedEnv.asSymbol ++ \dur);
+			("selectedEnv:"++selectedEnv).postln;
+			("selectedDuration:"++selectedDuration).postln;
 			cycleDuration = cycleDuration + selectedDuration;
 		});
 		library.putAtPath(cyclesPath ++ \cycleDur, cycleDuration);
@@ -235,8 +242,10 @@
 	qstop { |control|
 		var library = this.prGetLibrary(control);
 		var stage = \default;
+var stagePath = [control.asSymbol, \stages, stage.asSymbol];
 
-		library.at(control.asSymbol, \stages, stage.asSymbol, \stageTask).stop;
+		library.atPath(stagePath ++ \stageTask).stop;
+		library.putAtPath(stagePath ++ \stageTask, nil);
 		// var busIndex = this.controlBusIndex(control);
 		// var nodeKey = this.key;
 		// var synthName = nodeKey ++ "_" ++ control;
