@@ -81,6 +81,26 @@
 		library.postTree;
 	}
 
+	qstage {|control, pattern, repeats = inf|
+		var library = this.prGetLibrary(control);
+		var stage = \default;
+		var stagePath = [control.asSymbol, \stages, stage.asSymbol];
+
+		var stream = pattern.asStream;
+		case
+		{ stream.isKindOf(Routine) } { stream = stream.all; } // Pseq([\aaa, \bbb], 3) ++ \ccc
+		{ stream.isKindOf(Symbol) }	{ stream = stream.asArray; }
+		{ stream.isKindOf(Integer) } { stream = stream.asSymbol.asArray; }
+		{ stream.isKindOf(String) }	{ stream = stream.asSymbol.asArray; }
+		;
+
+		library.putAtPath(stagePath ++ \cyclePattern, stream);
+		library.putAtPath(stagePath ++ \stageLoopEnd, repeats);
+
+		this.prUpdateTimeline(control);
+		// library.postTree;
+	}
+
 	qplay {|control, pattern, repeats = inf|
 		var library = this.prGetLibrary(control);
 		var stage = \default;
@@ -104,6 +124,8 @@
 			library.putAtPath(stagePath ++ \cyclePattern, stream);
 			library.putAtPath(stagePath ++ \stageLoopEnd, repeats);
 			library.putAtPath(stagePath ++ \stageLoopNum, 0);
+
+
 
 			if((library.atPath(stagePath ++ \stageTask).isPlaying), {
 				var firstCycleDuration = library.atPath(cyclePath ++ stream[0].asSymbol ++ \cycleDur );
@@ -290,6 +312,64 @@
 		});
 
 		^Env(levels.array, times.array, curves.array);
+	}
+
+	prUpdateTimeline {|control|
+		var library = this.prGetLibrary(control);
+		var stage = \default;
+		var stagePath = [control.asSymbol, \stages, stage.asSymbol];
+		var cyclesPath = [control.asSymbol, \stages, stage.asSymbol, \cycles];
+		var envelopesPath = [control.asSymbol, \stages, stage.asSymbol, \envelopes];
+
+		var cyclePattern = library.atPath(stagePath ++ \cyclePattern);
+		var stageLoopEnd = library.atPath(stagePath ++ \stageLoopEnd);
+		var currentBeat = 0;
+		var stageLoop = 0;
+
+		var timeline = Order.new();
+		// var startTime = 0;
+		// var endTime = 9;
+
+		if((stageLoopEnd == inf), { stageLoopEnd = 1; });
+
+		stageLoopEnd.do({
+			("\nstageLoop" + stageLoop).postln;
+			cyclePattern.do({|selectedCycle|
+				var envPattern = library.atPath(cyclesPath ++ selectedCycle ++ \envPattern);
+
+				("\n\t - selectedCycle" + selectedCycle).postln;
+
+				envPattern.do({|patternKey|
+					var selectedDuration = library.atPath(envelopesPath ++ patternKey.asSymbol ++ \dur);
+					var selectedSynth = library.atPath(envelopesPath ++ patternKey.asSymbol ++ \synths);
+					var fromBeat, toBeat;
+
+					if((selectedDuration == nil), { selectedDuration = 0; });
+
+					fromBeat = currentBeat;
+					timeline.put(fromBeat, patternKey);
+					currentBeat = currentBeat + selectedDuration;
+					toBeat = currentBeat;
+
+					(
+						"\t\t - " + fromBeat +
+						"->" + toBeat +
+						"\t env:" + patternKey
+					).postln;
+				});
+			});
+			stageLoop = stageLoop + 1;
+		});
+
+		library.putAtPath(stagePath ++ \stageTimeline, timeline);
+/*
+		timeline.keysValuesDo ({|time|
+			// if((time >= startTime) && (time <= endTime), {
+			(time + "\t env:" + timeline[time]).postln;
+
+			// }
+		});
+		*/
 	}
 
 	prGetLibrary { |control|
