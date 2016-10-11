@@ -17,7 +17,6 @@
 						\env.kr(Env.newClear(20,1).asArray),
 						gate: \envTrig.tr(0),
 						timeScale: \tempoClock.kr(1).reciprocal,
-						// currentEnvironment.clock.tempo.reciprocal,
 						doneAction: 0
 					);
 
@@ -25,7 +24,6 @@
 						Env([ \fromVal.kr(0), \toVal.kr(0)], \fadeTime.kr(fTime), \sin),
 						gate:\fadeTrig.tr(0),
 						timeScale: \tempoClock.kr(1).reciprocal
-						// timeScale: currentEnvironment.clock.tempo.reciprocal
 					);
 
 					Out.kr( cBus, envelope * fade );
@@ -159,10 +157,10 @@
 				stageClock.stop;
 				if(loop,
 					{
-						(endTime + " stageClock restarted").postln;
+						(endTime + "stageClock restarted\n").postln;
 						this.qplay(control, startTime, endTime, loop);
 					},{
-						(endTime + " stageClock stopped").postln;
+						(endTime + "stageClock stopped\n").postln;
 					}
 				);
 			});
@@ -314,9 +312,41 @@
 		var cyclePattern = library.atPath(stagePath ++ \cyclePattern);
 		var stageLoopEnd = library.atPath(stagePath ++ \stageLoopEnd);
 		var currentBeat = 0;
-		var stageLoop = 0;
 
 		var timeline = Order.new();
+
+		if((stageLoopEnd == inf), { stageLoopEnd = 1; });
+
+		stageLoopEnd.do({
+			cyclePattern.do({|selectedCycle|
+				var envPattern = library.atPath(cyclesPath ++ selectedCycle ++ \envPattern);
+
+				envPattern.do({|patternKey|
+					var selectedDuration = library.atPath(envelopesPath ++ patternKey.asSymbol ++ \dur);
+					if(selectedDuration.isNil, { selectedDuration = 0; });
+
+					timeline.put(currentBeat, patternKey);
+					currentBeat = currentBeat + selectedDuration;
+				});
+			});
+		});
+
+		library.putAtPath(stagePath ++ \stageTimeline, timeline);
+	}
+
+	qTimeline {|control|
+		var library = this.prGetLibrary(control);
+		var stage = \default;
+		var stagePath = [control.asSymbol, \stages, stage.asSymbol];
+		var cyclesPath = [control.asSymbol, \stages, stage.asSymbol, \cycles];
+		var envelopesPath = [control.asSymbol, \stages, stage.asSymbol, \envelopes];
+
+		var cyclePattern = library.atPath(stagePath ++ \cyclePattern);
+		var stageLoopEnd = library.atPath(stagePath ++ \stageLoopEnd);
+		var currentBeat = 0;
+		var stageLoop = 0;
+
+		// var timeline = Order.new();
 
 		if((stageLoopEnd == inf), { stageLoopEnd = 1; });
 
@@ -335,7 +365,7 @@
 					if((selectedDuration == nil), { selectedDuration = 0; });
 
 					fromBeat = currentBeat;
-					timeline.put(fromBeat, patternKey);
+					// timeline.put(fromBeat, patternKey);
 					currentBeat = currentBeat + selectedDuration;
 					toBeat = currentBeat;
 
@@ -349,13 +379,7 @@
 			stageLoop = stageLoop + 1;
 		});
 
-		library.putAtPath(stagePath ++ \stageTimeline, timeline);
-	}
-
-	qTimeline {|control|
-		var library = this.prGetLibrary(control);
-		var stage = \default;
-		var stagePath = [control.asSymbol, \stages, stage.asSymbol];
+		// library.putAtPath(stagePath ++ \stageTimeline, timeline);
 	}
 
 	prGetLibrary { |control|
