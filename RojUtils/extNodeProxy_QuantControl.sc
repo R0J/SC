@@ -101,12 +101,13 @@
 		// library.postTree;
 	}
 
-	qplay2 {|control, startTime = nil, endTime = nil|
+	qplay2 {|control, startTime = nil, endTime = nil, loop = false|
 		var library = this.prGetLibrary(control);
 		var stage = \default;
 		var stagePath = [control.asSymbol, \stages, stage.asSymbol];
 		var controlBus = library.atPath([control.asSymbol, \controlBus]);
 		var stageTimeline = library.atPath(stagePath ++ \stageTimeline);
+		var stageClock = library.atPath(stagePath ++ \stageClock);
 
 		if(controlBus.isNil, {
 			"controlBus je NIL".warn;
@@ -123,23 +124,35 @@
 			if(startTime.isNil, { startTime = 0; });
 			if(endTime.isNil, {	endTime = stageTimeline.lastIndex; });
 
+			if(stageClock.notNil, {	stageClock.stop; });
+			this.prUpdateTimeline(control);
+
 			stageTimeline.keysValuesDo ({|time|
 				if((time >= startTime) && (time < endTime),
 					{
-						var delta = time-startTime;
-						(time + "\t env:" + stageTimeline[time]).postln;
+						var delta = time - startTime;
 						clock.sched(delta, {
 							var selectedEnv = stageTimeline[time];
-							("env:"+stageTimeline[time]).postln;
+							(time + "env:" + stageTimeline[time]).postln;
 							this.prTrigSynths(control, selectedEnv);
 						});
 					}
 				);
 			});
+			clock.sched(endTime - startTime, {
+				stageClock.stop;
+				if(loop,
+					{
+						this.qplay2(control, startTime, endTime, loop);
+						(endTime + " stageClock restarted").postln;
+					},{
+						(endTime + " stageClock stopped").postln;
+					}
+				);
+			});
 
-			clock.play();
+			library.putAtPath(stagePath ++ \stageClock, clock);
 		});
-
 	}
 
 	qplay {|control, pattern, repeats = inf|
@@ -362,8 +375,6 @@
 		var stageLoop = 0;
 
 		var timeline = Order.new();
-		// var startTime = 0;
-		// var endTime = 9;
 
 		if((stageLoopEnd == inf), { stageLoopEnd = 1; });
 
@@ -397,7 +408,12 @@
 		});
 
 		library.putAtPath(stagePath ++ \stageTimeline, timeline);
+	}
 
+	qTimeline {|control|
+		var library = this.prGetLibrary(control);
+		var stage = \default;
+		var stagePath = [control.asSymbol, \stages, stage.asSymbol];
 	}
 
 	prGetLibrary { |control|
