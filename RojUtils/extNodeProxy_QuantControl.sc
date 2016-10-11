@@ -136,7 +136,7 @@
 				var selectedEnvKey = stageTimeline[time].asSymbol;
 				var selectedEnvDuration = library.atPath(envPath ++ selectedEnvKey ++ \dur);
 
-				if((time >= startTime) && (time < endTime),
+				if((time >= startTime) && (time <= endTime),
 					{
 						var delta = time - startTime;
 						clock.sched(delta, {
