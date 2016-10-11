@@ -101,6 +101,47 @@
 		// library.postTree;
 	}
 
+	qplay2 {|control, startTime = nil, endTime = nil|
+		var library = this.prGetLibrary(control);
+		var stage = \default;
+		var stagePath = [control.asSymbol, \stages, stage.asSymbol];
+		var controlBus = library.atPath([control.asSymbol, \controlBus]);
+		var stageTimeline = library.atPath(stagePath ++ \stageTimeline);
+
+		if(controlBus.isNil, {
+			"controlBus je NIL".warn;
+			^nil;
+		},{
+			this.set( control.asSymbol, controlBus.asMap );
+		});
+
+		if(stageTimeline.isNil, {
+			"stageTimeline je NIL".warn;
+			^nil;
+		},{
+			var clock = TempoClock.new();
+			if(startTime.isNil, { startTime = 0; });
+			if(endTime.isNil, {	endTime = stageTimeline.lastIndex; });
+
+			stageTimeline.keysValuesDo ({|time|
+				if((time >= startTime) && (time < endTime),
+					{
+						var delta = time-startTime;
+						(time + "\t env:" + stageTimeline[time]).postln;
+						clock.sched(delta, {
+							var selectedEnv = stageTimeline[time];
+							("env:"+stageTimeline[time]).postln;
+							this.prTrigSynths(control, selectedEnv);
+						});
+					}
+				);
+			});
+
+			clock.play();
+		});
+
+	}
+
 	qplay {|control, pattern, repeats = inf|
 		var library = this.prGetLibrary(control);
 		var stage = \default;
@@ -124,8 +165,6 @@
 			library.putAtPath(stagePath ++ \cyclePattern, stream);
 			library.putAtPath(stagePath ++ \stageLoopEnd, repeats);
 			library.putAtPath(stagePath ++ \stageLoopNum, 0);
-
-
 
 			if((library.atPath(stagePath ++ \stageTask).isPlaying), {
 				var firstCycleDuration = library.atPath(cyclePath ++ stream[0].asSymbol ++ \cycleDur );
@@ -204,11 +243,7 @@
 		var envPath = [control.asSymbol, \stages, stage.asSymbol, \envelopes, envName.asSymbol];
 		var synthsDict = library.atPath(envPath ++ \synths);
 
-		synthsDict.do({|selectedSynth|
-			selectedSynth.set(\envTrig, 1);
-		});
-
-		// ("Trig synth" + envName + "-> at time" + currentEnvironment.clock.beats).postln;
+		synthsDict.do({|selectedSynth| selectedSynth.set(\envTrig, 1); });
 	}
 
 	prFadeOutSynths {|control, envName, fTime = 0|
@@ -362,14 +397,7 @@
 		});
 
 		library.putAtPath(stagePath ++ \stageTimeline, timeline);
-/*
-		timeline.keysValuesDo ({|time|
-			// if((time >= startTime) && (time <= endTime), {
-			(time + "\t env:" + timeline[time]).postln;
 
-			// }
-		});
-		*/
 	}
 
 	prGetLibrary { |control|
