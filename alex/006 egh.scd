@@ -94,7 +94,7 @@ AutoIDE.run;
 ~tss8082.play(vol:0.4, fadeTime:1, numChannels:2).quant_(4);
 (~tss8082[0]=Pbind(
 	\instrument, \tss808,
-	\amp,Pseq([1,0.5],inf),
+	\amp,\amp,Pseq([1,0.5,0.1,2],inf)*6,,
 	\dur,3,
 	\legato, 0.6,
 	\hpf,6000,
