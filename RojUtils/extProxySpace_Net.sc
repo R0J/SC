@@ -7,17 +7,29 @@
 		this.prInitReceiveMsg;
 		this.prInitSendMsg();
 
-		this.sendNetMsg(\join);
-		this.sendNetMsg(\getMyIP);
+		this.sendNetMsg(\newConnection);
+		this.sendNetMsg(\infoNetIP);
 	}
 
-
-
-	sendNetMsg {|type|
+	sendNetMsg {|type, aaaa|
 		var library = this.prGetLibrary;
 		var events = library.at(\events);
+var e = events.at(type.asSymbol);
 
-		if( events.notNil, { events.at(type.asSymbol).value; });
+		// ("sendNetMsg e:" + e).postln;
+
+		if( events.notNil, { e.value(\ahoj); });
+	}
+
+	prSenderCheck{ |msg|
+		var library = this.class.all.at(\NetLibrary);
+		var sender = msg[1];
+		("msg:" + msg).postln;
+		if(
+			(sender.asSymbol == library.at(\userName).asSymbol),
+			{ "je to moje zprava".postln; },
+			{ "neni to moje zprava".postln; }
+		);
 	}
 
 	prGetLibrary {|userName|
@@ -32,83 +44,48 @@
 
 		^library;
 	}
-/*
-	prNetAddress {
-		var net = Dictionary.new;
-		// thisProcess.openUDPPort(8080);
-
-		net.put( \test,	NetAddr("127.0.0.1", 57120) );
-		/*
-		this.accounts.do({ |profil|
-		// (this.name.asString != profil.key.asString).if({
-		net.put(
-		profil.key.asSymbol,
-		NetAddr(profil.value.asString, NetAddr.langPort)
-		// NetAddr(profil.value.asString, 8080)
-		);
-		// });
-		});
-		*/
-		^net;
-	}
-*/
-
 
 	prInitSendMsg {
 		var events = ();
 		var sender = this.prGetLibrary.at(\userName).asSymbol;
 		var broadcastAddr = NetAddr("255.255.255.255", NetAddr.langPort);
 
-		events.getMyIP = {|event| broadcastAddr.sendMsg('/user/getMyIP'); };
+		events.infoNetIP = {|event| broadcastAddr.sendMsg('/user/infoNetIP', sender); };
 
-		events.join = {|event| broadcastAddr.sendMsg('/user/join', sender); };
-
-		/*
-		events.join = {|event| net.keysValuesDo {|key, target|
-			target.sendMsg('/user/join', name.asSymbol);
-		}};
-		*/
-
-		events.connect = {|event|
-			var broadcastAddr2 = this.prGetLibrary.at(\broadcastNet);
-		("broadcastAddr2:" + broadcastAddr2).postln;
-			broadcastAddr2.sendMsg('/user/connect', sender);
-
-		};
-		// events.connect = {|event| this.prGetLibrary.at(\broadcastNet).sendMsg('/user/connect', name.asSymbol) };
+		events.newConnection = {|event| broadcastAddr.sendMsg('/user/newConnection', sender); };
+		events.loged = {|event, aaa| ("aaa:" + aaa).postln;   broadcastAddr.sendMsg('/user/loged', sender, aaa); };
 
 		this.prGetLibrary.put(\events, events);
 	}
 
-
 	prInitReceiveMsg {
+var aaa = this.class.all.at(\NetLibrary).at(\events);
 
-		OSCdef.newMatching(\msg_myIP, {|msg, time, addr, recvPort|
+		OSCdef.newMatching(\msg_infoNetIP, {|msg, time, addr, recvPort|
 			var broadcastIP = addr.ip.split($.).put(3,255).join(".");
-			("MyNetIP: " + addr.ip).postln;
-			("broadcastIP: " + broadcastIP).postln;
-			this.prGetLibrary.put(\broadcastNet, NetAddr.new(broadcastIP, 57120));
+			this.prSenderCheck(msg);
+			("NetIP:" + addr.ip + "; BroadcastIP:" + broadcastIP).postln;
+		},  '/user/infoNetIP', nil).permanent_(true);
 
-		},  '/user/getMyIP', nil).permanent_(true);
-
-
-		OSCdef.newMatching(\msg_join, {|msg, time, addr, recvPort|
+		OSCdef.newMatching(\msg_newConnection, {|msg, time, addr, recvPort|
 			var msgType = msg[0];
 			var sender = msg[1];
+			this.prSenderCheck(msg);
 			"Player % has joined to session".format(sender).warn;
-			// events.aliveAnsw(sender.asSymbol);
+			// this.sendNetMsg(\loged, "testArgs");
+			// aaa.loged("pozdrav2");
+			this.class.all.at(\NetLibrary).at(\events).loged("testArgs");
 			// events.clockTempoSet(currentEnvironment[\tempo].clock.tempo*60);
+		}, '/user/newConnection', nil).permanent_(true);
 
-		}, '/user/join', nil).permanent_(true);
-
-		OSCdef.newMatching(\msg_test, {|msg, time, addr, recvPort|
+		OSCdef.newMatching(\msg_loged, {|msg, time, addr, recvPort|
 			var msgType = msg[0];
 			var sender = msg[1];
-			"Player % send broadcast Msg".format(sender).warn;
-			// events.aliveAnsw(sender.asSymbol);
+			// var args = msg[2];
+			msg.postln;
+			"Player % is loged too".format(sender).warn;
 			// events.clockTempoSet(currentEnvironment[\tempo].clock.tempo*60);
-
-		}, '/user/connect', nil).permanent_(true);
+		}, '/user/loged', nil).permanent_(true);
 	}
 
 	moveNodeToTail {|nodeName|
