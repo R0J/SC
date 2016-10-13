@@ -11,24 +11,14 @@
 		this.sendNetMsg(\infoNetIP);
 	}
 
-	sendNetMsg {|type, aaaa|
-		var library = this.prGetLibrary;
-		var events = library.at(\events);
-var e = events.at(type.asSymbol);
-
-		// ("sendNetMsg e:" + e).postln;
-
-		if( events.notNil, { e.value(\ahoj); });
-	}
-
 	prSenderCheck{ |msg|
 		var library = this.class.all.at(\NetLibrary);
 		var sender = msg[1];
-		("msg:" + msg).postln;
+		// ("msg:" + msg).postln;
 		if(
 			(sender.asSymbol == library.at(\userName).asSymbol),
-			{ "je to moje zprava".postln; },
-			{ "neni to moje zprava".postln; }
+			{ "je to moje zprava".postln; ^false; },
+			{ "neni to moje zprava".postln; ^true; }
 		);
 	}
 
@@ -53,13 +43,22 @@ var e = events.at(type.asSymbol);
 		events.infoNetIP = {|event| broadcastAddr.sendMsg('/user/infoNetIP', sender); };
 
 		events.newConnection = {|event| broadcastAddr.sendMsg('/user/newConnection', sender); };
-		events.loged = {|event, aaa| ("aaa:" + aaa).postln;   broadcastAddr.sendMsg('/user/loged', sender, aaa); };
+		events.loged = {|event| broadcastAddr.sendMsg('/user/loged', sender); };
+
+		events.time = {|event| broadcastAddr.sendMsg('/clock/time', sender); };
+		events.setTime = {|event, setTime| broadcastAddr.sendMsg('/clock/setTime', sender, setTime); };
 
 		this.prGetLibrary.put(\events, events);
 	}
 
+	sendNetMsg {|type, args|
+		var event = this.prGetLibrary.at(\events).at(type.asSymbol);
+		if( event.notNil, { event.value(event, args); });
+		^nil;
+	}
+
 	prInitReceiveMsg {
-var aaa = this.class.all.at(\NetLibrary).at(\events);
+		var aaa = this.class.all.at(\NetLibrary).at(\events);
 
 		OSCdef.newMatching(\msg_infoNetIP, {|msg, time, addr, recvPort|
 			var broadcastIP = addr.ip.split($.).put(3,255).join(".");
@@ -72,20 +71,80 @@ var aaa = this.class.all.at(\NetLibrary).at(\events);
 			var sender = msg[1];
 			this.prSenderCheck(msg);
 			"Player % has joined to session".format(sender).warn;
-			// this.sendNetMsg(\loged, "testArgs");
-			// aaa.loged("pozdrav2");
-			this.class.all.at(\NetLibrary).at(\events).loged("testArgs");
+			this.sendNetMsg(\loged);
 			// events.clockTempoSet(currentEnvironment[\tempo].clock.tempo*60);
 		}, '/user/newConnection', nil).permanent_(true);
 
 		OSCdef.newMatching(\msg_loged, {|msg, time, addr, recvPort|
 			var msgType = msg[0];
 			var sender = msg[1];
-			// var args = msg[2];
-			msg.postln;
-			"Player % is loged too".format(sender).warn;
+			var args = msg[2];
+			// msg.postln;
+			"Player % is here too".format(sender).warn;
 			// events.clockTempoSet(currentEnvironment[\tempo].clock.tempo*60);
 		}, '/user/loged', nil).permanent_(true);
+
+		OSCdef.newMatching(\msg_time, {|msg, time, addr, recvPort|
+			var msgType = msg[0];
+			var sender = msg[1];
+			// var beat = msg[2];
+			// msg.postln;
+			"Current proxy clock beat is %".format(TempoClock.default.beats).postln;
+		}, '/clock/time', nil).permanent_(true);
+
+		OSCdef.newMatching(\msg_setTime, {|msg, time, addr, recvPort|
+			var msgType = msg[0];
+			var sender = msg[1];
+			var syncQuant = msg[2];
+			this.restartClock;
+			/*
+			var currentBeat = currentEnvironment.clock.beats;
+			var lastQuant = (currentBeat/syncQuant).floor;
+			var nextQuant = (currentBeat/syncQuant).ceil;
+			// var targetQuant = lastQuant * syncQuant;
+			var targetQuant = nextQuant * syncQuant;
+			var syncTimeAt = targetQuant - currentBeat;
+
+			"Sync of clock at % beats".format(syncTimeAt).postln;
+			currentEnvironment.clock.sched(syncTimeAt, {
+			currentEnvironment.clock.beats = targetQuant;
+			"Current proxy is set to beats %".format(currentEnvironment.clock.beats).postln;
+			});
+			*/
+		}, '/clock/setTime', nil).permanent_(true);
+	}
+
+	restartClock {
+		var oldClock = TempoClock.default;
+		var newClock = TempoClock.new(oldClock.tempo);
+		var oldQueue = oldClock.queue;
+
+		newClock.permanent_(true);
+
+		Task{
+			oldQueue.do({|oneVal|
+				// ("oneVal:"+oneVal).postln;
+				case
+				{oneVal.isKindOf(Function)} {
+					"jsem Function".postln;
+					("oneVal.isPlaying:"+oneVal.isPlaying).postln;
+					newClock.sched(0, oneVal);
+				}
+				{oneVal.isKindOf(EventStreamPlayer)} {
+					"jsem EventStreamPlayer".postln;
+					newClock.sched(0, oneVal);
+				}
+				;
+			});
+			0.2.wait;
+			// newQueue = newClock.queue;
+			TempoClock.default = newClock;
+			oldClock.stop;
+		}.play;
+
+
+		("oldQueue:" + oldQueue).postln;
+		// ("newQueue:" + newQueue).postln;
 	}
 
 	moveNodeToTail {|nodeName|
