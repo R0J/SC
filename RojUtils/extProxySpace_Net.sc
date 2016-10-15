@@ -154,7 +154,7 @@
 			if (nodeproxy.typeStr.asSymbol == 'ar 2')
 			{
 				nodeproxy.asTarget.moveToTail();
-				"posunu mastra na konec".postln;
+				//"posunu mastra na konec".postln;
 			};
 			1; // cas pro opakovane volani
 		});
