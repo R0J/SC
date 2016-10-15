@@ -11,8 +11,23 @@
 		this.sendNetMsg(\infoNetIP);
 	}
 
+	metro {|quant = 1, freq = 800|
+		var metro = this.prGetLibrary.at(\metro);
+
+		if(metro.isNil, {
+			this.prGetLibrary.put(\metro, Task({
+				TempoClock.default.timeToNextBeat(quant).wait;
+				{ Synth(\metronom, [\freq: freq]); quant.wait; }.loop;
+			}).play;
+			);
+		},{
+			metro.stop;
+			this.prGetLibrary.put(\metro, nil);
+		});
+	}
+
 	prSenderCheck{ |msg|
-		var library = this.class.all.at(\NetLibrary);
+		var library = this.prGetLibrary.at(\NetLibrary);
 		var sender = msg[1];
 		// ("msg:" + msg).postln;
 		if(
@@ -26,6 +41,14 @@
 		var library = this.class.all.at(\NetLibrary);
 
 		if( library.isNil, {
+			var metroDef = { |freq|
+				var sig = SinOsc.ar(freq!2);
+				var env = Env([0,1,0], [0.005, 0.05], [5,-3]);
+				var aEnv = EnvGen.kr(env, doneAction:2);
+				Out.ar(0, sig * aEnv);
+			};
+			metroDef.asSynthDef(name:\metronom).add;
+
 			this.class.all.put(\NetLibrary, IdentityDictionary.new);
 			library = this.class.all.at(\NetLibrary);
 			library.put(\userName, userName.asSymbol);
@@ -132,6 +155,10 @@
 				}
 				{oneVal.isKindOf(EventStreamPlayer)} {
 					"jsem EventStreamPlayer".postln;
+					newClock.sched(0, oneVal);
+				}
+				{oneVal.isKindOf(Task)} {
+					"jsem Task".postln;
 					newClock.sched(0, oneVal);
 				}
 				;
