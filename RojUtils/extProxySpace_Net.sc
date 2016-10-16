@@ -4,8 +4,7 @@
 		NetAddr.broadcastFlag = true;
 
 		this.prGetLibrary(userName);
-		this.prInitReceiveMsg;
-		this.prInitSendMsg();
+
 
 		this.sendNetMsg(\newConnection);
 		this.sendNetMsg(\infoNetIP);
@@ -17,7 +16,13 @@
 		if(metro.isNil, {
 			this.prGetLibrary.put(\metro, Task({
 				TempoClock.default.timeToNextBeat(quant).wait;
-				{ Synth(\metronom, [\freq: freq]); quant.wait; }.loop;
+				{
+					Synth(\metronom, [\freq: freq]);
+					TempoClock.all.do({|oneClock|
+						("Merto tick at beats:" + TempoClock.default.beats).postln;
+					});
+					quant.wait;
+				}.loop;
 			}).play;
 			);
 		},{
@@ -49,10 +54,14 @@
 			};
 			metroDef.asSynthDef(name:\metronom).add;
 
+
 			this.class.all.put(\NetLibrary, IdentityDictionary.new);
 			library = this.class.all.at(\NetLibrary);
 			library.put(\userName, userName.asSymbol);
 			"\nProxySpace NetLibrary prepared".postln;
+
+			this.prInitReceiveMsg;
+			this.prInitSendMsg;
 		});
 
 		^library;
@@ -138,6 +147,9 @@
 	}
 
 	restartClock {
+		TempoClock.allClocksRestart;
+
+		/*
 		var oldClock = TempoClock.default;
 		var newClock = TempoClock.new(oldClock.tempo);
 		var oldQueue = oldClock.queue;
@@ -145,33 +157,34 @@
 		newClock.permanent_(true);
 
 		Task{
-			oldQueue.do({|oneVal|
-				// ("oneVal:"+oneVal).postln;
-				case
-				{oneVal.isKindOf(Function)} {
-					"jsem Function".postln;
-					("oneVal.isPlaying:"+oneVal.isPlaying).postln;
-					newClock.sched(0, oneVal);
-				}
-				{oneVal.isKindOf(EventStreamPlayer)} {
-					"jsem EventStreamPlayer".postln;
-					newClock.sched(0, oneVal);
-				}
-				{oneVal.isKindOf(Task)} {
-					"jsem Task".postln;
-					newClock.sched(0, oneVal);
-				}
-				;
-			});
-			0.2.wait;
-			// newQueue = newClock.queue;
-			TempoClock.default = newClock;
-			oldClock.stop;
+		oldQueue.do({|oneVal|
+		// ("oneVal:"+oneVal).postln;
+		case
+		{oneVal.isKindOf(Function)} {
+		"jsem Function".postln;
+		("oneVal.isPlaying:"+oneVal.isPlaying).postln;
+		newClock.sched(0, oneVal);
+		}
+		{oneVal.isKindOf(EventStreamPlayer)} {
+		"jsem EventStreamPlayer".postln;
+		newClock.sched(0, oneVal);
+		}
+		{oneVal.isKindOf(Task)} {
+		"jsem Task".postln;
+		newClock.sched(0, oneVal);
+		}
+		;
+		});
+		0.2.wait;
+		// newQueue = newClock.queue;
+		TempoClock.default = newClock;
+		oldClock.stop;
 		}.play;
 
 
 		("oldQueue:" + oldQueue).postln;
 		// ("newQueue:" + newQueue).postln;
+		*/
 	}
 
 	moveNodeToTail {|nodeName|
@@ -181,9 +194,44 @@
 			if (nodeproxy.typeStr.asSymbol == 'ar 2')
 			{
 				nodeproxy.asTarget.moveToTail();
-				//"posunu mastra na konec".postln;
+				// "posunu mastra na konec".postln;
 			};
 			1; // cas pro opakovane volani
 		});
 	}
 }
+
++ TempoClock {
+
+	*allClocksRestart {
+		var allClocks = this.all;
+		("allClocks: " + allClocks).postln;
+
+		allClocks.do({|oneClock|
+			var queue = oneClock.queue;
+
+			("queue: " + queue).postln;
+
+			if (queue.size > 1) {
+				forBy(1, queue.size-1, 3) {|i|
+					var time = queue[i];
+					var item = queue[i+1];
+					("time[i]: " + queue[i]).postln;
+					("item[i+1]: " + queue[i+1]).postln;
+
+					queue[i] = 0;
+					// queue[i+1].removedFromScheduler(releaseNodes)
+				};
+
+				("queue: " + queue).postln;
+				oneClock.beats = 0;
+			};
+		});
+
+		("TempoClock restart").postln;
+	}
+
+
+}
+
+
