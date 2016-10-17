@@ -5,7 +5,6 @@
 
 		this.prGetLibrary(userName);
 
-
 		this.sendNetMsg(\newConnection);
 		this.sendNetMsg(\infoNetIP);
 	}
@@ -18,9 +17,12 @@
 				TempoClock.default.timeToNextBeat(quant).wait;
 				{
 					Synth(\metronom, [\freq: freq]);
-					TempoClock.all.do({|oneClock|
-						("Merto tick at beats:" + TempoClock.default.beats).postln;
-					});
+					// TempoClock.all.do({|oneClock|
+					// ("Merto tick at beats:" + oneClock.beats).postln;
+					// });
+					("\nTempoClock.default.beats:" + TempoClock.default.beats).postln;
+					("currentEnvirnment.clock.beats:" + currentEnvironment.clock.beats).postln;
+
 					quant.wait;
 				}.loop;
 			}).play;
@@ -29,17 +31,6 @@
 			metro.stop;
 			this.prGetLibrary.put(\metro, nil);
 		});
-	}
-
-	prSenderCheck{ |msg|
-		var library = this.prGetLibrary.at(\NetLibrary);
-		var sender = msg[1];
-		// ("msg:" + msg).postln;
-		if(
-			(sender.asSymbol == library.at(\userName).asSymbol),
-			{ "je to moje zprava".postln; ^false; },
-			{ "neni to moje zprava".postln; ^true; }
-		);
 	}
 
 	prGetLibrary {|userName|
@@ -54,31 +45,38 @@
 			};
 			metroDef.asSynthDef(name:\metronom).add;
 
-
 			this.class.all.put(\NetLibrary, IdentityDictionary.new);
 			library = this.class.all.at(\NetLibrary);
 			library.put(\userName, userName.asSymbol);
 			"\nProxySpace NetLibrary prepared".postln;
+			currentEnvironment.clock.beats =  TempoClock.default.beats;
 
 			this.prInitReceiveMsg;
 			this.prInitSendMsg;
 		});
-
 		^library;
+	}
+
+	prPostLibrary {
+		var library = this.prGetLibrary;
+		library.associationsDo({|assoc| "\t- % -> %".format(assoc.key,assoc.value).postln; })
+		^nil;
 	}
 
 	prInitSendMsg {
 		var events = ();
 		var sender = this.prGetLibrary.at(\userName).asSymbol;
-		var broadcastAddr = NetAddr("255.255.255.255", NetAddr.langPort);
+		// var broadcastAddr = NetAddr("255.255.255.255", NetAddr.langPort);
+		var broadcastAddr = NetAddr("10.0.0.255", NetAddr.langPort);
 
 		events.infoNetIP = {|event| broadcastAddr.sendMsg('/user/infoNetIP', sender); };
 
-		events.newConnection = {|event| broadcastAddr.sendMsg('/user/newConnection', sender); };
-		events.loged = {|event| broadcastAddr.sendMsg('/user/loged', sender); };
+		events.newConnection = {|event| "events.newConnection send".postln; broadcastAddr.sendMsg('/user/newConnection', sender); };
+		events.loged = {|event| "events.loged send".postln;  broadcastAddr.sendMsg('/user/loged', sender); };
 
-		events.time = {|event| broadcastAddr.sendMsg('/clock/time', sender); };
-		events.setTime = {|event, setTime| broadcastAddr.sendMsg('/clock/setTime', sender, setTime); };
+		events.time = {|event| "events.time send".postln; broadcastAddr.sendMsg('/clock/time', sender, TempoClock.default.beats); };
+		events.timeAnswer = {|event| broadcastAddr.sendMsg('/clock/time/answer', sender, TempoClock.default.beats); };
+		events.timeSync = {|event, setTime| "events.timeSync send".postln; broadcastAddr.sendMsg('/clock/sync', sender); };
 
 		this.prGetLibrary.put(\events, events);
 	}
@@ -89,8 +87,13 @@
 		^nil;
 	}
 
+	prSenderCheck{ |msg|
+		var library = this.prGetLibrary;
+		var sender = msg[1];
+		if((sender.asSymbol == library.at(\userName).asSymbol),	{ ^false; }, { ^true; });
+	}
+
 	prInitReceiveMsg {
-		var aaa = this.class.all.at(\NetLibrary).at(\events);
 
 		OSCdef.newMatching(\msg_infoNetIP, {|msg, time, addr, recvPort|
 			var broadcastIP = addr.ip.split($.).put(3,255).join(".");
@@ -99,55 +102,64 @@
 		},  '/user/infoNetIP', nil).permanent_(true);
 
 		OSCdef.newMatching(\msg_newConnection, {|msg, time, addr, recvPort|
-			var msgType = msg[0];
-			var sender = msg[1];
-			this.prSenderCheck(msg);
-			"Player % has joined to session".format(sender).warn;
-			this.sendNetMsg(\loged);
-			// events.clockTempoSet(currentEnvironment[\tempo].clock.tempo*60);
+			if(this.prSenderCheck(msg), {
+				var sender = msg[1];
+				"Player % has joined to session".format(sender).warn;
+				this.sendNetMsg(\loged);
+			});
 		}, '/user/newConnection', nil).permanent_(true);
 
 		OSCdef.newMatching(\msg_loged, {|msg, time, addr, recvPort|
-			var msgType = msg[0];
-			var sender = msg[1];
-			var args = msg[2];
-			// msg.postln;
-			"Player % is here too".format(sender).warn;
-			// events.clockTempoSet(currentEnvironment[\tempo].clock.tempo*60);
+			if(this.prSenderCheck(msg), {
+				var sender = msg[1];
+				"Player % is here too".format(sender).warn;
+			});
 		}, '/user/loged', nil).permanent_(true);
 
 		OSCdef.newMatching(\msg_time, {|msg, time, addr, recvPort|
-			var msgType = msg[0];
-			var sender = msg[1];
-			// var beat = msg[2];
-			// msg.postln;
-			"Current proxy clock beat is %".format(TempoClock.default.beats).postln;
+			if(this.prSenderCheck(msg), {
+				var msgType = msg[0];
+				var sender = msg[1];
+				var otherTime = msg[2];
+				var myTime = TempoClock.default.beats;
+				(
+					"% - My clock beats"
+					"\n% - % clock beats"
+					"\ndifferent: %"
+				).format(myTime, otherTime, sender, (myTime - otherTime).asFloat).postln;
+				this.sendNetMsg(\timeAnswer);
+			});
 		}, '/clock/time', nil).permanent_(true);
 
-		OSCdef.newMatching(\msg_setTime, {|msg, time, addr, recvPort|
-			var msgType = msg[0];
-			var sender = msg[1];
-			var syncQuant = msg[2];
-			this.restartClock;
-			/*
-			var currentBeat = currentEnvironment.clock.beats;
-			var lastQuant = (currentBeat/syncQuant).floor;
-			var nextQuant = (currentBeat/syncQuant).ceil;
-			// var targetQuant = lastQuant * syncQuant;
-			var targetQuant = nextQuant * syncQuant;
-			var syncTimeAt = targetQuant - currentBeat;
-
-			"Sync of clock at % beats".format(syncTimeAt).postln;
-			currentEnvironment.clock.sched(syncTimeAt, {
-			currentEnvironment.clock.beats = targetQuant;
-			"Current proxy is set to beats %".format(currentEnvironment.clock.beats).postln;
+		OSCdef.newMatching(\msg_timeAnswer, {|msg, time, addr, recvPort|
+			if(this.prSenderCheck(msg), {
+				var msgType = msg[0];
+				var sender = msg[1];
+				var otherTime = msg[2];
+				var myTime = TempoClock.default.beats;
+				(
+					"% - My clock beats"
+					"\n% - % clock beats"
+					"\ndifferent: %"
+				).format(myTime, otherTime, sender, (myTime - otherTime).asFloat).postln;
 			});
-			*/
-		}, '/clock/setTime', nil).permanent_(true);
+		}, '/clock/time/answer', nil).permanent_(true);
+
+		OSCdef.newMatching(\msg_timeSync, {|msg, time, addr, recvPort|
+			// var msgType = msg[0];
+			// var sender = msg[1];
+			// var syncQuant = msg[2];
+			// if(this.prSenderCheck(msg), {
+				TempoClock.allClocksRestart;
+		// });
+
+		}, '/clock/sync', nil).permanent_(true);
 	}
 
 	restartClock {
 		TempoClock.allClocksRestart;
+
+
 
 		/*
 		var oldClock = TempoClock.default;
@@ -219,13 +231,18 @@
 					("time[i]: " + queue[i]).postln;
 					("item[i+1]: " + queue[i+1]).postln;
 
-					queue[i] = 0;
+
+					case
+					{item.isKindOf(EventStreamPlayer)} { "jsem EventStreamPlayer".postln; queue[i+1].reset;}
+					;
+
+					queue[i] = 1;
 					// queue[i+1].removedFromScheduler(releaseNodes)
 				};
 
-				("queue: " + queue).postln;
-				oneClock.beats = 0;
 			};
+			("queue: " + queue).postln;
+			oneClock.beats = 0;
 		});
 
 		("TempoClock restart").postln;
