@@ -14,12 +14,8 @@
 				(TempoClock.default.timeToNextBeat(quant) + Server.default.latency).wait;
 				{
 					Synth(\metronom, [\freq: freq, \metronomTrig, 1]);
-					// TempoClock.all.do({|oneClock|
-					// ("Merto tick at beats:" + oneClock.beats).postln;
-					// });
 					("\nTempoClock.default.beats:" + TempoClock.default.beats).postln;
 					("currentEnvirnment.clock.beats:" + currentEnvironment.clock.beats).postln;
-
 					quant.wait;
 				}.loop;
 			}).play;
@@ -33,6 +29,19 @@
 	time { this.sendNetMsg(\clock_beats); ^nil; }
 
 	restartClock { this.sendNetMsg(\clock_sync); ^nil;}
+
+	sharedCode{
+		var isShared = this.prGetLibrary.at(\sharedCode);
+		if(isShared.not,
+			{
+				this.prGetLibrary.put(\sharedCode, true);
+				thisProcess.interpreter.codeDump = { |code| ("Evaluated code:" + code ).postln;  this.sendNetMsg(\code_evaluate, code); };
+			},{
+				this.prGetLibrary.put(\sharedCode, false);
+				thisProcess.interpreter.codeDump = nil;
+			}
+		);
+	}
 
 	prGetLibrary {|userName|
 		var library = this.class.all.at(\NetLibrary);
@@ -51,6 +60,7 @@
 			this.class.all.put(\NetLibrary, IdentityDictionary.new);
 			library = this.class.all.at(\NetLibrary);
 			if(userName.notNil, { library.put(\userName, userName.asSymbol); });
+			this.prGetLibrary.put(\sharedCode, false);
 			"\nProxySpace NetLibrary prepared".postln;
 			currentEnvironment.clock.beats =  TempoClock.default.beats;
 
@@ -93,6 +103,8 @@
 		events.clock_beats = {|event| broadcastAddr.sendMsg('/clock/beats', sender, TempoClock.default.beats); };
 		events.clock_beats_answer = {|event| broadcastAddr.sendMsg('/clock/beats/answer', sender, TempoClock.default.beats); };
 		events.clock_sync = {|event, setTime| broadcastAddr.sendMsg('/clock/sync', sender); };
+
+		events.code_evaluate = {|event, code| broadcastAddr.sendMsg('/code/evaluate', sender, code); };
 
 		this.prGetLibrary.put(\events, events);
 	}
@@ -174,6 +186,25 @@
 		OSCdef.newMatching(\clock_sync, {|msg, time, addr, recvPort|
 			TempoClock.allClocksRestart;
 		}, '/clock/sync', nil).permanent_(true);
+
+		OSCdef.newMatching(\msg_code_evaluate, {|msg, time, addr, recvPort|
+			var msgType = msg[0];
+			var sender = msg[1];
+			var code = msg[2];
+			// [msg, time, addr, recvPort].postln;
+
+			"\n\nCodeExecute from %\n%".format(sender,  code).postln;
+
+			if(this.prSenderCheck(addr), {
+				// weak protection
+				"code begins with p. -> %".format(code.asString.beginsWith("p.")).postln;
+				if(code.asString.beginsWith("p.").not, {
+					thisProcess.interpreter.interpret(code.asString);
+				});
+			});
+			// History.enter(code.asString, sender.asSymbol);
+
+		}, '/code/evaluate', nil).permanent_(true);
 	}
 
 
