@@ -8,9 +8,10 @@
 
 	metro {|quant = 1, freq = 800|
 		var metro = this.prGetLibrary.at(\metro);
+		var isShared = this.prGetLibrary.at(\sharedCode);
 
 		if(metro.isNil, {
-			this.prGetLibrary.put(\metro, Task({
+			var code = Task({
 				(TempoClock.default.timeToNextBeat(quant) + Server.default.latency).wait;
 				{
 					Synth(\metronom, [\freq: freq, \metronomTrig, 1]);
@@ -19,7 +20,7 @@
 					quant.wait;
 				}.loop;
 			}).play;
-			);
+			this.prGetLibrary.put(\metro, code);
 		},{
 			metro.stop;
 			this.prGetLibrary.put(\metro, nil);
@@ -57,19 +58,19 @@
 			};
 			metroDef.asSynthDef(name:\metronom).add;
 
+			currentEnvironment.clock.beats = TempoClock.default.beats;
+
 			this.class.all.put(\NetLibrary, IdentityDictionary.new);
 			library = this.class.all.at(\NetLibrary);
 			if(userName.notNil, { library.put(\userName, userName.asSymbol); });
 			this.prGetLibrary.put(\sharedCode, false);
 			"\nProxySpace NetLibrary prepared".postln;
-			currentEnvironment.clock.beats =  TempoClock.default.beats;
-
-			this.prInitReceiveMsg;
 		});
 		^library;
 	}
 
 	prGetBroadcastIP {
+
 		OSCdef.newMatching(\msg_getNetIP, {|msg, time, addr, recvPort|
 			var library = this.prGetLibrary;
 			var broadcastIP = addr.ip.split($.).put(3,255).join(".");
@@ -77,10 +78,11 @@
 
 			library.put(\broadcastAddr, broadcastIP.asSymbol);
 			library.put(\userIP, addr.ip.asSymbol);
+			this.prInitReceiveMsg;
 			this.prInitSendMsg;
-			this.sendNetMsg(\newConnection);
+			this.sendNetMsg(\user_newConnection);
 
-		},  '/user/getNetIP', nil).permanent_(true);
+		},  '/user/getNetIP', nil).oneShot;
 
 		NetAddr("255.255.255.255", NetAddr.langPort).sendMsg('/user/getNetIP');
 	}
@@ -97,21 +99,21 @@
 		var sender = this.prGetLibrary.at(\userIP).asSymbol;
 		var broadcastAddr = NetAddr( library.at(\broadcastAddr).asString, NetAddr.langPort) ;
 
-		events.user_newConnection = {|event| "events.newConnection send".postln; broadcastAddr.sendMsg('/user/newConnection', sender); };
-		events.user_loged = {|event| "events.loged send".postln;  broadcastAddr.sendMsg('/user/loged', sender); };
+		events.user_newConnection = {|event| broadcastAddr.sendMsg('/user/newConnection', sender); };
+		events.user_loged = {|event|  broadcastAddr.sendMsg('/user/loged', sender); };
 
 		events.clock_beats = {|event| broadcastAddr.sendMsg('/clock/beats', sender, TempoClock.default.beats); };
 		events.clock_beats_answer = {|event| broadcastAddr.sendMsg('/clock/beats/answer', sender, TempoClock.default.beats); };
-		events.clock_sync = {|event, setTime| broadcastAddr.sendMsg('/clock/sync', sender); };
+		events.clock_sync = {|event, setTime| "events.clock_sync send".postln; broadcastAddr.sendMsg('/clock/sync', sender); };
 
 		events.code_evaluate = {|event, code| broadcastAddr.sendMsg('/code/evaluate', sender, code); };
 
 		this.prGetLibrary.put(\events, events);
 	}
 
-	sendNetMsg {|type, args|
+	sendNetMsg {|type, arg1, arg2, arg3 |
 		var event = this.prGetLibrary.at(\events).at(type.asSymbol);
-		if( event.notNil, { event.value(event, args); });
+		if( event.notNil, { event.value(event, arg1, arg2, arg3); });
 		^nil;
 	}
 
@@ -119,25 +121,14 @@
 		var library = this.prGetLibrary;
 		var senderIP = addr.ip;
 
-		("This is my IP:" + library.at(\userIP).asSymbol).postln;
-		("This is incoming MSG IP:" + senderIP.asSymbol).postln;
-		("Is it my MSG:" + (senderIP.asSymbol == library.at(\userIP).asSymbol)).postln;
-
-		if((senderIP.asSymbol == library.at(\userIP).asSymbol),
-			{
-				// ("This is my MSG:" + [msg]).postln;
-				^false;
-			}, {
-				// ("This is new incoming MSG:" + [msg]).postln;
-				^true;
-			}
-		);
+		if((senderIP.asSymbol == library.at(\userIP).asSymbol),	{ ^false; }, { ^true; } );
 	}
 
 	prInitReceiveMsg {
+		var library = this.prGetLibrary;
+		var broadcastAddr = NetAddr( library.at(\broadcastAddr).asString, NetAddr.langPort) ;
 
 		OSCdef.newMatching(\user_newConnection, {|msg, time, addr, recvPort|
-			[msg, time, addr, recvPort].postln;
 			if(this.prSenderCheck(addr), {
 				var sender = msg[1];
 				"Player % has joined to session".format(sender).warn;
@@ -146,7 +137,6 @@
 		}, '/user/newConnection', nil).permanent_(true);
 
 		OSCdef.newMatching(\user_loged, {|msg, time, addr, recvPort|
-			[msg, time, addr, recvPort].postln;
 			if(this.prSenderCheck(addr), {
 				var sender = msg[1];
 				"Player % is here too".format(sender).warn;
@@ -202,12 +192,8 @@
 					thisProcess.interpreter.interpret(code.asString);
 				});
 			});
-			// History.enter(code.asString, sender.asSymbol);
-
 		}, '/code/evaluate', nil).permanent_(true);
 	}
-
-
 
 	moveNodeToTail {|nodeName|
 		var nodeproxy = this.doFunctionPerform(nodeName.asSymbol);
