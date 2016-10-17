@@ -1,13 +1,9 @@
 + ProxySpace {
 
-	connect {|userName|
+	connect {|userName = nil|
 		NetAddr.broadcastFlag = true;
-
 		this.prGetLibrary(userName);
 		this.prGetBroadcastIP;
-
-		// this.sendNetMsg(\newConnection);
-		// this.sendNetMsg(\infoNetIP);
 	}
 
 	metro {|quant = 1, freq = 800|
@@ -15,9 +11,9 @@
 
 		if(metro.isNil, {
 			this.prGetLibrary.put(\metro, Task({
-				TempoClock.default.timeToNextBeat(quant).wait;
+				(TempoClock.default.timeToNextBeat(quant) + Server.default.latency).wait;
 				{
-					Synth(\metronom, [\freq: freq]);
+					Synth(\metronom, [\freq: freq, \metronomTrig, 1]);
 					// TempoClock.all.do({|oneClock|
 					// ("Merto tick at beats:" + oneClock.beats).postln;
 					// });
@@ -34,21 +30,27 @@
 		});
 	}
 
+	time { this.sendNetMsg(\clock_beats); ^nil; }
+
+	restartClock { this.sendNetMsg(\clock_sync); ^nil;}
+
 	prGetLibrary {|userName|
 		var library = this.class.all.at(\NetLibrary);
 
 		if( library.isNil, {
 			var metroDef = { |freq|
+				var metronomTrig = \metronomTrig.tr(0);
 				var sig = SinOsc.ar(freq!2);
 				var env = Env([0,1,0], [0.005, 0.05], [5,-3]);
 				var aEnv = EnvGen.kr(env, doneAction:2);
+				SendTrig.kr(metronomTrig);
 				Out.ar(0, sig * aEnv);
 			};
 			metroDef.asSynthDef(name:\metronom).add;
 
 			this.class.all.put(\NetLibrary, IdentityDictionary.new);
 			library = this.class.all.at(\NetLibrary);
-			library.put(\userName, userName.asSymbol);
+			if(userName.notNil, { library.put(\userName, userName.asSymbol); });
 			"\nProxySpace NetLibrary prepared".postln;
 			currentEnvironment.clock.beats =  TempoClock.default.beats;
 
@@ -82,15 +84,15 @@
 	prInitSendMsg {
 		var library = this.prGetLibrary;
 		var events = ();
-		var sender = this.prGetLibrary.at(\userName).asSymbol;
-		var broadcastAddr =  NetAddr( library.at(\broadcastAddr).asString, NetAddr.langPort) ;
+		var sender = this.prGetLibrary.at(\userIP).asSymbol;
+		var broadcastAddr = NetAddr( library.at(\broadcastAddr).asString, NetAddr.langPort) ;
 
-		events.newConnection = {|event| "events.newConnection send".postln; broadcastAddr.sendMsg('/user/newConnection', sender); };
-		events.loged = {|event| "events.loged send".postln;  broadcastAddr.sendMsg('/user/loged', sender); };
+		events.user_newConnection = {|event| "events.newConnection send".postln; broadcastAddr.sendMsg('/user/newConnection', sender); };
+		events.user_loged = {|event| "events.loged send".postln;  broadcastAddr.sendMsg('/user/loged', sender); };
 
-		events.time = {|event| "events.time send".postln; broadcastAddr.sendMsg('/clock/time', sender, TempoClock.default.beats); };
-		events.timeAnswer = {|event| broadcastAddr.sendMsg('/clock/time/answer', sender, TempoClock.default.beats); };
-		events.timeSync = {|event, setTime| "events.timeSync send".postln; broadcastAddr.sendMsg('/clock/sync', sender); };
+		events.clock_beats = {|event| broadcastAddr.sendMsg('/clock/beats', sender, TempoClock.default.beats); };
+		events.clock_beats_answer = {|event| broadcastAddr.sendMsg('/clock/beats/answer', sender, TempoClock.default.beats); };
+		events.clock_sync = {|event, setTime| broadcastAddr.sendMsg('/clock/sync', sender); };
 
 		this.prGetLibrary.put(\events, events);
 	}
@@ -101,33 +103,46 @@
 		^nil;
 	}
 
-	prSenderCheck{ |msg|
+	prSenderCheck{ |addr|
 		var library = this.prGetLibrary;
-		var sender = msg[1];
-		if((sender.asSymbol == library.at(\userName).asSymbol),	{ ^false; }, { ^true; });
+		var senderIP = addr.ip;
+
+		("This is my IP:" + library.at(\userIP).asSymbol).postln;
+		("This is incoming MSG IP:" + senderIP.asSymbol).postln;
+		("Is it my MSG:" + (senderIP.asSymbol == library.at(\userIP).asSymbol)).postln;
+
+		if((senderIP.asSymbol == library.at(\userIP).asSymbol),
+			{
+				// ("This is my MSG:" + [msg]).postln;
+				^false;
+			}, {
+				// ("This is new incoming MSG:" + [msg]).postln;
+				^true;
+			}
+		);
 	}
 
 	prInitReceiveMsg {
 
-		OSCdef.newMatching(\msg_newConnection, {|msg, time, addr, recvPort|
+		OSCdef.newMatching(\user_newConnection, {|msg, time, addr, recvPort|
 			[msg, time, addr, recvPort].postln;
-			if(this.prSenderCheck(msg), {
+			if(this.prSenderCheck(addr), {
 				var sender = msg[1];
 				"Player % has joined to session".format(sender).warn;
-				this.sendNetMsg(\loged);
+				this.sendNetMsg(\user_loged);
 			});
 		}, '/user/newConnection', nil).permanent_(true);
 
-		OSCdef.newMatching(\msg_loged, {|msg, time, addr, recvPort|
+		OSCdef.newMatching(\user_loged, {|msg, time, addr, recvPort|
 			[msg, time, addr, recvPort].postln;
-			if(this.prSenderCheck(msg), {
+			if(this.prSenderCheck(addr), {
 				var sender = msg[1];
 				"Player % is here too".format(sender).warn;
 			});
 		}, '/user/loged', nil).permanent_(true);
 
-		OSCdef.newMatching(\msg_time, {|msg, time, addr, recvPort|
-			if(this.prSenderCheck(msg), {
+		OSCdef.newMatching(\clock_beats, {|msg, time, addr, recvPort|
+			if(this.prSenderCheck(addr), {
 				var msgType = msg[0];
 				var sender = msg[1];
 				var otherTime = msg[2];
@@ -137,12 +152,13 @@
 					"\n% - % clock beats"
 					"\ndifferent: %"
 				).format(myTime, otherTime, sender, (myTime - otherTime).asFloat).postln;
-				this.sendNetMsg(\timeAnswer);
+				[msg, time, addr, recvPort].postln;
+				this.sendNetMsg(\clock_beats_answer);
 			});
-		}, '/clock/time', nil).permanent_(true);
+		}, '/clock/beats', nil).permanent_(true);
 
-		OSCdef.newMatching(\msg_timeAnswer, {|msg, time, addr, recvPort|
-			if(this.prSenderCheck(msg), {
+		OSCdef.newMatching(\clock_beats_Answer, {|msg, time, addr, recvPort|
+			if(this.prSenderCheck(addr), {
 				var msgType = msg[0];
 				var sender = msg[1];
 				var otherTime = msg[2];
@@ -153,14 +169,14 @@
 					"\ndifferent: %"
 				).format(myTime, otherTime, sender, (myTime - otherTime).asFloat).postln;
 			});
-		}, '/clock/time/answer', nil).permanent_(true);
+		}, '/clock/beats/answer', nil).permanent_(true);
 
-		OSCdef.newMatching(\msg_timeSync, {|msg, time, addr, recvPort|
+		OSCdef.newMatching(\clock_sync, {|msg, time, addr, recvPort|
 			TempoClock.allClocksRestart;
 		}, '/clock/sync', nil).permanent_(true);
 	}
 
-	restartClock { TempoClock.allClocksRestart;	}
+
 
 	moveNodeToTail {|nodeName|
 		var nodeproxy = this.doFunctionPerform(nodeName.asSymbol);
@@ -194,12 +210,11 @@
 					("time[i]: " + queue[i]).postln;
 					("item[i+1]: " + queue[i+1]).postln;
 
-
 					case
 					{item.isKindOf(EventStreamPlayer)} { "jsem EventStreamPlayer".postln; queue[i+1].reset;}
 					;
 
-					queue[i] = 1;
+					queue[i] = 0;
 					// queue[i+1].removedFromScheduler(releaseNodes)
 				};
 
