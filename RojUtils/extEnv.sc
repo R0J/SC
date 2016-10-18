@@ -54,27 +54,54 @@
 		^cropedEnv;
 	}
 
-	extend {|extendTime|
+	extend {|extendTime, maxLimit = 60|
 		var extendedEnv = super.class.new(this.levels, this.times, this.curves);
-		var timeLimit = 100; //sec
 		var envDur = this.duration;
 
 		if(extendTime < envDur) {
-			("Env.extend(" ++ extendTime ++ ") is lower than evelope duration (" ++ envDur ++ ")").postln
+			("Env.extend(" ++ extendTime ++ ") is lower than evelope duration (" ++ envDur ++ ")").postln;
 			^this;
 		};
+		if(maxLimit < extendTime) {
+			("Env.extend(" ++ extendTime ++ ") extendTime is higher than 2nd argument maxLimit (" ++ maxLimit ++ ")").postln;
+			extendTime = maxLimit;
+		};
 
-		while (
-			{ envDur < extendTime },
-			{
-				envDur = extendedEnv.duration;
-				envDur = envDur + this.duration;
-				extendedEnv = extendedEnv.connect(this);
-			}
-		);
+		while ({ envDur < extendTime }, {
+			envDur = extendedEnv.duration;
+			envDur = envDur + this.duration;
+			extendedEnv = extendedEnv.connect(this);
+		});
+		^extendedEnv.crop(0, extendTime);
+	}
 
-		extendedEnv = extendedEnv.crop(0,extendTime);
-		^extendedEnv;
+	// mensi pro zapis array ale horsi vysledky fadu
+	fade_noInterpolation {|targetEnv, loops = 6|
+		var fadedEnv = nil;
+		var steps = (0, 1/(loops-1) .. 1);
+
+		steps.do { |fadeIndex|
+			if((fadedEnv.isNil),
+				{ fadedEnv = super.class.new(this.levels, this.times, this.curves); },
+				{ fadedEnv = fadedEnv.connect( blend(this, targetEnv, fadeIndex) ); }
+			);
+		};
+		^fadedEnv;
+	}
+
+	fade {|targetEnv, loops = 6, interpolSeg = 20|
+		var fadedEnv = nil;
+		var interFromEnv = this.prInterpolatedEnv(this, 0, this.duration, interpolSeg);
+		var interTargetEnv = this.prInterpolatedEnv(targetEnv, 0, targetEnv.duration, interpolSeg);
+		var steps = (0, 1/(loops-1) .. 1);
+
+		steps.do { |fadeIndex|
+			if((fadedEnv.isNil),
+				{ fadedEnv = super.class.new(this.levels, this.times, this.curves); },
+				{ fadedEnv = fadedEnv.connect( blend(interFromEnv, interTargetEnv, fadeIndex) ); }
+			);
+		};
+		^fadedEnv;
 	}
 
 	segment {|index| ^super.class.new([this.levels[index],this.levels[index+1]], this.times[index], this.curves[index]); }
@@ -93,7 +120,9 @@
 		if(plotWin.isNil, {
 			this.plot( size:size, name:envName.asSymbol ).parent.alwaysOnTop_(true);
 		},{
-			var plotter = Plotter(envName.asSymbol, parent:plotWin);
+			var plotter;
+			plotWin.view.children[0].close;
+			plotter = Plotter(envName.asSymbol, parent:plotWin);
 			plotter.value = this.asSignal(size);
 			plotter.domainSpecs = [[0, this.duration, 0, 0, "", " s"]];
 			plotter.refresh;
