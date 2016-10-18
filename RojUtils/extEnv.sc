@@ -10,22 +10,13 @@
 	}
 
 	crop {|atFrom = nil, atTo = nil|
-		var cropedEnv = nil; // = super.class.new();
+		var cropedEnv = nil;
 
 		if(atFrom.isNil) { atFrom = 0; };
 		if(atFrom < 0) { atFrom = 0; };
 		if(atTo.isNil) { atTo = this.duration; };
 		if(atTo > this.duration) { atTo = this.duration; };
 
-		/*
-		("LEVELS:" + this.levels).postln;
-		("TIMES:" + this.times).postln;
-		("CURVES:" + this.curves).postln;
-
-		("atFrom:" + atFrom + "valFrom:" + this.at(atFrom)).postln;
-		("atTo:" + atTo + "valTo:" + this.at(atTo)).postln;
-		("this.segmentCount:" + this.segmentCount).postln;
-		*/
 		this.segmentCount.do({|i|
 
 			case
@@ -37,14 +28,12 @@
 					{ cropedEnv = cropedEnv.connect(interEnv); }
 				);
 			}
-
 			{(this.segmentStart(i) >= atFrom) && (this.segmentEnd(i) <= atTo)} {
 				if((cropedEnv.isNil) ,
 					{ cropedEnv = this.segment(i); },
 					{ cropedEnv = cropedEnv.connect(this.segment(i)); }
 				);
 			}
-
 			{(this.segmentStart(i) >= atFrom) && (this.segmentStart(i) < atTo) && (this.segmentEnd(i) > atTo)} {
 				var cropAtEnd = atTo - this.segmentStart(i);
 				var interEnv = this.prInterpolatedEnv(this.segment(i), 0, cropAtEnd);
@@ -62,12 +51,6 @@
 					{ cropedEnv = cropedEnv.connect(interEnv); }
 				);
 			};
-
-			/*
-			if((this.segmentStart(i) >= atFrom) && (this.segmentEnd(i) <= atTo)) {
-			("segment[" ++ i ++ "] is from" + this.segmentStart(i) + "to" + this.segmentEnd(i)).postln;
-			}
-			*/
 		})
 		^cropedEnv;
 	}
@@ -77,14 +60,32 @@
 	segmentEnd {|index| ^this.times[0..index].sum; }
 	segmentCount { ^this.levels.size - 1 }
 
+	plotNamedEnv {|envName, size = 400|
+		var windows = Window.allWindows;
+		var plotWin = nil;
+
+		windows.do({|oneW|
+			if(envName.asSymbol == oneW.name.asSymbol) { plotWin = oneW; };
+		});
+
+		if(plotWin.isNil, {
+			this.plot(size:size,name:envName.asSymbol).parent.alwaysOnTop_(true);
+		},{
+			var plotter = Plotter(envName.asSymbol, parent:plotWin);
+			plotter.value = this.asSignal(size);
+			plotter.domainSpecs = [[0, this.duration, 0, 0, "", " s"]];
+			plotter.refresh;
+		});
+		^this;
+	}
+
 	prInterpolatedEnv {|env, from, to, segments = 20|
 		var segLevels = List.new;
 		var segTimes = List.new;
 		var segCurves = List.new;
-		var cropSegmentDur = to - from;
-		var segmentsDur = cropSegmentDur / segments;
+		var cropEnvDur = to - from;
+		var segmentsDur = cropEnvDur / segments;
 		var currentPosition = from;
-		var interpolatedEnv;
 
 		segments.do({
 			segLevels.add(env.at(currentPosition));
