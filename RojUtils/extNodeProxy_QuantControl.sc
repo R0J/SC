@@ -1,3 +1,25 @@
+
+NodeEnv {
+
+	var <name, <env, <quant;
+	var >setPlot = false;
+
+	*new {|name, envelope = nil, quant = 1|
+		^super.newCopyArgs(name, envelope, quant);
+	}
+
+	env_ {|envelope|
+		env = envelope;
+		if(setPlot) { this.plot; };
+	}
+
+	printOn { |stream|
+		stream << this.class.name << "[" << name << "]";
+	}
+
+	plot {|size| env.plotNamedEnv(name.asSymbol); }
+}
+
 + NodeProxy {
 
 	qenv { |control, envName, env, duration = nil, fTime = 1|
@@ -401,6 +423,18 @@
 		^library;
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

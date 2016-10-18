@@ -123,6 +123,8 @@
 			var plotter;
 			plotWin.view.children[0].close;
 			plotter = Plotter(envName.asSymbol, parent:plotWin);
+			// plotter.front;
+			// plotter.alwaysOnTop_(true);
 			plotter.value = this.asSignal(size);
 			plotter.domainSpecs = [[0, this.duration, 0, 0, "", " s"]];
 			plotter.refresh;
