@@ -18,7 +18,6 @@
 		if(atTo > this.duration) { atTo = this.duration; };
 
 		this.segmentCount.do({|i|
-
 			case
 			{(this.segmentStart(i) < atFrom) && (this.segmentEnd(i) > atFrom) && (this.segmentEnd(i) < atTo)} {
 				var cropAtStart = atFrom - this.segmentStart(i);
@@ -55,6 +54,29 @@
 		^cropedEnv;
 	}
 
+	extend {|extendTime|
+		var extendedEnv = super.class.new(this.levels, this.times, this.curves);
+		var timeLimit = 100; //sec
+		var envDur = this.duration;
+
+		if(extendTime < envDur) {
+			("Env.extend(" ++ extendTime ++ ") is lower than evelope duration (" ++ envDur ++ ")").postln
+			^this;
+		};
+
+		while (
+			{ envDur < extendTime },
+			{
+				envDur = extendedEnv.duration;
+				envDur = envDur + this.duration;
+				extendedEnv = extendedEnv.connect(this);
+			}
+		);
+
+		extendedEnv = extendedEnv.crop(0,extendTime);
+		^extendedEnv;
+	}
+
 	segment {|index| ^super.class.new([this.levels[index],this.levels[index+1]], this.times[index], this.curves[index]); }
 	segmentStart {|index| ^this.times[-1..index-1].sum; }
 	segmentEnd {|index| ^this.times[0..index].sum; }
@@ -69,7 +91,7 @@
 		});
 
 		if(plotWin.isNil, {
-			this.plot(size:size,name:envName.asSymbol).parent.alwaysOnTop_(true);
+			this.plot( size:size, name:envName.asSymbol ).parent.alwaysOnTop_(true);
 		},{
 			var plotter = Plotter(envName.asSymbol, parent:plotWin);
 			plotter.value = this.asSignal(size);
