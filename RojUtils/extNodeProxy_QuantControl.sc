@@ -1,26 +1,79 @@
-
 NodeEnv {
 
-	var <name, <env, <quant;
+	var nodeName, controlName, envelope;
+	var envName;
+	var <quant, loopTime;
 	var >setPlot = false;
 
-	*new {|name, envelope = nil, quant = 1|
-		^super.newCopyArgs(name, envelope, quant);
-	}
+	*new {|nodeName, controlName, envelope| ^super.newCopyArgs(nodeName.asSymbol, controlName.asSymbol, envelope); }
 
-	env_ {|envelope|
-		env = envelope;
+	env_ {|env|
+		envelope = env;
 		if(setPlot) { this.plot; };
 	}
 
+	envCode { ^envelope.storeArgs; }
+
 	printOn { |stream|
-		stream << this.class.name << "[" << name << "]";
+		stream << this.class.name << "[~" << nodeName << "; \\" << controlName << "]";
+		// if(name.notNil) { stream << this.class.name << "[" << name << "]"; }
 	}
 
-	plot {|size| env.plotNamedEnv(name.asSymbol); }
+	plot {|size| envelope.plotNamedEnv(envName.asSymbol); }
+
+	storeToMap {
+		var node = nodeName.envirGet;
+		var library = node.nodeMap.get(\qMachine);
+		var stage = \default;
+		var path;
+		// if(envName.isNil) {	path = [controlName.asSymbol, \stages, stage.asSymbol, \envelopes, \default]; };
+		// if(envName.isNil) {	path = [controlName.asSymbol, \envelopes]; };
+
+
+
+		// library.putAtPath(path ++ \env, envelope);
+		// library.putAtPath(path, this);
+
+		// library.postTree;
+	}
 }
 
+NodeCycle { }
+
+NodeStage { }
+
 + NodeProxy {
+
+	// ~node.env(\amp, Env() ) --- ma se stat jen jednou a hned
+	env { |control, envelope|
+
+		case
+		{ envelope.isKindOf(Env) } { "envelope je to env".postln; }
+		{ envelope.isKindOf(Array) } { "envelope je to array".postln; }
+		;
+
+		// var nEnv = NodeEnv(this.envirKey, control, envelope);
+		// var quant = this.quant;
+		// nEnv.storeToMap;
+
+
+	}
+
+	cycle { }
+
+	stage { }
+
+	makeLibrary {
+		var library = this.nodeMap.get(\qMachine);
+		if(library.isNil)
+		{
+			this.nodeMap.put(\qMachine, MultiLevelIdentityDictionary.new);
+			library = this.nodeMap.get(\qMachine);
+			("NodeMap library prepared").postln;
+		};
+	}
+
+	///////////////////////////////////////
 
 	qenv { |control, envName, env, duration = nil, fTime = 1|
 		var library = this.prGetLibrary(control);
