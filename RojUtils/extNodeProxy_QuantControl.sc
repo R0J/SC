@@ -4,8 +4,6 @@ NodeEnv {
 	var envelope;
 
 	var synth, controlBus;
-	var <quant, loopTime;
-
 	var >setPlot = false;
 
 	*new {|nodeName, controlName, envName|
@@ -15,13 +13,8 @@ NodeEnv {
 		var nEnv = library.atPath(path ++ envName.asSymbol);
 
 		if(nEnv.isNil,
-			{
-				("NodeEnv" + envName + "novy").postln;
-				^super.newCopyArgs(nodeName.asSymbol, controlName.asSymbol, envName).init;
-			}, {
-				("NodeEnv" + envName + "nalezen").postln;
-				^nEnv;
-			}
+			{ ^super.newCopyArgs(nodeName.asSymbol, controlName.asSymbol, envName).init; },
+			{ ^nEnv; }
 		);
 	}
 
@@ -45,9 +38,10 @@ NodeEnv {
 
 	envCode { ^envelope.storeArgs; }
 
+	duration { ^envelope.duration; }
+
 	printOn { |stream|
-		stream << this.class.name << "[~" << nodeName << "; \\" << controlName << "]";
-		// if(name.notNil) { stream << this.class.name << "[" << name << "]"; }
+		stream << this.class.name << "[" << nodeName << "; " << controlName << "]";
 	}
 
 	plot {|size| envelope.plotNamedEnv(envName.asSymbol); }
@@ -107,13 +101,9 @@ NodeEnv {
 	storeToMap {
 		var node = nodeName.envirGet;
 		var library = node.nodeMap.get(\qMachine);
-		var stage = \default;
 		var path = [\envelopes, controlName.asSymbol];
-		// if(envName.isNil) {	path = [controlName.asSymbol, \stages, stage.asSymbol, \envelopes, \default]; };
-		// if(envName.isNil) {	path = [controlName.asSymbol, \envelopes]; };
 
 		library.putAtPath(path ++ envName.asSymbol, this);
-
 		library.postTree;
 	}
 }
@@ -122,106 +112,182 @@ NodeCycle {
 	var nodeName, cycleName;
 	var clock;
 	var timeline;
+	var duration;
 
 	*new {|nodeName, cycleName|
 		var node = nodeName.envirGet;
 		var library = node.nodeMap.get(\qMachine);
-		var path = [\cycles];
-		var nCycle = library.atPath(path ++ cycleName.asSymbol);
+		var path = [\cycles, cycleName.asSymbol];
+		var nCycle = library.atPath(path);
 
 		if(nCycle.isNil,
-			{
-				("NodeCycle" + cycleName + "novy").postln;
-				^super.newCopyArgs(nodeName.asSymbol, cycleName.asSymbol).init;
-			}, {
-				("NodeCycle" + cycleName + "nalezen").postln;
-				^nCycle;
-			}
+			{ ^super.newCopyArgs(nodeName.asSymbol, cycleName.asSymbol).init; },
+			{ ^nCycle; }
 		);
 	}
 
 	init {
-		// var node = nodeName.envirGet;
-		// var library = node.nodeMap.get(\qMachine);
-		// clock = TempoClock.new(currentEnvironment.clock.tempo);
+		clock = nil;
 		timeline = Order.new();
 		this.storeToMap;
 	}
 
 	schedEnv {|time, nodeEnv|
 		timeline.put(time, nodeEnv);
+		duration = timeline.lastIndex + timeline[timeline.lastIndex].duration;
 	}
 
 	trig {
+		if(clock.notNil) { clock.stop; };
 		clock = TempoClock.new(currentEnvironment.clock.tempo);
 
 		timeline.keysValuesDo ({|time|
 			var selectedNodeEnv = timeline[time];
-			// var selectedEnvDuration = library.atPath(envPath ++ selectedEnvKey ++ \dur);
 			("timeLine time:" + time).postln;
 			("timeLine selectedNodeEnv:" + selectedNodeEnv).postln;
-			/*
-			clock.sched(0, {
-			// (time + "env:" + selectedEnvKey).postln;
-			this.prTrigSynths(control, selectedEnvKey);
-			});
-			*/
+
+			clock.sched(time, { selectedNodeEnv.trig; });
 		});
+
+		clock.sched(duration, { clock.stop; });
+
+	}
+
+	printOn { |stream|
+		stream << this.class.name << "[" << nodeName << "; " << cycleName << "]";
 	}
 
 	storeToMap {
 		var node = nodeName.envirGet;
 		var library = node.nodeMap.get(\qMachine);
-		var stage = \default;
-		var path = [\cycles];
+		var path = [\cycles, cycleName.asSymbol];
 
-		library.putAtPath(path ++ cycleName.asSymbol, this);
+		library.putAtPath(path, this);
 		library.postTree;
 	}
 }
 
-NodeStage { }
+NodeStage {
+	var nodeName, stageName;
+	var clock;
+	var timeline;
+
+	var >loopCount;
+	var >loopTime;
+
+	*new {|nodeName, stageName|
+		var node = nodeName.envirGet;
+		var library = node.nodeMap.get(\qMachine);
+		var path = [\stages, stageName.asSymbol];
+		var nStage = library.atPath(path);
+
+		if(nStage.isNil,
+			{
+				("NodeStage" + stageName + "novy").postln;
+				^super.newCopyArgs(nodeName.asSymbol, stageName.asSymbol).init;
+			}, {
+				("NodeStage" + stageName + "nalezen").postln;
+				^nStage;
+			}
+		);
+	}
+
+	init {
+		clock = nil;
+		timeline = Order.new();
+		loopCount = 1;
+		loopTime = 1;
+		this.storeToMap;
+	}
+
+	schedCycle {|time, nodeCycle| timeline.put(time, nodeCycle); }
+
+	play {
+		loopCount.do({
+			if(clock.notNil) { clock.stop; };
+			clock = TempoClock.new(currentEnvironment.clock.tempo);
+
+			timeline.keysValuesDo ({|time|
+				var selectedNodeCycle = timeline[time];
+				("timeLine time:" + time).postln;
+				("timeLine selectedNodeCycle:" + selectedNodeCycle).postln;
+
+				clock.sched(time, {	selectedNodeCycle.trig;	});
+			});
+			loopTime.wait;
+		});
+	}
+
+	printOn { |stream|
+		stream << this.class.name << "[" << nodeName << "; " << stageName << "]";
+	}
+
+	storeToMap {
+		var node = nodeName.envirGet;
+		var library = node.nodeMap.get(\qMachine);
+		// var stage = \default;
+		var path = [\stages, stageName.asSymbol];
+
+		library.putAtPath(path, this);
+		library.postTree;
+	}
+}
 
 + NodeProxy {
 
-	// ~node.env(\amp, Env() ) --- env \default, ma se stat jen jednou, start node.quant
-	// ~node.env(\amp, Env(), loopTime ) --- env \default, ma se stat opakovane, start node.quant
 	env { |controlName, envelope, loopTime = nil|
 		var library = this.prGetLibrary(controlName);
 		var path = [controlName.asSymbol, \envelopes];
-		// var nEnv = library.atPath(path ++ \default);
-		var nEnv, nCycle;
+		var nEnv, nCycle, nStage;
 		{
 			case
 			{ envelope.isKindOf(Env) } {
-				"envelope je to env".postln;
-
 				nEnv = NodeEnv(this.envirKey, controlName, \default);
 				nEnv.env(envelope);
 
 				nCycle = NodeCycle(this.envirKey, \default);
 				nCycle.schedEnv(0, nEnv);
+
+				nStage = NodeStage(this.envirKey, \default);
+				nStage.schedCycle(0, nCycle);
+				nStage.loopCount_(inf);
+				nStage.loopTime_(loopTime);
+
+				nStage.play;
 			}
 			{ envelope.isKindOf(Array) } {
-				"envelope je to array".postln;
-
+				if ((envelope.size % 2 != 0), {
+					"envelope array is not set in pairs [\\symbol, env]".warn;
+				}, {
+					envelope.pairsDo({|key, oneEnv|
+						nEnv = NodeEnv(this.envirKey, controlName, key.asSymbol);
+						nEnv.env(oneEnv);
+					});
+				});
 			}
 			;
 
-			nCycle.trig;
+
 		}.fork;
-		// var nEnv = NodeEnv(this.envirKey, control, envelope);
-		// var quant = this.quant;
-		// nEnv.storeToMap;
-
-
 	}
 
+	/*
 	cycle { }
 
-	stage { }
+	stage { |stageName, cyclePattern|
+	var nCycle = NodeStage(this.envirKey, stageName.asSymbol);
+	var stream = pattern.asStream;
 
-	prGetLibrary { |control|
+	case
+	{ stream.isKindOf(Routine) } { stream = stream.all; } // Pseq([\aaa, \bbb], 3) ++ \ccc
+	{ stream.isKindOf(Symbol) }	{ stream = stream.asArray; }
+	{ stream.isKindOf(Integer) } { stream = stream.asSymbol.asArray; }
+	{ stream.isKindOf(String) }	{ stream = stream.asSymbol.asArray; }
+	;
+	}
+	*/
+
+	prGetLibrary { |controlName|
 		var library = this.nodeMap.get(\qMachine);
 
 		if((library == nil), {
@@ -230,10 +296,10 @@ NodeStage { }
 			("NodeMap library qMachine prepared").postln;
 		});
 
-		if((library.at(control.asSymbol) == nil),
+		if((library.at(controlName.asSymbol) == nil),
 			{
 				var controlBus = Bus.control(Server.default, 1);
-				library.put(\envelopes, controlName.asSymbol, \controlBus);
+				library.put(\envelopes, controlName.asSymbol, \controlBus, controlBus);
 			}
 		);
 
