@@ -38,6 +38,26 @@ p.arProxyNames.collect{|n| var snth = (p[n.asSymbol]);snth.clear};
 p.clear;
 
 
+(
+  ~master.quant=2;
+  ~master.play;
+  ~master.fadeTime = 0.01;
+  ~master = {|wet=0.5,lp=3500,hp=100,len=10,rev = 2|
+  var sig = In.ar([0,1]);
+  var orig = sig;
+  var fx;
+  //fx = Limiter.ar(sig,0.95);
+  sig = Compander.ar(sig,3/4,1/1.1,1/3);
+  fx = LPF.ar(sig,lp);
+  fx = HPF.ar(fx,hp);
+  fx = DWGReverb.ar(NumChannels.ar(fx,2),[5000,5010],1/len)/rev;
+  sig = SelectX.ar(wet,[orig,fx]);
+  sig = NumChannels.ar(sig,2);
+  ReplaceOut.ar(0,sig);
+  };
+);
+p.moveNodeToTail(\master);
+
 
 (
     p=ProxySpace.push(s.reboot);
@@ -71,9 +91,9 @@ ProxyMixer.new(p,16);
 ~sync.pause;
 ~sync.resume;
 
-
+p.makeTempoClock;
 (
-p.clock.tempo_(127/60/8);
+//p.clock.tempo_(127/60/8);
 
     ~offset = {(0..7)/8};
 
@@ -85,7 +105,14 @@ p.clock.tempo_(127/60/8);
     p.clock.tempo_(127/60);
 );
 
-
+(
+{
+  p.stop(30);
+  ~master.play;
+  30.wait;
+  p.clean;
+}.fork;  
+)
 
 // moog synth , DANEGEROUS LARGE offset ///////////////////////////////////////
 
@@ -107,10 +134,10 @@ p.clock.tempo_(127/60/8);
         sig = Limiter.ar(sig,0.8);
         sig = LPF.ar(sig,7000);
         sig = CompanderD.ar(sig,3/4,1/2,1);
-        Splay.ar(sig,0.25,0.00125);
+        Splay.ar(sig,0.25,0.25);
     };
     ~moog.play;
-    ~moog[10] = \filter -> {|sig| LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),80),[4004,4014]),LFNoise2.kr(1/4!2).range(5000,9000))+sig;};
+ //   ~moog[10] = \filter -> {|sig| LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),80),[4004,4014]),LFNoise2.kr(1/4!2).range(5000,9000))+sig;};
 );
 ~moog.stop(8);
 ~moog.clear;
@@ -138,10 +165,10 @@ p.clock.tempo_(127/60/8);
         //sig = sig * (LFTri.ar(pat)**2);
         sig = CompanderD.ar(sig,3/4,1/3,1/2);
         sig = HPF.ar(sig,100);
-        Splay.ar(sig,0.95,0.15);
+        Splay.ar(sig,0.95,0.25);
     };
     ~karplus.play;
-    ~karplus[10] = \filter -> {|sig| LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),50),[4004,4014]),LFNoise2.kr(1/4!2).range(3000,15000))+sig;};
+    //~karplus[10] = \filter -> {|sig| LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),50),[4004,4014]),LFNoise2.kr(1/4!2).range(3000,15000))+sig;};
 );
 ~karplus.stop(10);
 ~karplus.clear;
@@ -168,7 +195,7 @@ p.clock.tempo_(127/60/8);
         Splay.ar(sig,0.05,0.75);
     };
     ~saw.play;
-    ~saw[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),50),[4000,4010]),1500+LFTri.kr(1/16!2).range(0,10000));};
+    //~saw[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),50),[4000,4010]),1500+LFTri.kr(1/16!2).range(0,10000));};
 );
 ~saw.stop(4);
 ~saw.clear;
@@ -222,7 +249,7 @@ p.clock.tempo_(127/60/8);
         Splay.ar(sig,0.95,0.125,SinOsc.kr(1/4.01*~tempo));
     };
     ~scanner.play;
-    ~scanner[10] = \filter -> {|sig|DWGReverb.ar(HPF.ar(LPF.ar(NumChannels.ar(sig,2),LFNoise2.kr(1/4!2).range(5000,13000)),300),[3000,3010])/4+sig;};
+//    ~scanner[10] = \filter -> {|sig|DWGReverb.ar(HPF.ar(LPF.ar(NumChannels.ar(sig,2),LFNoise2.kr(1/4!2).range(5000,13000)),300),[3000,3010])/4+sig;};
 );
 ~scanner.stop(4);
 ~scanner.clear;
@@ -253,7 +280,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
         Splay.ar(sig.flat,0.5,0.75);
     };
     ~smp.play;
-    ~smp[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),300),[4003,4013]),1500+LFSaw.kr(1/32!2).range(0,4000))/4+sig;};
+  //  ~smp[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),300),[4003,4013]),1500+LFSaw.kr(1/32!2).range(0,4000))/4+sig;};
 );
 
 ~smp.stop(7);
@@ -292,7 +319,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
         Splay.ar(sig,0.95,0.5);
     };
     ~one_weird_env.play;
-    ~one_weird_env[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),50),[4001,4011]),5000)+sig;};
+    //~one_weird_env[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),50),[4001,4011]),5000)+sig;};
 
 );
 ~one_weird_env.stop(4);
@@ -350,13 +377,22 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
     };
     ~a_env.play;
 
-    ~a_env[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),50),[4002,4012]),1600+LFSaw.kr(1/32!2).range(0,10000))+sig;};
+    //~a_env[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),50),[4002,4012]),1600+LFSaw.kr(1/32!2).range(0,10000))+sig;};
 );
 ~a_env.stop(4);
 ~a_env.clear;
 ~a_env.pause;
 ~a_env.resume;
 
+
+(
+{
+  p.stop(30);
+  ~master.play;
+  30.wait;
+  p.clean;
+}.fork;  
+)
 
 
 
