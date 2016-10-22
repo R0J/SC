@@ -137,7 +137,8 @@ NetProxy : ProxySpace {
 				var sender = msg[1].asSymbol;
 				var senderTime = msg[2];
 				var yourTime = currentEnvironment.clock.beats;
-				"Yours time: %\n% time: %".format(yourTime, sender, senderTime).warn;
+				sendMsg.clock_get_answer;
+				"Yours time: %\n% time: %\ndifference: %".format(yourTime, sender, senderTime, (yourTime - senderTime)).warn;
 			});
 		}, '/clock/get', nil).permanent_(true);
 
@@ -146,7 +147,7 @@ NetProxy : ProxySpace {
 				var sender = msg[1].asSymbol;
 				var senderTime = msg[2];
 				var yourTime = currentEnvironment.clock.beats;
-				"Yours time: %\n% time: %".format(yourTime, sender, senderTime).warn;
+				"Yours time: %\n% time: %\ndifference: %".format(yourTime, sender, senderTime, (yourTime - senderTime)).warn;
 			});
 		}, '/clock/get/answer', nil).permanent_(true);
 
