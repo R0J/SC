@@ -16,7 +16,7 @@ NetProxy : ProxySpace {
 
 	initNet {|name|
 		NetAddr.broadcastFlag = true;
-		currentEnvironment.clock.beats = TempoClock.default.beats;
+		// currentEnvironment.clock.beats = TempoClock.default.beats;
 
 		sendMsg = ();
 		netAddrs = IdentityDictionary.new();
@@ -44,10 +44,10 @@ NetProxy : ProxySpace {
 
 		if(metronom.isNil, {
 			metronom = Task({
-				TempoClock.default.timeToNextBeat(quant).wait;
+				currentEnvironment.timeToNextBeat(quant).wait;
 				{
 					Synth(\metronom, [\freq: freq, \metronomTrig, 1]);
-					("\nTempoClock.default.beats:" + TempoClock.default.beats).postln;
+					// ("\nTempoClock.default.beats:" + TempoClock.default.beats).postln;
 					("currentEnvirnment.clock.beats:" + currentEnvironment.clock.beats).postln;
 					quant.wait;
 				}.loop;
