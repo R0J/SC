@@ -34,7 +34,7 @@ NetProxy : ProxySpace {
 		this.prGetBroadcastIP;
 	}
 
-	time { sendMsg.clock_get }
+	time2 { sendMsg.clock_get; ^this; }
 
 	prGetBroadcastIP {
 
@@ -70,19 +70,21 @@ NetProxy : ProxySpace {
 
 		sendMsg.clock_set = {|event|
 			netAddrs.keysValuesDo {|key, target|
+				("sendMsg.clock_set to target % send").format(target).postln;
 				target.sendMsg('/clock/set', userName, currentEnvironment.clock.beats);
 			};
 		};
 
 		sendMsg.clock_get = {|event|
 			netAddrs.keysValuesDo {|key, target|
+				("sendMsg.clock_get to target % send").format(target).postln;
 				target.sendMsg('/clock/get', userName, currentEnvironment.clock.beats);
 			};
 		};
 
 		sendMsg.clock_get_answer = {|event, target|
 			("sendMsg.clock_get_answer to target % send").format(target).postln;
-			netAddrs.at(target.asSymbol).sendMsg('/clock/get/answer', userName);
+			netAddrs.at(target.asSymbol).sendMsg('/clock/get/answer', userName, currentEnvironment.clock.beats);
 		};
 
 		/*
@@ -103,6 +105,7 @@ NetProxy : ProxySpace {
 					sendMsg.user_timeMaster(sender);
 					sendMsg.clock_set;
 				};
+				netAddrs.postln;
 			});
 		}, '/user/connected', nil).permanent_(true);
 
@@ -111,6 +114,7 @@ NetProxy : ProxySpace {
 				var sender = msg[1].asSymbol;
 				netAddrs.put(sender, addr);
 				"Player % is here too".format(sender).warn;
+				netAddrs.postln;
 			});
 		}, '/user/loged', nil).permanent_(true);
 
@@ -131,13 +135,12 @@ NetProxy : ProxySpace {
 			});
 		}, '/clock/set', nil).permanent_(true);
 
-
 		OSCdef.newMatching(\clock_get, {|msg, time, addr, recvPort|
 			if(this.prSenderCheck(addr), {
 				var sender = msg[1].asSymbol;
 				var senderTime = msg[2];
 				var yourTime = currentEnvironment.clock.beats;
-				sendMsg.clock_get_answer;
+				sendMsg.clock_get_answer(sender);
 				"Yours time: %\n% time: %\ndifference: %".format(yourTime, sender, senderTime, (yourTime - senderTime)).warn;
 			});
 		}, '/clock/get', nil).permanent_(true);
