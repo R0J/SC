@@ -1,5 +1,5 @@
-// NetProxy : ProxySpace {
-	NetProxy {
+NetProxy : ProxySpace {
+	// NetProxy {
 
 	var userName;
 	var netIP, broadcastIP;
@@ -9,18 +9,25 @@
 	var timeMaster;
 	var metronom;
 
-	// *connect { |name = nil|
-		*new { |name = nil|
+	*connect { |name = nil|
+		// *new { |name = nil|
 		// var proxyspace = super.new.push(Server.default).makeTempoClock;
 		// super.push(Server.default).makeTempoClock;
-		// Server.default.waitForBoot({ proxyspace.initNet(name); });
 		// ^proxyspace;
-		^super.new.initNet(name);
+		var proxyspace = super.push(Server.default);
+
+		Server.default.waitForBoot({
+			proxyspace.makeTempoClock;
+			proxyspace.initNet(name);
+		});
+		^proxyspace;
 	}
 
 	initNet {|name|
 		NetAddr.broadcastFlag = true;
 		// currentEnvironment.clock.beats = TempoClock.default.beats;
+
+		TempoClock.setAllClocks(0, currentEnvironment.clock.tempo);
 
 		sendMsg = ();
 		netAddrs = IdentityDictionary.new();
@@ -51,18 +58,6 @@
 				("currentEnvirnment.clock.beats:" + currentEnvironment.clock.beats).postln;
 				quant;
 			});
-			/*
-			metronom = Task({
-			// TempoClock.default.timeToNextBeat(quant).wait;
-			currentEnvironment.clock.timeToNextBeat(quant).wait;
-			{
-			Synth(\metronom, [\freq: freq, \metronomTrig, 1]);
-			("\nTempoClock.default.beats:" + TempoClock.default.beats).postln;
-			("currentEnvirnment.clock.beats:" + currentEnvironment.clock.beats).postln;
-			quant.wait;
-			}.loop;
-			}).play(currentEnvironment.clock);
-			*/
 		},{
 			metronom.stop;
 			metronom = nil;
@@ -73,16 +68,13 @@
 
 		OSCdef.newMatching(\msg_getNetIP, {|msg, time, addr, recvPort|
 			var broadcastIP = addr.ip.split($.).put(3,255).join(".");
-
 			netIP = addr.ip.asSymbol;
 			broadcastIP = broadcastIP.asSymbol;
-
 			this.prInitSendMsg;
 			this.prInitReceiveMsg;
+			("\nNetProxy init done...\nUserName:" +  userName + "; NetIP:" + addr.ip + "; BroadcastIP:" + broadcastIP).postln;
 
 			NetAddr( broadcastIP.asString, NetAddr.langPort).sendMsg('/user/connected', userName);
-
-			("\nNetProxy init done...\nUserName:" +  userName + "; NetIP:" + addr.ip + "; BroadcastIP:" + broadcastIP).postln;
 
 		},  '/user/getNetIP', nil).oneShot;
 
@@ -104,7 +96,7 @@
 		sendMsg.clock_set = {|event|
 			netAddrs.keysValuesDo {|key, target|
 				("sendMsg.clock_set to target % send").format(key).postln;
-				target.sendMsg('/clock/set', userName, currentEnvironment.clock.beats);
+				target.sendMsg('/clock/set', userName, currentEnvironment.clock.beats, currentEnvironment.clock.tempo);
 			};
 		};
 
@@ -163,11 +155,21 @@
 			if(this.prSenderCheck(addr), {
 				var sender = msg[1].asSymbol;
 				var newTime = msg[2];
-				msg[2].postln;
-				currentEnvironment.clock.beats_(newTime);
+				var newTempo = msg[3];
+				[msg, time, addr, recvPort].postln;
+
+				TempoClock.setAllClocks(newTime, newTempo);
+				// currentEnvironment.clock.tempo = newTempo;
+				// TempoClock.default.tempo = newTempo;
+				/*
+				Server.default.bind({
+				// currentEnvironment.clock.beats_(newTime);
 				TempoClock.default.beats_(newTime);
+				currentEnvironment.clock.beats = TempoClock.default.beats;
+				});
+				*/
 				"Player % set clock at beat %".format(sender, newTime).warn;
-				("currentEnvironment.clock.beats" + currentEnvironment.clock.beats).postln;
+				// ("currentEnvironment.clock.beats" + currentEnvironment.clock.beats).postln;
 			});
 		}, '/clock/set', nil).permanent_(true);
 
@@ -230,4 +232,43 @@
 			Out.ar(0, sig * aEnv);
 		}.asSynthDef(name:\metronom).add;
 	}
+}
+
++ TempoClock {
+
+	*setAllClocks {|targetTime, targetTempo|
+		var allClocks = this.all;
+		("allClocks: " + allClocks).postln;
+
+		allClocks.do({|oneClock|
+			var queue = oneClock.queue;
+
+			("queue: " + queue).postln;
+
+			if (queue.size > 1) {
+				forBy(1, queue.size-1, 3) {|i|
+					var time = queue[i];
+					var item = queue[i+1];
+					// ("time[i]: " + queue[i]).postln;
+					// ("item[i+1]: " + queue[i+1]).postln;
+
+					// case
+					// {item.isKindOf(EventStreamPlayer)} { "jsem EventStreamPlayer".postln; queue[i+1].reset;}
+					// ;
+
+					queue[i] = targetTime;
+					// queue[i+1].removedFromScheduler(releaseNodes)
+				};
+
+			};
+			// ("queue: " + queue).postln;
+			oneClock.beats = targetTime;
+			oneClock.tempo = targetTempo;
+			("oneClock.beats:" + oneClock.beats).postln;
+		});
+
+		("TempoClock restart").postln;
+	}
+
+
 }
