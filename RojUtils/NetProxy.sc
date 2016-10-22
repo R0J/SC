@@ -1,4 +1,5 @@
-NetProxy : ProxySpace {
+// NetProxy : ProxySpace {
+	NetProxy {
 
 	var userName;
 	var netIP, broadcastIP;
@@ -8,10 +9,13 @@ NetProxy : ProxySpace {
 	var timeMaster;
 	var metronom;
 
-	*connect { |name = nil|
-		var proxyspace = super.new.push(Server.default).makeTempoClock;
-		Server.default.waitForBoot({ proxyspace.initNet(name); });
-		^proxyspace;
+	// *connect { |name = nil|
+		*new { |name = nil|
+		// var proxyspace = super.new.push(Server.default).makeTempoClock;
+		// super.push(Server.default).makeTempoClock;
+		// Server.default.waitForBoot({ proxyspace.initNet(name); });
+		// ^proxyspace;
+		^super.new.initNet(name);
 	}
 
 	initNet {|name|
@@ -39,20 +43,26 @@ NetProxy : ProxySpace {
 	time { sendMsg.clock_get; ^nil; }
 
 	metro {|quant = 1, freq = 800|
-		var metro = this.prGetLibrary.at(\metro);
-		var isShared = this.prGetLibrary.at(\sharedCode);
-
 		if(metronom.isNil, {
+			metronom = TempoClock.new(currentEnvironment.clock.tempo);
+			metronom.sched(currentEnvironment.clock.timeToNextBeat(quant), {
+				Synth(\metronom, [\freq: freq, \metronomTrig, 1]);
+				("\nTempoClock.default.beats:" + TempoClock.default.beats).postln;
+				("currentEnvirnment.clock.beats:" + currentEnvironment.clock.beats).postln;
+				quant;
+			});
+			/*
 			metronom = Task({
-				// TempoClock.default.timeToNextBeat(quant).wait;
-				currentEnvironment.clock.timeToNextBeat(quant).wait;
-				{
-					Synth(\metronom, [\freq: freq, \metronomTrig, 1]);
-					("\nTempoClock.default.beats:" + TempoClock.default.beats).postln;
-					("currentEnvirnment.clock.beats:" + currentEnvironment.clock.beats).postln;
-					quant.wait;
-				}.loop;
+			// TempoClock.default.timeToNextBeat(quant).wait;
+			currentEnvironment.clock.timeToNextBeat(quant).wait;
+			{
+			Synth(\metronom, [\freq: freq, \metronomTrig, 1]);
+			("\nTempoClock.default.beats:" + TempoClock.default.beats).postln;
+			("currentEnvirnment.clock.beats:" + currentEnvironment.clock.beats).postln;
+			quant.wait;
+			}.loop;
 			}).play(currentEnvironment.clock);
+			*/
 		},{
 			metronom.stop;
 			metronom = nil;
@@ -154,8 +164,8 @@ NetProxy : ProxySpace {
 				var sender = msg[1].asSymbol;
 				var newTime = msg[2];
 				msg[2].postln;
-				currentEnvironment.clock.beats = newTime.asFloat;
-				// TempoClock.default.beats = newTime.asFloat;
+				currentEnvironment.clock.beats_(newTime);
+				TempoClock.default.beats_(newTime);
 				"Player % set clock at beat %".format(sender, newTime).warn;
 				("currentEnvironment.clock.beats" + currentEnvironment.clock.beats).postln;
 			});
@@ -176,6 +186,8 @@ NetProxy : ProxySpace {
 				var sender = msg[1].asSymbol;
 				var senderTime = msg[2];
 				var yourTime = currentEnvironment.clock.beats;
+				// currentEnvironment.clock.beats_(newTime);
+				// TempoClock.default.beats_(yourTime);
 				"Yours time: %\n% time: %\ndifference: %".format(yourTime, sender, senderTime, (yourTime - senderTime)).warn;
 			});
 		}, '/clock/get/answer', nil).permanent_(true);
