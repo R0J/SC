@@ -44,10 +44,11 @@ NetProxy : ProxySpace {
 
 		if(metronom.isNil, {
 			metronom = Task({
-				currentEnvironment.timeToNextBeat(quant).wait;
+				TempoClock.default.timeToNextBeat(quant).wait;
+				// currentEnvironment.clock.timeToNextBeat(quant).wait;
 				{
 					Synth(\metronom, [\freq: freq, \metronomTrig, 1]);
-					// ("\nTempoClock.default.beats:" + TempoClock.default.beats).postln;
+					("\nTempoClock.default.beats:" + TempoClock.default.beats).postln;
 					("currentEnvirnment.clock.beats:" + currentEnvironment.clock.beats).postln;
 					quant.wait;
 				}.loop;
@@ -152,8 +153,11 @@ NetProxy : ProxySpace {
 			if(this.prSenderCheck(addr), {
 				var sender = msg[1].asSymbol;
 				var newTime = msg[2];
-				currentEnvironment.clock.beats = newTime;
+				msg[2].postln;
+				currentEnvironment.clock.beats = newTime.asFloat;
+				TempoClock.default.beats = newTime.asFloat;
 				"Player % set clock at beat %".format(sender, newTime).warn;
+				("currentEnvironment.clock.beats" + currentEnvironment.clock.beats).postln;
 			});
 		}, '/clock/set', nil).permanent_(true);
 
