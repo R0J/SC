@@ -17,6 +17,7 @@ NetProxy : ProxySpace {
 		var proxyspace = super.push(Server.default);
 
 		Server.default.waitForBoot({
+			Server.default.latency = 0;
 			proxyspace.makeTempoClock;
 			proxyspace.initNet(name);
 		});
