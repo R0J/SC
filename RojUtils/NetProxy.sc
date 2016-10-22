@@ -82,7 +82,7 @@ NetProxy : ProxySpace {
 
 		sendMsg.clock_get_answer = {|event, target|
 			("sendMsg.clock_get_answer to target % send").format(target).postln;
-			netAddrs.at(target.asSymbol).sendMsg('/user/get/answer', userName);
+			netAddrs.at(target.asSymbol).sendMsg('/clock/get/answer', userName);
 		};
 
 		/*
