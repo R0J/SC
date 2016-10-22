@@ -1,9 +1,9 @@
 + ProxySpace {
 
 	connect {|userName = nil|
-		NetAddr.broadcastFlag = true;
-		this.prGetLibrary(userName);
-		this.prGetBroadcastIP;
+		// NetAddr.broadcastFlag = true;
+		// this.prGetLibrary(userName);
+		// this.prGetBroadcastIP;
 	}
 
 	metro {|quant = 1, freq = 800|
@@ -12,7 +12,7 @@
 
 		if(metro.isNil, {
 			var code = Task({
-				(TempoClock.default.timeToNextBeat(quant) + Server.default.latency).wait;
+				TempoClock.default.timeToNextBeat(quant).wait;
 				{
 					Synth(\metronom, [\freq: freq, \metronomTrig, 1]);
 					("\nTempoClock.default.beats:" + TempoClock.default.beats).postln;
