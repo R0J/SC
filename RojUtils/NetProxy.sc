@@ -6,14 +6,15 @@ NetProxy : ProxySpace {
 	var sendMsg;
 
 	var timeMaster;
+	var metronom;
 
 	*connect { |name = nil|
 		var proxyspace = super.new.push(Server.default).makeTempoClock;
-		Server.default.waitForBoot({ proxyspace.initNet; });
+		Server.default.waitForBoot({ proxyspace.initNet(name); });
 		^proxyspace;
 	}
 
-	initNet {
+	initNet {|name|
 		NetAddr.broadcastFlag = true;
 		currentEnvironment.clock.beats = TempoClock.default.beats;
 
@@ -29,12 +30,33 @@ NetProxy : ProxySpace {
 		});
 
 		timeMaster = true;
+		metronom = nil;
 
 		this.prMetronomDef;
 		this.prGetBroadcastIP;
 	}
 
-	time2 { sendMsg.clock_get; ^this; }
+	time { sendMsg.clock_get; ^nil; }
+
+	metro {|quant = 1, freq = 800|
+		var metro = this.prGetLibrary.at(\metro);
+		var isShared = this.prGetLibrary.at(\sharedCode);
+
+		if(metronom.isNil, {
+			metronom = Task({
+				TempoClock.default.timeToNextBeat(quant).wait;
+				{
+					Synth(\metronom, [\freq: freq, \metronomTrig, 1]);
+					("\nTempoClock.default.beats:" + TempoClock.default.beats).postln;
+					("currentEnvirnment.clock.beats:" + currentEnvironment.clock.beats).postln;
+					quant.wait;
+				}.loop;
+			}).play;
+		},{
+			metronom.stop;
+			metronom = nil;
+		});
+	}
 
 	prGetBroadcastIP {
 
@@ -70,14 +92,14 @@ NetProxy : ProxySpace {
 
 		sendMsg.clock_set = {|event|
 			netAddrs.keysValuesDo {|key, target|
-				("sendMsg.clock_set to target % send").format(target).postln;
+				("sendMsg.clock_set to target % send").format(key).postln;
 				target.sendMsg('/clock/set', userName, currentEnvironment.clock.beats);
 			};
 		};
 
 		sendMsg.clock_get = {|event|
 			netAddrs.keysValuesDo {|key, target|
-				("sendMsg.clock_get to target % send").format(target).postln;
+				("sendMsg.clock_get to target % send").format(key).postln;
 				target.sendMsg('/clock/get', userName, currentEnvironment.clock.beats);
 			};
 		};
