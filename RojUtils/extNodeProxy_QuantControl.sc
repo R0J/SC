@@ -172,6 +172,7 @@ NodeStage {
 	var clock;
 	var timeline;
 
+	var loopTask;
 	var >loopCount;
 	var >loopTime;
 
@@ -195,6 +196,7 @@ NodeStage {
 	init {
 		clock = nil;
 		timeline = Order.new();
+		loopTask = nil;
 		loopCount = 1;
 		loopTime = 1;
 		this.storeToMap;
@@ -202,20 +204,32 @@ NodeStage {
 
 	schedCycle {|time, nodeCycle| timeline.put(time, nodeCycle); }
 
+	cleanTimeline {
+		loopTask.stop;
+		clock.stop;
+		timeline = Order.new();
+	}
+
 	play {
-		loopCount.do({
-			if(clock.notNil) { clock.stop; };
-			clock = TempoClock.new(currentEnvironment.clock.tempo);
+		// if(loopTask.no[tNil) {  };
+		("loopTask.isNil" + loopTask.isNil).postln;
+		("loopTask" + loopTask).postln;
+		loopTask = Task({
+			loopCount.do({
+				if(clock.notNil) { clock.stop; };
+				clock = TempoClock.new(currentEnvironment.clock.tempo);
 
-			timeline.keysValuesDo ({|time|
-				var selectedNodeCycle = timeline[time];
-				("timeLine time:" + time).postln;
-				("timeLine selectedNodeCycle:" + selectedNodeCycle).postln;
+				timeline.keysValuesDo ({|time|
+					var selectedNodeCycle = timeline[time];
+					("timeLine time:" + time).postln;
+					("timeLine selectedNodeCycle:" + selectedNodeCycle).postln;
 
-				clock.sched(time, {	selectedNodeCycle.trig;	});
+					clock.sched(time, {	selectedNodeCycle.trig;	});
+					clock.sched(loopTime, { clock.stop; })
+				});
+				loopTime.wait;
 			});
-			loopTime.wait;
-		});
+		}).play;
 	}
 
 	printOn { |stream|
@@ -249,9 +263,17 @@ NodeStage {
 				nCycle.schedEnv(0, nEnv);
 
 				nStage = NodeStage(this.envirKey, \default);
+				nStage.cleanTimeline;
+
+				if(loopTime.notNil, {
+					nStage.loopCount_(inf);
+					nStage.loopTime_(loopTime);
+				}, {
+						nStage.loopCount_(1);
+					// nStage.loopTime_(loopTime);
+				});
+
 				nStage.schedCycle(0, nCycle);
-				nStage.loopCount_(inf);
-				nStage.loopTime_(loopTime);
 
 				nStage.play;
 			}
