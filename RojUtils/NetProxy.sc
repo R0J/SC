@@ -194,6 +194,13 @@ NetProxy : ProxySpace {
 			});
 		}, '/clock/get/answer', nil).permanent_(true);
 
+		OSCdef.newMatching(\clock_get_answer, {|msg, time, addr, recvPort|
+			// o = OSCFunc({ arg msg, time;
+			var metronomTime = currentEnvironment.clock.beats;
+			"Metronom answer time: %".format(metronomTime).postln;
+		},'/tr', Server.default.addr);
+
+
 		/*
 
 		OSCdef.newMatching(\clock_sync, {|msg, time, addr, recvPort|
@@ -228,7 +235,7 @@ NetProxy : ProxySpace {
 			var sig = SinOsc.ar(freq!2);
 			var env = Env([0,1,0], [0.005, 0.05], [5,-3]);
 			var aEnv = EnvGen.kr(env, doneAction:2);
-			// SendTrig.kr(metronomTrig);
+			SendTrig.kr(metronomTrig);
 			Out.ar(0, sig * aEnv);
 		}.asSynthDef(name:\metronom).add;
 	}
