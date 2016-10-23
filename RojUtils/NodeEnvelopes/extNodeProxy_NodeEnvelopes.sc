@@ -97,36 +97,34 @@
 	// ~aaa.cycle(\test, \amp, \e1, [0, 0.2]); // cislo znamena cas trigu v cyklu
 	// ~aaa.cycle(\test, \amp, Pn(\e1,3) ++ \e2);
 	cycle { |cycleName, controlName, envPattern, trigTime = nil|
-		var library = this.prGetLibrary(controlName);
-		// var cyclePath = [\cycles, cysleName.asSymbol];
-		// var path = [controlName.asSymbol, \cycles, cycleName.asSymbol];
+		var library = this.nodeMap.get(\qMachine);
 		var nCycle;
 		var stream = envPattern.asStream;
 		var envStartTime = 0;
 
-		case
-		{ stream.isKindOf(Routine) } { stream = stream.all; } // Pseq([\aaa, \bbb], 3) ++ \ccc
-		{ stream.isKindOf(Symbol) }	{ stream = stream.asArray; }
-		{ stream.isKindOf(Integer) } { stream = stream.asSymbol.asArray; }
-		{ stream.isKindOf(String) }	{ stream = stream.asSymbol.asArray; }
-		;
+		if(library.notNil) {
+			case
+			{ stream.isKindOf(Routine) } { stream = stream.all; } // Pseq([\aaa, \bbb], 3) ++ \ccc
+			{ stream.isKindOf(Symbol) }	{ stream = stream.asArray; }
+			{ stream.isKindOf(Integer) } { stream = stream.asSymbol.asArray; }
+			{ stream.isKindOf(String) }	{ stream = stream.asSymbol.asArray; }
+			;
 
-		case
-		{controlName.isKindOf(Symbol) } {
-			nCycle = NodeCycle(this.envirKey, cycleName.asSymbol);
-			stream.do({|oneEnvelopeName|
-				var oneEnvPath = [\envelopes, controlName.asSymbol, oneEnvelopeName.asSymbol];
-				var oneEnv = library.atPath(oneEnvPath);
-				// ("oneEnv" + oneEnv).postln;
-				// ("envStartTime" + envStartTime).postln;
-				nCycle.schedEnv(envStartTime, oneEnv);
-				envStartTime = envStartTime + oneEnv.duration;
-			});
-		}
-		{controlName.isKindOf(Array) } {
-			"controlName je Array".postln;
+			case
+			{controlName.isKindOf(Symbol) } {
+				nCycle = NodeCycle(this.envirKey, cycleName.asSymbol);
+				stream.do({|oneEnvelopeName|
+					var oneEnvPath = [\envelopes, controlName.asSymbol, oneEnvelopeName.asSymbol];
+					var oneEnv = library.atPath(oneEnvPath);
+					nCycle.schedEnv(envStartTime, oneEnv);
+					envStartTime = envStartTime + oneEnv.duration;
+				});
+			}
+			{controlName.isKindOf(Array) } {
+				"controlName je Array".postln;
+			};
+			this.post;
 		};
-		this.post;
 	}
 	// nCycle.schedEnv(0, nEnv);
 
