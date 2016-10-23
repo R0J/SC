@@ -215,6 +215,7 @@ NodeStage {
 		("loopTask.isNil" + loopTask.isNil).postln;
 		("loopTask" + loopTask).postln;
 		loopTask = Task({
+			currentEnvironment.clock.timeToNextBeat(loopTime).wait;
 			loopCount.do({
 				if(clock.notNil) { clock.stop; };
 				clock = TempoClock.new(currentEnvironment.clock.tempo);
@@ -269,7 +270,7 @@ NodeStage {
 					nStage.loopCount_(inf);
 					nStage.loopTime_(loopTime);
 				}, {
-						nStage.loopCount_(1);
+					nStage.loopCount_(1);
 					// nStage.loopTime_(loopTime);
 				});
 
