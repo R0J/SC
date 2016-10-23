@@ -1,5 +1,4 @@
 NetProxy : ProxySpace {
-	// NetProxy {
 
 	var userName;
 	var netIP, broadcastIP;
@@ -44,7 +43,13 @@ NetProxy : ProxySpace {
 		this.prGetBroadcastIP;
 	}
 
-	bpm { }
+	bpm { |bpm|
+		{
+			currentEnvironment.clock.timeToNextBeat(1).wait;
+			TempoClock.setAllClocks(currentEnvironment.clock.beats, bpm/60);
+			sendMsg.clock_set;
+		}.fork;
+	}
 
 	time { sendMsg.clock_get; ^nil; }
 
