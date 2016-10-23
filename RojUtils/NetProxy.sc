@@ -7,15 +7,12 @@ NetProxy : ProxySpace {
 	var sendMsg;
 
 	var timeMaster;
+
 	var metronom;
+	var oscScTrigAddr, oscScTrigClock;
 
 	*connect { |name = nil|
-		// *new { |name = nil|
-		// var proxyspace = super.new.push(Server.default).makeTempoClock;
-		// super.push(Server.default).makeTempoClock;
-		// ^proxyspace;
 		var proxyspace = super.push(Server.default);
-
 		Server.default.waitForBoot({
 			Server.default.latency = 0;
 			proxyspace.makeTempoClock;
@@ -26,8 +23,6 @@ NetProxy : ProxySpace {
 
 	initNet {|name|
 		NetAddr.broadcastFlag = true;
-		// currentEnvironment.clock.beats = TempoClock.default.beats;
-
 		TempoClock.setAllClocks(0, currentEnvironment.clock.tempo);
 
 		sendMsg = ();
@@ -43,14 +38,23 @@ NetProxy : ProxySpace {
 
 		timeMaster = true;
 		metronom = nil;
+		oscScTrigClock = nil;
 
 		this.prMetronomDef;
 		this.prGetBroadcastIP;
 	}
 
+	bpm { }
+
 	time { sendMsg.clock_get; ^nil; }
 
+	restartClock {
+		sendMsg.clock_restart;
+		TempoClock.setAllClocks(0, currentEnvironment.clock.tempo);
+	}
+
 	metro {|quant = 1, freq = 800|
+
 		if(metronom.isNil, {
 			metronom = TempoClock.new(currentEnvironment.clock.tempo);
 			metronom.sched(currentEnvironment.clock.timeToNextBeat(quant), {
@@ -65,6 +69,20 @@ NetProxy : ProxySpace {
 		});
 	}
 
+	oscTrig { |quant = 1|
+
+		if(oscScTrigClock.isNil, {
+			oscScTrigClock = TempoClock.new(currentEnvironment.clock.tempo);
+			oscScTrigClock.sched(currentEnvironment.clock.timeToNextBeat(quant), {
+				oscScTrigAddr.sendMsg('/scTrig', quant, currentEnvironment.clock.tempo*60);
+				quant;
+			});
+		},{
+			oscScTrigClock.stop;
+			oscScTrigClock = nil;
+		});
+	}
+
 	prGetBroadcastIP {
 
 		OSCdef.newMatching(\msg_getNetIP, {|msg, time, addr, recvPort|
@@ -75,6 +93,7 @@ NetProxy : ProxySpace {
 			this.prInitReceiveMsg;
 			("\nNetProxy init done...\nUserName:" +  userName + "; NetIP:" + addr.ip + "; BroadcastIP:" + broadcastIP).postln;
 
+			oscScTrigAddr = NetAddr( broadcastIP.asString, 10000);
 			NetAddr( broadcastIP.asString, NetAddr.langPort).sendMsg('/user/connected', userName);
 
 		},  '/user/getNetIP', nil).oneShot;
@@ -101,6 +120,13 @@ NetProxy : ProxySpace {
 			};
 		};
 
+		sendMsg.clock_restart = {|event|
+			netAddrs.keysValuesDo {|key, target|
+				("sendMsg.clock_restart to target % send").format(key).postln;
+				target.sendMsg('/clock/restart', userName, currentEnvironment.clock.tempo);
+			};
+		};
+
 		sendMsg.clock_get = {|event|
 			netAddrs.keysValuesDo {|key, target|
 				("sendMsg.clock_get to target % send").format(key).postln;
@@ -113,12 +139,9 @@ NetProxy : ProxySpace {
 			netAddrs.at(target.asSymbol).sendMsg('/clock/get/answer', userName, currentEnvironment.clock.beats);
 		};
 
-		/*
-		sendMsg.clock_sync = {|event, setTime| "events.clock_sync send".postln; broadcastAddr.sendMsg('/clock/sync', sender); };
-		sendMsg.code_evaluate = {|event, code| broadcastAddr.sendMsg('/code/evaluate', sender, code); };
-		*/
-
+		// sendMsg.code_evaluate = {|event, code| broadcastAddr.sendMsg('/code/evaluate', sender, code); };
 	}
+
 	prInitReceiveMsg {
 
 		OSCdef.newMatching(\user_connected, {|msg, time, addr, recvPort|
@@ -157,22 +180,19 @@ NetProxy : ProxySpace {
 				var sender = msg[1].asSymbol;
 				var newTime = msg[2];
 				var newTempo = msg[3];
-				[msg, time, addr, recvPort].postln;
-
 				TempoClock.setAllClocks(newTime, newTempo);
-				// currentEnvironment.clock.tempo = newTempo;
-				// TempoClock.default.tempo = newTempo;
-				/*
-				Server.default.bind({
-				// currentEnvironment.clock.beats_(newTime);
-				TempoClock.default.beats_(newTime);
-				currentEnvironment.clock.beats = TempoClock.default.beats;
-				});
-				*/
 				"Player % set clock at beat %".format(sender, newTime).warn;
-				// ("currentEnvironment.clock.beats" + currentEnvironment.clock.beats).postln;
 			});
 		}, '/clock/set', nil).permanent_(true);
+
+		OSCdef.newMatching(\clock_restart, {|msg, time, addr, recvPort|
+			if(this.prSenderCheck(addr), {
+				var sender = msg[1].asSymbol;
+				var senderTempo = msg[2];
+				TempoClock.setAllClocks(0, senderTempo);
+				"Player % restart all clock".format(sender).warn;
+			});
+		}, '/clock/restart', nil).permanent_(true);
 
 		OSCdef.newMatching(\clock_get, {|msg, time, addr, recvPort|
 			if(this.prSenderCheck(addr), {
@@ -189,24 +209,17 @@ NetProxy : ProxySpace {
 				var sender = msg[1].asSymbol;
 				var senderTime = msg[2];
 				var yourTime = currentEnvironment.clock.beats;
-				// currentEnvironment.clock.beats_(newTime);
-				// TempoClock.default.beats_(yourTime);
 				"Yours time: %\n% time: %\ndifference: %".format(yourTime, sender, senderTime, (yourTime - senderTime)).warn;
 			});
 		}, '/clock/get/answer', nil).permanent_(true);
 
-		OSCdef.newMatching(\clock_get_answer, {|msg, time, addr, recvPort|
-			// o = OSCFunc({ arg msg, time;
+		OSCdef.newMatching(\metronom_answer, {|msg, time, addr, recvPort|
 			var metronomTime = currentEnvironment.clock.beats;
 			"Metronom answer time: %".format(metronomTime).postln;
 		},'/tr', Server.default.addr);
 
 
 		/*
-
-		OSCdef.newMatching(\clock_sync, {|msg, time, addr, recvPort|
-		// TempoClock.allClocksRestart;
-		}, '/clock/sync', nil).permanent_(true);
 
 		OSCdef.newMatching(\msg_code_evaluate, {|msg, time, addr, recvPort|
 		var msgType = msg[0];
@@ -251,31 +264,22 @@ NetProxy : ProxySpace {
 		allClocks.do({|oneClock|
 			var queue = oneClock.queue;
 
-			("queue: " + queue).postln;
+			// ("queue: " + queue).postln;
 
 			if (queue.size > 1) {
 				forBy(1, queue.size-1, 3) {|i|
 					var time = queue[i];
 					var item = queue[i+1];
-					// ("time[i]: " + queue[i]).postln;
-					// ("item[i+1]: " + queue[i+1]).postln;
-
-					// case
-					// {item.isKindOf(EventStreamPlayer)} { "jsem EventStreamPlayer".postln; queue[i+1].reset;}
-					// ;
-
 					queue[i] = targetTime;
-					// queue[i+1].removedFromScheduler(releaseNodes)
 				};
 
 			};
-			// ("queue: " + queue).postln;
 			oneClock.beats = targetTime;
 			oneClock.tempo = targetTempo;
-			("oneClock.beats:" + oneClock.beats).postln;
+			// ("oneClock.beats:" + oneClock.beats).postln;
 		});
 
-		("TempoClock restart").postln;
+		("All clocks restarted" + allClocks).postln;
 	}
 
 
