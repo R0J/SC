@@ -186,7 +186,7 @@ NetProxy : ProxySpace {
 				var newTime = msg[2];
 				var newTempo = msg[3];
 				TempoClock.setAllClocks(newTime, newTempo);
-				"Player % set clock at beat %".format(sender, newTime).warn;
+				"Player % set clock at beat % and tempo %".format(sender, newTime, newTempo * 60).warn;
 			});
 		}, '/clock/set', nil).permanent_(true);
 
