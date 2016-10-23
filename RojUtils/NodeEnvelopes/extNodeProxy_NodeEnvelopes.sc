@@ -1,258 +1,57 @@
-NodeEnv {
-
-	var nodeName, controlName, envName;
-	var envelope;
-
-	var synth, controlBus;
-	var >setPlot = false;
-
-	*new {|nodeName, controlName, envName|
-		var node = nodeName.envirGet;
-		var library = node.nodeMap.get(\qMachine);
-		var path = [\envelopes, controlName.asSymbol];
-		var nEnv = library.atPath(path ++ envName.asSymbol);
-
-		if(nEnv.isNil,
-			{ ^super.newCopyArgs(nodeName.asSymbol, controlName.asSymbol, envName).init; },
-			{ ^nEnv; }
-		);
-	}
-
-	init {
-		var node = nodeName.envirGet;
-		var library = node.nodeMap.get(\qMachine);
-
-		synth = nil;
-		controlBus = library.at(\envelopes, controlName.asSymbol, \controlBus);
-		node.set(controlName.asSymbol, controlBus.asMap);
-
-		this.prepareSynthDef;
-
-		this.storeToMap;
-	}
-
-	env {|env|
-		envelope = env;
-		if(setPlot) { this.plot; };
-	}
-
-	envCode { ^envelope.storeArgs; }
-
-	duration { ^envelope.duration; }
-
-	printOn { |stream|
-		stream << this.class.name << "[" << nodeName << "; " << controlName << "]";
-	}
-
-	plot {|size| envelope.plotNamedEnv(envName.asSymbol); }
-
-	prepareSynthDef {
-		var envSynthDef;
-		var envSynthName = nodeName ++ "_" ++ controlName ++ "_" ++ envName;
-		var fTime = 0;
-
-		envSynthDef = {|cBus|
-			var envelope = EnvGen.kr(
-				\env.kr(Env.newClear(200,1).asArray),
-				gate: \envTrig.tr(0),
-				timeScale: \tempoClock.kr(1).reciprocal,
-				doneAction: 0
-			);
-
-			var fade = EnvGen.kr(
-				Env([ \fromVal.kr(0), \toVal.kr(0)], \fadeTime.kr(fTime), \sin),
-				gate:\fadeTrig.tr(0),
-				timeScale: \tempoClock.kr(1).reciprocal
-			);
-
-			Out.kr( cBus, envelope * fade );
-		};
-		envSynthDef.asSynthDef(name:envSynthName.asSymbol).add;
-		("SynthDef" + envSynthName + "added").postln;
-
-		Server.default.sync;
-		// this.prFadeOutSynths(control, envName, fTime);
-
-		synth = Synth(envSynthName.asSymbol, [
-			\cBus: controlBus,
-			\env: [envelope],
-			\fromVal, 0,
-			\toVal, 1,
-			\fadeTime, fTime,
-			\fadeTrig, 1
-		], nodeName.envirGet.group);
-		// synthID = synth.nodeID;
-
-
-		// library.putAtPath(path ++ \synths ++ synthID.asSymbol, synth);
-		// });
-	}
-
-	trig {
-		// synth.do({|selectedSynth| selectedSynth.set(\envTrig, 1, \tempoClock, currentEnvironment.clock.tempo); });
-		("Synth trig to " + controlBus + "by synth:" + synth.nodeID + "env:" + this.envCode).postln;
-		synth.set(
-			\envTrig, 1,
-			\tempoClock, currentEnvironment.clock.tempo,
-			\env, [envelope]
-		);
-	}
-
-	storeToMap {
-		var node = nodeName.envirGet;
-		var library = node.nodeMap.get(\qMachine);
-		var path = [\envelopes, controlName.asSymbol];
-
-		library.putAtPath(path ++ envName.asSymbol, this);
-		library.postTree;
-	}
-}
-
-NodeCycle {
-	var nodeName, cycleName;
-	var clock;
-	var timeline;
-	var duration;
-
-	*new {|nodeName, cycleName|
-		var node = nodeName.envirGet;
-		var library = node.nodeMap.get(\qMachine);
-		var path = [\cycles, cycleName.asSymbol];
-		var nCycle = library.atPath(path);
-
-		if(nCycle.isNil,
-			{ ^super.newCopyArgs(nodeName.asSymbol, cycleName.asSymbol).init; },
-			{ ^nCycle; }
-		);
-	}
-
-	init {
-		clock = nil;
-		timeline = Order.new();
-		this.storeToMap;
-	}
-
-	schedEnv {|time, nodeEnv|
-		timeline.put(time, nodeEnv);
-		duration = timeline.lastIndex + timeline[timeline.lastIndex].duration;
-	}
-
-	trig {
-		if(clock.notNil) { clock.stop; };
-		clock = TempoClock.new(currentEnvironment.clock.tempo);
-
-		timeline.keysValuesDo ({|time|
-			var selectedNodeEnv = timeline[time];
-			("timeLine time:" + time).postln;
-			("timeLine selectedNodeEnv:" + selectedNodeEnv).postln;
-
-			clock.sched(time, { selectedNodeEnv.trig; });
-		});
-
-		clock.sched(duration, { clock.stop; });
-
-	}
-
-	printOn { |stream|
-		stream << this.class.name << "[" << nodeName << "; " << cycleName << "]";
-	}
-
-	storeToMap {
-		var node = nodeName.envirGet;
-		var library = node.nodeMap.get(\qMachine);
-		var path = [\cycles, cycleName.asSymbol];
-
-		library.putAtPath(path, this);
-		library.postTree;
-	}
-}
-
-NodeStage {
-	var nodeName, stageName;
-	var clock;
-	var timeline;
-
-	var loopTask;
-	var >loopCount;
-	var >loopTime;
-
-	*new {|nodeName, stageName|
-		var node = nodeName.envirGet;
-		var library = node.nodeMap.get(\qMachine);
-		var path = [\stages, stageName.asSymbol];
-		var nStage = library.atPath(path);
-
-		if(nStage.isNil,
-			{
-				("NodeStage" + stageName + "novy").postln;
-				^super.newCopyArgs(nodeName.asSymbol, stageName.asSymbol).init;
-			}, {
-				("NodeStage" + stageName + "nalezen").postln;
-				^nStage;
-			}
-		);
-	}
-
-	init {
-		clock = nil;
-		timeline = Order.new();
-		loopTask = nil;
-		loopCount = 1;
-		loopTime = 1;
-		this.storeToMap;
-	}
-
-	schedCycle {|time, nodeCycle| timeline.put(time, nodeCycle); }
-
-	cleanTimeline {
-		loopTask.stop;
-		clock.stop;
-		timeline = Order.new();
-	}
-
-	play {
-		// if(loopTask.no[tNil) {  };
-		("loopTask.isNil" + loopTask.isNil).postln;
-		("loopTask" + loopTask).postln;
-		loopTask = Task({
-			currentEnvironment.clock.timeToNextBeat(loopTime).wait;
-			loopCount.do({
-				if(clock.notNil) { clock.stop; };
-				clock = TempoClock.new(currentEnvironment.clock.tempo);
-
-				timeline.keysValuesDo ({|time|
-					var selectedNodeCycle = timeline[time];
-					("timeLine time:" + time).postln;
-					("timeLine selectedNodeCycle:" + selectedNodeCycle).postln;
-
-					clock.sched(time, {	selectedNodeCycle.trig;	});
-					clock.sched(loopTime, { clock.stop; })
-				});
-				loopTime.wait;
-			});
-		}).play;
-	}
-
-	printOn { |stream|
-		stream << this.class.name << "[" << nodeName << "; " << stageName << "]";
-	}
-
-	storeToMap {
-		var node = nodeName.envirGet;
-		var library = node.nodeMap.get(\qMachine);
-		// var stage = \default;
-		var path = [\stages, stageName.asSymbol];
-
-		library.putAtPath(path, this);
-		library.postTree;
-	}
-}
-
 + NodeProxy {
+
+	post {
+		var library = this.nodeMap.get(\qMachine);
+		if(library.notNil) {
+			var envFolder = library.atPath([\envelopes]);
+			var cyclesFolder = library.atPath([\cycles]);
+			var stageFolder = library.atPath([\stages]);
+
+			"\n\nNodeProxy qMachine post \n-----------------------".postln;
+
+			if(envFolder.notNil) {
+				"envelopes:".postln;
+				library.atPath([\envelopes]).sortedKeysValuesDo({|oneControlNames|
+					("\t \\" ++ oneControlNames).postln;
+					library.atPath([\envelopes] ++ oneControlNames.asSymbol).sortedKeysValuesDo({|key|
+						var oneItem = library.atPath([\envelopes] ++ oneControlNames.asSymbol ++ key.asSymbol);
+
+						case
+						{ oneItem.isKindOf(Bus) } { ("\t\t \\" ++ key + "index" + oneItem.index).postln;  }
+						{ oneItem.isKindOf(NodeEnv) } {
+							("\n\t\t \\" ++ key ++ " -> NodeEnv [ dur:" + oneItem.duration + "]").postln;
+							(
+								"\t\t\t - levels:" + oneItem.envelope.levels +
+								"\n\t\t\t - times:" + oneItem.envelope.times +
+								"\n\t\t\t - curves:" + oneItem.envelope.curves
+							).postln;
+						};
+					});
+				});
+			};
+
+			if(cyclesFolder.notNil) {
+				"cycles:".postln;
+				cyclesFolder.sortedKeysValuesDo({|oneCycleNames|
+					var oneCycle = library.atPath([\cycles] ++ oneCycleNames.asSymbol);
+					("\t\t \\" ++ oneCycleNames ++ " -> NodeCycle [ dur:" + oneCycle.duration + "]").postln;
+
+					oneCycle.trigTimes.do({|oneTrigTime|
+						var oneEnv = oneCycle.trigAt(oneTrigTime);
+						("\t\t\t - \\" ++ oneEnv.envName + "->" + oneTrigTime + "to" + oneCycle.trigEndTime(oneTrigTime)).postln;
+					})
+				});
+			};
+
+			if(stageFolder.notNil) {
+				"stages:".postln;
+			};
+		};
+	}
 
 	env { |controlName, envelope, loopTime = nil|
 		var library = this.prGetLibrary(controlName);
-		var path = [controlName.asSymbol, \envelopes];
+		// var path = [controlName.asSymbol, \envelopes];
 		var nEnv, nCycle, nStage;
 		{
 			case
@@ -290,13 +89,49 @@ NodeStage {
 			}
 			;
 
+			this.post;
 
 		}.fork;
 	}
 
-	/*
-	cycle { }
+	// ~aaa.cycle(\test, \amp, \e1, [0, 0.2]); // cislo znamena cas trigu v cyklu
+	// ~aaa.cycle(\test, \amp, Pn(\e1,3) ++ \e2);
+	cycle { |cycleName, controlName, envPattern, trigTime = nil|
+		var library = this.prGetLibrary(controlName);
+		// var cyclePath = [\cycles, cysleName.asSymbol];
+		// var path = [controlName.asSymbol, \cycles, cycleName.asSymbol];
+		var nCycle;
+		var stream = envPattern.asStream;
+		var envStartTime = 0;
 
+		case
+		{ stream.isKindOf(Routine) } { stream = stream.all; } // Pseq([\aaa, \bbb], 3) ++ \ccc
+		{ stream.isKindOf(Symbol) }	{ stream = stream.asArray; }
+		{ stream.isKindOf(Integer) } { stream = stream.asSymbol.asArray; }
+		{ stream.isKindOf(String) }	{ stream = stream.asSymbol.asArray; }
+		;
+
+		case
+		{controlName.isKindOf(Symbol) } {
+			nCycle = NodeCycle(this.envirKey, cycleName.asSymbol);
+			stream.do({|oneEnvelopeName|
+				var oneEnvPath = [\envelopes, controlName.asSymbol, oneEnvelopeName.asSymbol];
+				var oneEnv = library.atPath(oneEnvPath);
+				// ("oneEnv" + oneEnv).postln;
+				// ("envStartTime" + envStartTime).postln;
+				nCycle.schedEnv(envStartTime, oneEnv);
+				envStartTime = envStartTime + oneEnv.duration;
+			});
+		}
+		{controlName.isKindOf(Array) } {
+			"controlName je Array".postln;
+		};
+		this.post;
+	}
+	// nCycle.schedEnv(0, nEnv);
+
+
+	/*
 	stage { |stageName, cyclePattern|
 	var nCycle = NodeStage(this.envirKey, stageName.asSymbol);
 	var stream = pattern.asStream;
