@@ -256,7 +256,7 @@ ProxySynthDef(\kickfill,{
 
 	env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2.5],[3,-3],curve:'exp'),timeScale:sustain, doneAction:2);
 
-	sig = Mix.fill(10,{|n| SinOsc.ar(50!2,env**(n+10)*8pi)});
+	sig = Mix.fill(10,{|n| SinOsc.ar(\freq.kr,env**(n+10)*8pi)});
 	sig = Pan2.ar(sig * env*amp,pan);
 	Splay.ar(sig,0.75,0.25);
 }).add;
