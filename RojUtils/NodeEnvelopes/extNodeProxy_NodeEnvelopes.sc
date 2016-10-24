@@ -35,11 +35,12 @@
 				cyclesFolder.sortedKeysValuesDo({|oneCycleNames|
 					var oneCycle = library.atPath([\cycles] ++ oneCycleNames.asSymbol);
 					("\t\t \\" ++ oneCycleNames ++ " -> NodeCycle [ dur:" + oneCycle.duration + "]").postln;
-
-					oneCycle.trigTimes.do({|oneTrigTime|
-						var oneEnv = oneCycle.trigAt(oneTrigTime);
-						("\t\t\t - \\" ++ oneEnv.envName + "->" + oneTrigTime + "to" + oneCycle.trigEndTime(oneTrigTime)).postln;
-					})
+					oneCycle.storedControlNames.do({|oneControlName|
+						oneCycle.trigTimes(oneControlName).do({|oneTrigTime|
+							var oneEnv = oneCycle.trigAt(oneControlName, oneTrigTime);
+							("\t\t\t - \\" ++ oneEnv.envName + "->" + oneTrigTime + "to" + oneCycle.trigEndTime(oneControlName, oneTrigTime)).postln;
+						});
+					});
 				});
 			};
 
@@ -92,6 +93,37 @@
 			this.post;
 
 		}.fork;
+	}
+
+
+	cycle2 { |envPattern, cycleName = nil, trigTime = 0|
+		if(cycleName.isNil) { cycleName = \default; };
+		if ((envPattern.size % 2 != 0), { "envPattern array is not set in pairs [\\controlName, \\envName]".warn; },
+			{
+				var library = this.nodeMap.get(\qMachine);
+				var nCycle = NodeCycle(this.envirKey, cycleName.asSymbol);
+
+				envPattern.pairsDo({|controlName, oneEnvPattern|
+					var stream = oneEnvPattern.asStream;
+					var currentTrigTime = trigTime;
+					case
+					{ stream.isKindOf(Routine) } { stream = stream.all; } // Pseq([\aaa, \bbb], 3) ++ \ccc
+					{ stream.isKindOf(Symbol) }	{ stream = stream.asArray; }
+					{ stream.isKindOf(Integer) } { stream = stream.asSymbol.asArray; }
+					{ stream.isKindOf(String) }	{ stream = stream.asSymbol.asArray; }
+					;
+					("controlName:" + controlName + "; stream:" + stream).postln;
+
+					stream.do({|oneEnvelopeName|
+						var oneEnvPath = [\envelopes, controlName.asSymbol, oneEnvelopeName.asSymbol];
+						var oneEnv = library.atPath(oneEnvPath);
+						nCycle.schedEnv(currentTrigTime, oneEnv);
+						currentTrigTime = currentTrigTime + oneEnv.duration;
+					});
+				});
+		});
+
+		this.post;
 	}
 
 	// ~aaa.cycle(\test, \amp, \e1, [0, 0.2]); // cislo znamena cas trigu v cyklu

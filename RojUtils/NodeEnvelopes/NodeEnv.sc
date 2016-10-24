@@ -1,6 +1,6 @@
 NodeEnv {
 
-	var nodeName, controlName, <envName;
+	var nodeName, <controlName, <envName;
 	var <envelope;
 
 	var synth, controlBus;

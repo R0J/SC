@@ -3,6 +3,7 @@ NodeCycle {
 	var nodeName, cycleName;
 
 	var clock;
+	var controlTimeline;
 	var timeline;
 	var <duration;
 
@@ -23,26 +24,51 @@ NodeCycle {
 
 	init {
 		clock = nil;
-		timeline = Order.new();
+		// timeline = Order.new();
+		controlTimeline = IdentityDictionary.new();
 		this.storeToMap;
 	}
 
 	schedEnv {|time, nodeEnv|
+
+		var controlName = nodeEnv.controlName.asSymbol;
+		var timeline;
+		if(controlTimeline.at(controlName).isNil) {
+			// ("schedEnv -> nodeEnv.controlName:" + nodeEnv.controlName).warn;
+			controlTimeline.put(controlName, Order.new());
+		};
+		timeline = controlTimeline.at(controlName);
+		// ("timeline -> " + timeline).warn;
 		timeline.put(time, nodeEnv);
-		duration = timeline.lastIndex + timeline[timeline.lastIndex].duration;
+		// duration = timeline.lastIndex + timeline[timeline.lastIndex].duration;
 		this.storeToMap;
 	}
 
 	cleanSched {
-		timeline = Order.new();
+		controlTimeline = IdentityDictionary.new();
+		// timeline = Order.new();
 		duration = 0;
 		this.storeToMap;
 	}
 
-	trigTimes {	^timeline.indices; }
-	trigEnvs { ^timeline.array; }
-	trigAt {|time| ^timeline[time]; }
-	trigEndTime {|time| ^time + timeline[time].duration; }
+	storedControlNames { ^controlTimeline.keys.asArray; }
+
+	trigTimes { |controlName|
+		var timeline = controlTimeline.at(controlName.asSymbol);
+		if(timeline.notNil, { ^timeline.indices; }, { ^nil; });
+	}
+	trigEnvs {|controlName|
+		var timeline = controlTimeline.at(controlName.asSymbol);
+		if(timeline.notNil, { ^timeline.array; }, { ^nil; });
+	}
+	trigAt {|controlName, time|
+		var timeline = controlTimeline.at(controlName.asSymbol);
+		if(timeline.notNil, { ^timeline[time]; }, { ^nil; });
+	}
+	trigEndTime {|controlName, time|
+		var timeline = controlTimeline.at(controlName.asSymbol);
+		if(timeline.notNil, { ^time + timeline[time].duration; }, { ^nil; });
+	}
 
 	trig {
 		if(clock.notNil) { clock.stop; };
@@ -60,7 +86,7 @@ NodeCycle {
 	}
 
 	printOn { |stream|
-		stream << this.class.name << "[" << cycleName << ", " << timeline << "]";
+		stream << this.class.name << "[" << cycleName << ", " << this.storedControlNames << "]";
 	}
 
 	storeToMap {
