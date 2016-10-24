@@ -21,3 +21,6 @@ ProxySynthDef.sampleAccurate=true;
 )
 ~cheap[4]=\filter->{arg in; CheapVerb.ar(in,4)};
 ~cheap[4]=nil;
+
+
+{CheapVerb.ar(SinOsc.ar(2800)*Decay.ar(Impulse.ar(0.25),0.02),0.1,20)}.play;
