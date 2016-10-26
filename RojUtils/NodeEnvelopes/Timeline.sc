@@ -3,9 +3,7 @@ Timeline {
 
 	*new { ^super.new.init(); }
 
-	init {
-		timeline = Order.new();
-	}
+	init { timeline = Order.new(); }
 
 	put { |time, item, duration, key|
 		if(duration.isNil) { duration = 0; };
@@ -80,7 +78,7 @@ Timeline {
 		var endDuration = 0;
 		timeline.array.do({|oneTime|
 			oneTime.asArray.do({|oneTimebar|
-				var end = oneTimebar.from + oneTimebar.to;
+				var end = oneTimebar.from + oneTimebar.duration;
 				if(end > endDuration) { endDuration = end; };
 			});
 		})
@@ -96,6 +94,15 @@ Timeline {
 			oneArray.asArray.do({|item| txt = txt ++ "\n\t" ++ tabs ++ "-" + item; });
 		});
 		txt.postln;
+	}
+
+	play{ |clock, function|
+		timeline.indicesDo({|oneArray, oneTime|
+			oneArray.asArray.do({|item|
+				clock.sched(item.from, {item;} );
+			});
+		});
+		clock.sched(this.duration, { clock.stop; "clock stoped".postln; });
 	}
 }
 

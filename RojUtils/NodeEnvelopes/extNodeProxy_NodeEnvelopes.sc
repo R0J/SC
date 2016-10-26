@@ -34,13 +34,16 @@
 				"cycles:".postln;
 				cyclesFolder.sortedKeysValuesDo({|oneCycleNames|
 					var oneCycle = library.atPath([\cycles] ++ oneCycleNames.asSymbol);
-					("\t\t \\" ++ oneCycleNames ++ " -> NodeCycle [ dur:" + oneCycle.duration + "]").postln;
+					("\t\\" ++ oneCycleNames ++ " -> NodeCycle [ dur:" + oneCycle.timeline.duration + "]").postln;
+					/*
 					oneCycle.storedControlNames.do({|oneControlName|
-						oneCycle.trigTimes(oneControlName).do({|oneTrigTime|
-							var oneEnv = oneCycle.trigAt(oneControlName, oneTrigTime);
-							("\t\t\t - \\" ++ oneEnv.envName + "->" + oneTrigTime + "to" + oneCycle.trigEndTime(oneControlName, oneTrigTime)).postln;
-						});
+					oneCycle.trigTimes(oneControlName).do({|oneTrigTime|
+					var oneEnv = oneCycle.trigAt(oneControlName, oneTrigTime);
+					("\t\t\t - \\" ++ oneEnv.envName + "->" + oneTrigTime + "to" + oneCycle.trigEndTime(oneControlName, oneTrigTime)).postln;
 					});
+					});
+					*/
+					oneCycle.timeline.print(2);
 				});
 			};
 
@@ -95,8 +98,8 @@
 		}.fork;
 	}
 
-
-	cycle2 { |envPattern, cycleName = nil, trigTime = 0|
+	// envPattern -> [\amp, \e1, 0.5] -> cislo je doba spusteni
+	cycle { |envPattern, cycleName = nil, trigTime = 0|
 		if(cycleName.isNil) { cycleName = \default; };
 		if ((envPattern.size % 2 != 0), { "envPattern array is not set in pairs [\\controlName, \\envName]".warn; },
 			{
@@ -121,59 +124,31 @@
 						currentTrigTime = currentTrigTime + oneEnv.duration;
 					});
 				});
+
+				nCycle.trig;
 		});
 
 		this.post;
 	}
 
-	// ~aaa.cycle(\test, \amp, \e1, [0, 0.2]); // cislo znamena cas trigu v cyklu
-	// ~aaa.cycle(\test, \amp, Pn(\e1,3) ++ \e2);
-	cycle { |cycleName, controlName, envPattern, trigTime = nil|
+	cycle2 { |cycleName = nil|
 		var library = this.nodeMap.get(\qMachine);
-		var nCycle;
-		var stream = envPattern.asStream;
-		var envStartTime = 0;
-
-		if(library.notNil) {
-			case
-			{ stream.isKindOf(Routine) } { stream = stream.all; } // Pseq([\aaa, \bbb], 3) ++ \ccc
-			{ stream.isKindOf(Symbol) }	{ stream = stream.asArray; }
-			{ stream.isKindOf(Integer) } { stream = stream.asSymbol.asArray; }
-			{ stream.isKindOf(String) }	{ stream = stream.asSymbol.asArray; }
-			;
-
-			case
-			{controlName.isKindOf(Symbol) } {
-				nCycle = NodeCycle(this.envirKey, cycleName.asSymbol);
-				stream.do({|oneEnvelopeName|
-					var oneEnvPath = [\envelopes, controlName.asSymbol, oneEnvelopeName.asSymbol];
-					var oneEnv = library.atPath(oneEnvPath);
-					nCycle.schedEnv(envStartTime, oneEnv);
-					envStartTime = envStartTime + oneEnv.duration;
-				});
-			}
-			{controlName.isKindOf(Array) } {
-				"controlName je Array".postln;
-			};
-			this.post;
-		};
+		if(cycleName.isNil) { cycleName = \default; };
+		^NodeCycle(this.envirKey, cycleName.asSymbol);
 	}
-	// nCycle.schedEnv(0, nEnv);
 
-
-	/*
 	stage { |stageName, cyclePattern|
-	var nCycle = NodeStage(this.envirKey, stageName.asSymbol);
-	var stream = pattern.asStream;
+		var nCycle = NodeStage(this.envirKey, stageName.asSymbol);
+		var stream = cyclePattern.asStream;
 
-	case
-	{ stream.isKindOf(Routine) } { stream = stream.all; } // Pseq([\aaa, \bbb], 3) ++ \ccc
-	{ stream.isKindOf(Symbol) }	{ stream = stream.asArray; }
-	{ stream.isKindOf(Integer) } { stream = stream.asSymbol.asArray; }
-	{ stream.isKindOf(String) }	{ stream = stream.asSymbol.asArray; }
-	;
+		case
+		{ stream.isKindOf(Routine) } { stream = stream.all; } // Pseq([\aaa, \bbb], 3) ++ \ccc
+		{ stream.isKindOf(Symbol) }	{ stream = stream.asArray; }
+		{ stream.isKindOf(Integer) } { stream = stream.asSymbol.asArray; }
+		{ stream.isKindOf(String) }	{ stream = stream.asSymbol.asArray; }
+		;
 	}
-	*/
+
 
 	prGetLibrary { |controlName|
 		var library = this.nodeMap.get(\qMachine);
