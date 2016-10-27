@@ -1,6 +1,6 @@
 NodeEnv {
 
-	var nodeName, <controlName, <envName;
+	var nodeName, <controlName, <envName, library;
 	var <envelope;
 
 	var synth, controlBus;
@@ -8,17 +8,17 @@ NodeEnv {
 
 	*new {|nodeName, controlName, envName|
 		var node = nodeName.envirGet;
-		var library = node.nodeMap.get(\qMachine);
+		var lib = node.nodeMap.get(\qMachine);
 		var path = [\envelopes, controlName.asSymbol];
-		var nEnv = library.atPath(path ++ envName.asSymbol);
+		var nEnv = lib.atPath(path ++ envName.asSymbol);
 
 		if(nEnv.isNil,
-			{ ^super.newCopyArgs(nodeName.asSymbol, controlName.asSymbol, envName).init; },
+			{ ^super.newCopyArgs(nodeName.asSymbol, controlName.asSymbol, envName, lib).init(path); },
 			{ ^nEnv; }
 		);
 	}
 
-	init {
+	init { |path|
 		var node = nodeName.envirGet;
 		var library = node.nodeMap.get(\qMachine);
 
@@ -28,7 +28,11 @@ NodeEnv {
 
 		this.prepareSynthDef;
 
-		this.storeToMap;
+		library.putAtPath(path ++ envName.asSymbol, this);
+	}
+
+	set {|envName, env|
+		envelope = env;
 	}
 
 	env {|env|
@@ -38,13 +42,11 @@ NodeEnv {
 		this.post;
 	}
 
-	envCode { ^"Env ( " ++ envelope.levels ++ ", " ++ envelope.times ++ ", " ++ envelope.curves ++ " )"; }
-
 	duration { ^envelope.duration; }
 
-	printOn { |stream|
-		stream << this.class.name << "[ \\" << controlName << ", " << this.envCode << " ]";
-	}
+	envCode { ^"Env ( " ++ envelope.levels ++ ", " ++ envelope.times ++ ", " ++ envelope.curves ++ " )"; }
+
+	printOn { |stream| stream << this.class.name << "[ \\" << controlName << ", " << this.envCode << " ]"; }
 
 	plot {|size| envelope.plotNamedEnv(envName.asSymbol); }
 
@@ -98,13 +100,5 @@ NodeEnv {
 			\tempoClock, currentEnvironment.clock.tempo,
 			\env, [envelope]
 		);
-	}
-
-	storeToMap {
-		var node = nodeName.envirGet;
-		var library = node.nodeMap.get(\qMachine);
-		var path = [\envelopes, controlName.asSymbol];
-
-		library.putAtPath(path ++ envName.asSymbol, this);
 	}
 }

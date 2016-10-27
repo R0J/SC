@@ -135,35 +135,40 @@
 		this.post;
 	}
 
+	env2 { |controlName|
+		// var library = this.prGetLibrary(controlName);
+		// if(envName.isNil) { envName = \default; };
+		^NodeEnv(this.envirKey, controlName.asSymbol);
+	}
+
 	cycle2 { |cycleName = nil|
-		var library = this.nodeMap.get(\qMachine);
+		var library = this.prGetLibrary;
 		if(cycleName.isNil) { cycleName = \default; };
 		^NodeCycle(this.envirKey, cycleName.asSymbol);
 	}
 
 	stage { |stageName = nil|
-		var library = this.nodeMap.get(\qMachine);
+		var library = this.prGetLibrary;
 		if(stageName.isNil) { stageName = \default; };
 		^NodeStage(this.envirKey, stageName.asSymbol);
 	}
 
 
-	prGetLibrary { |controlName|
+	prGetLibrary { |controlName = nil|
 		var library = this.nodeMap.get(\qMachine);
 
-		if((library == nil), {
+		if(library.isNil) {
 			this.nodeMap.put(\qMachine, MultiLevelIdentityDictionary.new);
 			library = this.nodeMap.get(\qMachine);
 			("NodeMap library qMachine prepared").postln;
-		});
+		};
 
-		if((library.at(controlName.asSymbol) == nil),
-			{
+		if(controlName.notNil) {
+			if(library.at(controlName.asSymbol).isNil) {
 				var controlBus = Bus.control(Server.default, 1);
 				library.put(\envelopes, controlName.asSymbol, \controlBus, controlBus);
-			}
-		);
-
+			};
+		};
 		^library;
 	}
 
