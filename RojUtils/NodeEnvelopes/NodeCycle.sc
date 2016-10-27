@@ -1,6 +1,6 @@
 NodeCycle {
 
-	var nodeName, cycleName, library;
+	var nodeName, <cycleName, library;
 
 	var clock;
 	var <timeline;

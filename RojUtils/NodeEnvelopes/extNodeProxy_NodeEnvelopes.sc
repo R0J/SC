@@ -49,6 +49,10 @@
 
 			if(stageFolder.notNil) {
 				"stages:".postln;
+				stageFolder.sortedKeysValuesDo({|oneStageNames|
+					var oneStage = library.atPath([\stages] ++ oneStageNames.asSymbol);
+					("\t\\" ++ oneStageNames ++ " -> NodeStage [ dur:" + oneStage.timeline.duration + "]").postln;
+				});
 			};
 		};
 	}
@@ -137,16 +141,10 @@
 		^NodeCycle(this.envirKey, cycleName.asSymbol);
 	}
 
-	stage { |stageName, cyclePattern|
-		var nCycle = NodeStage(this.envirKey, stageName.asSymbol);
-		var stream = cyclePattern.asStream;
-
-		case
-		{ stream.isKindOf(Routine) } { stream = stream.all; } // Pseq([\aaa, \bbb], 3) ++ \ccc
-		{ stream.isKindOf(Symbol) }	{ stream = stream.asArray; }
-		{ stream.isKindOf(Integer) } { stream = stream.asSymbol.asArray; }
-		{ stream.isKindOf(String) }	{ stream = stream.asSymbol.asArray; }
-		;
+	stage { |stageName = nil|
+		var library = this.nodeMap.get(\qMachine);
+		if(stageName.isNil) { stageName = \default; };
+		^NodeStage(this.envirKey, stageName.asSymbol);
 	}
 
 
