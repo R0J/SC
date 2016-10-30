@@ -22,7 +22,7 @@ Timeline {
 		var items = List.new();
 		timeline.indicesDo({|oneTime|
 			oneTime.asArray.do({|oneTimebar|
-				if(oneTimebar.isAtTime(time)) { items.add( oneTimebar); };
+				if(oneTimebar.isAtTime(time)) { items.add(oneTimebar.item); };
 			});
 		});
 		case
@@ -36,8 +36,8 @@ Timeline {
 		var items = List.new();
 		oneTime.asArray.do({|oneTimebar|
 			if(key.notNil,
-				{ if(oneTimebar.key.asSymbol == key.asSymbol) { items.add(oneTimebar); }; },
-				{ items.add(oneTimebar); }
+				{ if(oneTimebar.key.asSymbol == key.asSymbol) { items.add(oneTimebar.item); }; },
+				{ items.add(oneTimebar.item); }
 			);
 		});
 		case
@@ -54,14 +54,15 @@ Timeline {
 			if(key.notNil,
 				{
 					if((oneTimebar.key.asSymbol == key.asSymbol),
-						{ items.add(oneTimebar); },
+						{ items.add(oneTimebar.item); },
 						{ rest.add(oneTimebar); }
 					);
 				},
-				{ items.add(oneTimebar); }
+				{ items.add(oneTimebar.item); }
 			);
 		});
 
+		// timeline.removeAt(time);
 		case
 		{rest.isEmpty} { timeline.removeAt(time); }
 		{rest.notEmpty} { timeline.put(time, rest); };

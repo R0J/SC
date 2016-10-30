@@ -42,17 +42,18 @@ NodeCycle {
 				// remove old keys
 				stream.do({|oneEnvelopeName|
 					timeline.times.do({|oneTime|
+						("oneTime, oneEnvelopeName:" + [oneTime, oneEnvelopeName]).postln;
 						timeline.take(oneTime, oneEnvelopeName);
 					});
 				});
 
 				// add new keys
 				stream.do({|oneEnvelopeName|
-					var oneEnvPath = [nodeName.asSymbol, \envelopes, controlName.asSymbol];
+					var oneEnvPath = [nodeName.asSymbol, \envelopes, controlName.asSymbol, oneEnvelopeName.asSymbol];
 					var oneEnv = library.atPath(oneEnvPath);
 
-					this.schedEnv(currentTrigTime, oneEnv, oneEnvelopeName);
-					currentTrigTime = currentTrigTime + oneEnv.duration(oneEnvelopeName);
+					this.schedEnv(currentTrigTime, oneEnv);
+					currentTrigTime = currentTrigTime + oneEnv.duration;
 				});
 
 			}
@@ -60,8 +61,8 @@ NodeCycle {
 
 	}
 
-	schedEnv {|time, nodeEnv, envName|
-		timeline.put(time, nodeEnv, nodeEnv.duration(envName), envName);
+	schedEnv {|time, nodeEnv|
+		timeline.put(time, nodeEnv, nodeEnv.duration, nodeEnv.envelopeName);
 	}
 
 	duration { ^timeline.duration; }
@@ -71,8 +72,8 @@ NodeCycle {
 		clock = TempoClock.new(currentEnvironment.clock.tempo);
 
 		timeline.times.do({|oneTime|
-			timeline.get(oneTime).asArray.do({|timeBar|
-				clock.sched(oneTime, { timeBar.item.trig(timeBar.key); } );
+			timeline.get(oneTime).asArray.do({|oneEnv|
+				clock.sched(oneTime, { oneEnv.trig; } );
 			});
 		});
 		clock.sched(timeline.duration, { clock.stop; });

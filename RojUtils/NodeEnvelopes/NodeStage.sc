@@ -28,16 +28,10 @@ NodeStage {
 
 
 	set {|time, cyclePattern|
-		// var path = [nodeName.asSymbol, \cycles, cycleName.asSymbol];
-		// var nCycle = library.atPath(path);
 		var stream = cyclePattern.asStream;
 		var currentTrigTime = time;
 
-		// if(nCycle.isNil,
-		// { ("NodeCycle [\\" ++ cycleName ++ "] not found in map").warn;  ^nil; },
-		// {
 		timeline = Timeline.new();
-		// this.schedCycle(time, nCycle);
 		loopCount = 1;
 
 		case
@@ -63,8 +57,6 @@ NodeStage {
 			this.schedCycle(currentTrigTime, oneCycle);
 			currentTrigTime = currentTrigTime + oneCycle.duration;
 		});
-		// }
-		// );
 	}
 
 	schedCycle {|time, nodeCycle| timeline.put(time, nodeCycle, nodeCycle.duration, nodeCycle.cycleName); }
@@ -72,20 +64,18 @@ NodeStage {
 	duration { ^timeline.duration; }
 
 	play { |loops = inf|
-		// loopCount = loops;
+
 		if(loopTask.notNil) { this.stop; };
 		if(timeline.duration > 0)
 		{
 			loopTask = Task({
 				currentEnvironment.clock.timeToNextBeat(timeline.duration).wait;
 				loops.do({
-					// if(clock.notNil) { clock.stop; };
-
 					clock = TempoClock.new(currentEnvironment.clock.tempo);
 
 					timeline.times.do({|oneTime|
-						timeline.get(oneTime).asArray.do({|timeBar|
-							clock.sched(oneTime, { timeBar.item.trig; } );
+						timeline.get(oneTime).asArray.do({|oneCycle|
+							clock.sched(oneTime, { oneCycle.trig; } );
 						});
 					});
 					// clock.sched(timeline.duration, { clock.stop; });

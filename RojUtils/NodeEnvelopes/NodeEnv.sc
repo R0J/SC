@@ -1,93 +1,89 @@
 NodeEnv {
 
-	var nodeName, <controlName, library;
-	var envelopes;
+	var nodeName, <controlName, <envelopeName, library;
 
-	var synth, controlBus;
-	var >setPlot = false;
+	var <>envelope;
+	var synth, controlBusIndex;
+	var <>setPlot = false;
 
-	*new {|nodeName, controlName|
+	*new {|nodeName, controlName, envelopeName = \default|
 		var lib = Library.at(\qMachine);
-		var path = [nodeName.asSymbol, \envelopes, controlName.asSymbol];
+		var path = [nodeName.asSymbol, \envelopes, controlName.asSymbol, envelopeName.asSymbol];
 		var nEnv = lib.atPath(path);
 
 		if(nEnv.isNil,
-			{ ^super.newCopyArgs(nodeName.asSymbol, controlName.asSymbol, lib).init(path); },
+			{ ^super.newCopyArgs(nodeName.asSymbol, controlName.asSymbol, envelopeName.asSymbol, lib).init(path); },
 			{ ^nEnv; }
 		);
 	}
 
 	init { |path|
 		var node = library.atPath([nodeName.asSymbol, \node]);
-		envelopes = IdentityDictionary.new();
+		controlBusIndex = library.atPath([nodeName.asSymbol, \buses, controlName.asSymbol]).index;
+		envelope = nil;
 		synth = nil;
-		controlBus = Bus.control(Server.default, 1);
-		node.set(controlName.asSymbol, controlBus.asMap);
 
+		node.set(controlName.asSymbol, BusPlug.for(controlBusIndex));
 		this.prepareSynthDef;
 
 		library.putAtPath(path, this);
 	}
 
-	envNames { ^envelopes.keys.asArray; }
-
-	hasEnvName {|envName| if(envelopes.keys.asArray.indexOf(envName.asSymbol).notNil, { ^true; }, { ^false; }); }
-
 	set {|envName, env|
-		envelopes.put(envName.asSymbol, env);
-		if(setPlot) { this.plot(envName); };
-		library.postTree;
-		^this;
+		var nEnv = super.class.new(nodeName, controlName, envName);
+		nEnv.envelope = env;
+		if(nEnv.setPlot) { nEnv.plot(envName); };
+		^nEnv;
 	}
-
-	get {|envName|
-		if(this.hasEnvName(envName)) { ^envelopes.at(envName.asSymbol);	};
-		^nil;
-	}
-
 
 	fixDur {|envName, dur|
-		envName.asArray.do({|oneName|
-			if(this.hasEnvName(oneName)) {
-				var envDur = this.duration(oneName);
+		var nEnv = super.class.new(nodeName, controlName, envName);
 
-				if(envDur.notNil)
-				{
-					case
-					{ dur < envDur } { this.set(oneName, envelopes[oneName].crop(0, dur)); }
-					{ dur.asSymbol == envDur.asSymbol } {  }
-					{ dur > envDur } { this.set(oneName, envelopes[oneName].extend(dur)); };
+		if(nEnv.envelope.notNil) {
+			var envDur = nEnv.duration;
+			case
+			{ dur < envDur } { nEnv.set(envelopeName, nEnv.envelope.crop(0, dur)); }
+			{ dur.asSymbol == envDur.asSymbol } {  }
+			{ dur > envDur } { nEnv.set(envelopeName, nEnv.envelope.extend(dur)); };
 
-					if(setPlot) { this.plot(oneName); };
-				};
-			};
-		});
-		^this;
+			if(nEnv.setPlot) { nEnv.plot(envelopeName); };
+		}
+		^nEnv;
 	}
 
-
-	duration {|envName|
-		envName.asArray.do({|oneName|
-			if(this.hasEnvName(oneName)) { ^envelopes[oneName.asSymbol].duration; };
-		});
-		^nil;
+	duration {
+		if(envelope.notNil,
+			{ ^envelope.duration; },
+			{ ^nil; }
+		);
 	}
 
+	print { |cntTabs = 0|
+		var txt = "";
+		var tabs = "";
+		cntTabs.do({tabs = tabs ++ "\t"});
 
-	// envCode {|key| ^"Env ( " ++ envelope.levels ++ ", " ++ envelope.times ++ ", " ++ envelope.curves ++ " )"; }
+		if(envelope.notNil, {
+			txt = txt ++ tabs ++ "- levels:" + envelope.levels ++ "\n";
+				txt = txt ++ tabs ++ "- times:" + envelope.times ++ "\n";
+				txt = txt ++ tabs ++ "- curves:" + envelope.curves ++ "\n";
+			}, {
+			txt = tabs ++ "Env (nil)\n";
+		});
 
-	printOn { |stream| stream << this.class.name << " [\\" << controlName << ", " << envelopes.keys.asArray << "]"; }
+		txt.postln;
+	}
+
+	printOn { |stream| stream << this.class.name << " [\\" << controlName << ", \\" << envelopeName << ", dur:" << this.duration << "]"; }
 
 	plot {|envName, size = 400|
-		if(this.hasEnvName(envName)) {
-			envelopes[envName.asSymbol].plotNamedEnv(envName.asSymbol, size);
-		};
+		envelope.plotNamedEnv(envName.asSymbol, size);
 		^this;
 	}
 
 	prepareSynthDef {
 		var envSynthDef;
-		var envSynthName = nodeName ++ "_" ++ controlName;
+		var envSynthName = nodeName ++ "_" ++ controlName ++ "_" ++ envelopeName;
 		var fTime = 0;
 		{
 			envSynthDef = {|cBus|
@@ -113,7 +109,7 @@ NodeEnv {
 			// this.prFadeOutSynths(control, envName, fTime);
 
 			synth = Synth(envSynthName.asSymbol, [
-				\cBus: controlBus,
+				\cBus: controlBusIndex,
 				// \env: [envelope],
 				\fromVal, 0,
 				\toVal, 1,
@@ -123,17 +119,14 @@ NodeEnv {
 			// synthID = synth.nodeID;
 		}.fork;
 
-		// library.putAtPath(path ++ \synths ++ synthID.asSymbol, synth);
-		// });
 	}
 
-	trig {|envName|
-		// synth.do({|selectedSynth| selectedSynth.set(\envTrig, 1, \tempoClock, currentEnvironment.clock.tempo); });
-		// ("Synth trig to " + controlBus + "by synth:" + synth.nodeID + "env:" + this.envCode).postln;
+	trig {
+		// ("Synth trig to controlBus_" ++ controlBusIndex + "by synth:" + synth.nodeID + "env:" + this.print(1)).postln;
 		synth.set(
 			\envTrig, 1,
 			\tempoClock, currentEnvironment.clock.tempo,
-			\env, [envelopes[envName.asSymbol]]
+			\env, [envelope]
 		);
 	}
 }
