@@ -22,7 +22,7 @@ Timeline {
 		var items = List.new();
 		timeline.indicesDo({|oneTime|
 			oneTime.asArray.do({|oneTimebar|
-				if(oneTimebar.isAtTime(time)) { items.add( oneTimebar.item); };
+				if(oneTimebar.isAtTime(time)) { items.add( oneTimebar); };
 			});
 		});
 		case
@@ -36,8 +36,8 @@ Timeline {
 		var items = List.new();
 		oneTime.asArray.do({|oneTimebar|
 			if(key.notNil,
-				{ if(oneTimebar.key.asSymbol == key.asSymbol) { items.add(oneTimebar.item); }; },
-				{ items.add(oneTimebar.item); }
+				{ if(oneTimebar.key.asSymbol == key.asSymbol) { items.add(oneTimebar); }; },
+				{ items.add(oneTimebar); }
 			);
 		});
 		case
@@ -54,11 +54,11 @@ Timeline {
 			if(key.notNil,
 				{
 					if((oneTimebar.key.asSymbol == key.asSymbol),
-						{ items.add(oneTimebar.item); },
+						{ items.add(oneTimebar); },
 						{ rest.add(oneTimebar); }
 					);
 				},
-				{ items.add(oneTimebar.item); }
+				{ items.add(oneTimebar); }
 			);
 		});
 
@@ -121,6 +121,6 @@ Timebar {
 	}
 
 	printOn { |stream|
-		stream << this.class.name << "[" << from << "; " << duration << "; " << key << "; " << item << "]";
+		stream << this.class.name << "[" << from << "; " << (from + duration) << "; " << key << "; " << item << "]";
 	}
 }

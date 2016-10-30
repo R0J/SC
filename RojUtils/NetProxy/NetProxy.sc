@@ -10,11 +10,25 @@ NetProxy : ProxySpace {
 	var metronom;
 	var oscScTrigAddr, oscScTrigClock;
 
-	*connect { |name = nil|
+	*push {
 		var proxyspace = super.push(Server.default);
 		Server.default.waitForBoot({
-			Server.default.latency = 0;
+			Server.default.latency = 0.0;
 			proxyspace.makeTempoClock;
+			proxyspace.prMetronomDef;
+			"\nNetProxy init done...".postln;
+		});
+		^proxyspace;
+	}
+
+	*connect { |name = nil|
+
+		// var proxyspace = super.push(Server.default);
+		var proxyspace = this.push();
+		// Server.default.waitForBoot({
+			Server.default.doWhenBooted({
+			// Server.default.latency = 0;
+			// proxyspace.makeTempoClock;
 			proxyspace.initNet(name);
 		});
 		^proxyspace;
@@ -39,9 +53,11 @@ NetProxy : ProxySpace {
 		metronom = nil;
 		oscScTrigClock = nil;
 
-		this.prMetronomDef;
+		// this.prMetronomDef;
 		this.prGetBroadcastIP;
 	}
+
+	name { ^userName.asSymbol; }
 
 	bpm { |bpm|
 		{

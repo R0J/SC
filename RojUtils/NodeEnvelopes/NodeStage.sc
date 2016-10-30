@@ -1,16 +1,15 @@
 NodeStage {
 
 	var nodeName, stageName, library;
-	var clock;
 	var <timeline;
 
+	var clock;
 	var loopTask;
 	var >loopCount;
-	var >loopTime;
 
 	*new {|nodeName, stageName = \default|
-		var lib = nodeName.envirGet.nodeMap.get(\qMachine);
-		var path = [\stages, stageName.asSymbol];
+		var lib = Library.at(\qMachine);
+		var path = [nodeName.asSymbol, \stages, stageName.asSymbol];
 		var nStage = lib.atPath(path);
 
 		if(nStage.isNil,
@@ -24,54 +23,86 @@ NodeStage {
 		timeline = Timeline.new();
 		loopTask = nil;
 		loopCount = 1;
-		loopTime = 1;
 		library.putAtPath(path, this);
 	}
 
 
-	add {|time, cycleName|
-		var path = [\cycles, cycleName.asSymbol];
-		var nCycle = library.atPath(path);
+	set {|time, cyclePattern|
+		// var path = [nodeName.asSymbol, \cycles, cycleName.asSymbol];
+		// var nCycle = library.atPath(path);
+		var stream = cyclePattern.asStream;
+		var currentTrigTime = time;
 
-		if(nCycle.isNil,
-			{ ("NodeCycle [\\" ++ cycleName ++ "] not found in map").warn;  ^nil; },
-			{ this.schedCycle(time, nCycle); }
-		);
+		// if(nCycle.isNil,
+		// { ("NodeCycle [\\" ++ cycleName ++ "] not found in map").warn;  ^nil; },
+		// {
+		timeline = Timeline.new();
+		// this.schedCycle(time, nCycle);
+		loopCount = 1;
+
+		case
+		{ stream.isKindOf(Routine) } { stream = stream.all; } // Pseq([\aaa, \bbb], 3) ++ \ccc
+		{ stream.isKindOf(Symbol) }	{ stream = stream.asArray; }
+		{ stream.isKindOf(Integer) } { stream = stream.asSymbol.asArray; }
+		{ stream.isKindOf(String) }	{ stream = stream.asSymbol.asArray; }
+		;
+		("stageName:" + stageName + "; stream:" + stream).postln;
+
+		// remove old keys
+		stream.do({|oneCycleName|
+			timeline.times.do({|oneTime|
+				timeline.take(oneTime, oneCycleName);
+			});
+		});
+
+		// add new keys
+		stream.do({|oneCycleName|
+			var oneCyclePath = [nodeName.asSymbol, \cycles, oneCycleName.asSymbol];
+			var oneCycle = library.atPath(oneCyclePath);
+
+			this.schedCycle(currentTrigTime, oneCycle);
+			currentTrigTime = currentTrigTime + oneCycle.duration;
+		});
+		// }
+		// );
 	}
 
 	schedCycle {|time, nodeCycle| timeline.put(time, nodeCycle, nodeCycle.duration, nodeCycle.cycleName); }
 
-	cleanTimeline {
-		loopTask.stop;
-		clock.stop;
-		timeline = Timeline.new();
-	}
-
 	duration { ^timeline.duration; }
 
-	play { |loops = 1|
-		loopCount = loops;
-		// if(loopTask.no[tNil) {  };
-		// ("loopTask.isNil" + loopTask.isNil).postln;
-		// ("loopTask" + loopTask).postln;
+	play { |loops = inf|
+		// loopCount = loops;
+		if(loopTask.notNil) { this.stop; };
+		if(timeline.duration > 0)
+		{
+			loopTask = Task({
+				currentEnvironment.clock.timeToNextBeat(timeline.duration).wait;
+				loops.do({
+					// if(clock.notNil) { clock.stop; };
 
-		loopTask = Task({
-			currentEnvironment.clock.timeToNextBeat(loopTime).wait;
-			loopCount.do({
-				if(clock.notNil) { clock.stop; };
-				clock = TempoClock.new(currentEnvironment.clock.tempo);
+					clock = TempoClock.new(currentEnvironment.clock.tempo);
 
-				timeline.times.do({|oneTime|
-					timeline.get(oneTime).asArray.do({|item|
-						clock.sched(oneTime, { item.trig; } );
+					timeline.times.do({|oneTime|
+						timeline.get(oneTime).asArray.do({|timeBar|
+							clock.sched(oneTime, { timeBar.item.trig; } );
+						});
 					});
+					// clock.sched(timeline.duration, { clock.stop; });
+					("loopCount:" + loopCount).postln;
+					loopCount = loopCount + 1;
+					timeline.duration.wait;
 				});
-				// clock.sched(timeline.duration, { clock.stop; });
-				("loopCount:" + loopCount).postln;
-				loopCount = loopCount + 1;
-				timeline.duration.wait;
-			});
-		}).play;
+			}).play;
+		};
+	}
+
+	stop {
+		loopTask.stop;
+		clock.stop;
+		clock = nil;
+		loopTask = nil;
+		loopCount = 1;
 	}
 
 	printOn { |stream| stream << this.class.name << " [\\"  << stageName << ", dur:" << this.duration << "]" }

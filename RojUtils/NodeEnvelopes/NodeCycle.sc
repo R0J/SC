@@ -4,11 +4,10 @@ NodeCycle {
 
 	var clock;
 	var <timeline;
-	var library;
 
 	*new {|nodeName, cycleName = \default|
-		var lib = nodeName.envirGet.nodeMap.get(\qMachine);
-		var path = [\cycles, cycleName.asSymbol];
+		var lib = Library.at(\qMachine);
+		var path = [nodeName.asSymbol, \cycles, cycleName.asSymbol];
 		var nCycle = lib.atPath(path);
 
 		if(nCycle.isNil,
@@ -23,22 +22,46 @@ NodeCycle {
 		library.putAtPath(path, this);
 	}
 
-	addEnv {|time, controlName, envName|
-		var path = [\envelopes, controlName.asSymbol, envName.asSymbol];
+	set {|controlName, envPattern, time = 0|
+		var path = [nodeName.asSymbol, \envelopes, controlName.asSymbol];
 		var nEnv = library.atPath(path);
+		var stream = envPattern.asStream;
+		var currentTrigTime = time;
 
 		if(nEnv.isNil,
-			{ ("NodeEnv [\\" ++ controlName ++ "\\" ++ envName ++ "] not found in map").warn;  ^nil; },
-			{ this.schedEnv(time, nEnv); }
+			{ ("NodeEnv [\\" ++ controlName ++ "\\" ++ envPattern ++ "] not found in map").warn;  ^nil; },
+			{
+				case
+				{ stream.isKindOf(Routine) } { stream = stream.all; } // Pseq([\aaa, \bbb], 3) ++ \ccc
+				{ stream.isKindOf(Symbol) }	{ stream = stream.asArray; }
+				{ stream.isKindOf(Integer) } { stream = stream.asSymbol.asArray; }
+				{ stream.isKindOf(String) }	{ stream = stream.asSymbol.asArray; }
+				;
+				("controlName:" + controlName + "; stream:" + stream).postln;
+
+				// remove old keys
+				stream.do({|oneEnvelopeName|
+					timeline.times.do({|oneTime|
+						timeline.take(oneTime, oneEnvelopeName);
+					});
+				});
+
+				// add new keys
+				stream.do({|oneEnvelopeName|
+					var oneEnvPath = [nodeName.asSymbol, \envelopes, controlName.asSymbol];
+					var oneEnv = library.atPath(oneEnvPath);
+
+					this.schedEnv(currentTrigTime, oneEnv, oneEnvelopeName);
+					currentTrigTime = currentTrigTime + oneEnv.duration(oneEnvelopeName);
+				});
+
+			}
 		);
+
 	}
 
-	schedEnv {|time, nodeEnv|
-		timeline.put(time, nodeEnv, nodeEnv.duration, nodeEnv.envName);
-	}
-
-	cleanSched {
-		timeline = Timeline.new();
+	schedEnv {|time, nodeEnv, envName|
+		timeline.put(time, nodeEnv, nodeEnv.duration(envName), envName);
 	}
 
 	duration { ^timeline.duration; }
@@ -48,8 +71,8 @@ NodeCycle {
 		clock = TempoClock.new(currentEnvironment.clock.tempo);
 
 		timeline.times.do({|oneTime|
-			timeline.get(oneTime).asArray.do({|item|
-				clock.sched(oneTime, { item.trig; } );
+			timeline.get(oneTime).asArray.do({|timeBar|
+				clock.sched(oneTime, { timeBar.item.trig(timeBar.key); } );
 			});
 		});
 		clock.sched(timeline.duration, { clock.stop; });

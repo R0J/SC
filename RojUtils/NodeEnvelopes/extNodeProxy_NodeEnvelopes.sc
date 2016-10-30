@@ -1,31 +1,27 @@
 + NodeProxy {
 
 	post {
-		var library = this.nodeMap.get(\qMachine);
+		var library = this.prGetLibrary;
 		if(library.notNil) {
-			var envFolder = library.atPath([\envelopes]);
-			var cyclesFolder = library.atPath([\cycles]);
-			var stageFolder = library.atPath([\stages]);
+			var envFolder = library.atPath([this.envirKey.asSymbol, \envelopes]);
+			var cyclesFolder = library.atPath([this.envirKey.asSymbol, \cycles]);
+			var stageFolder = library.atPath([this.envirKey.asSymbol, \stages]);
 
 			"\n\nNodeProxy qMachine post \n-----------------------".postln;
 
 			if(envFolder.notNil) {
 				"envelopes:".postln;
-				library.atPath([\envelopes]).sortedKeysValuesDo({|oneControlNames|
-					("\t \\" ++ oneControlNames).postln;
-					library.atPath([\envelopes] ++ oneControlNames.asSymbol).sortedKeysValuesDo({|key|
-						var oneItem = library.atPath([\envelopes] ++ oneControlNames.asSymbol ++ key.asSymbol);
+				library.atPath([this.envirKey.asSymbol,\envelopes]).sortedKeysValuesDo({|oneControlNames|
+					var oneEnv = library.atPath([this.envirKey.asSymbol, \envelopes, oneControlNames.asSymbol]);
 
-						case
-						{ oneItem.isKindOf(Bus) } { ("\t\t \\" ++ key + "index" + oneItem.index).postln;  }
-						{ oneItem.isKindOf(NodeEnv) } {
-							("\n\t\t \\" ++ key ++ " -> NodeEnv [ dur:" + oneItem.duration + "]").postln;
-							(
-								"\t\t\t - levels:" + oneItem.envelope.levels +
-								"\n\t\t\t - times:" + oneItem.envelope.times +
-								"\n\t\t\t - curves:" + oneItem.envelope.curves
-							).postln;
-						};
+					("\t \\" ++ oneControlNames).postln;
+					oneEnv.envNames.do({|key|
+						("\n\t\t \\" ++ key ++ " -> NodeEnv [ dur:" + oneEnv.duration(key) + "]").postln;
+						(
+							"\t\t\t - levels:" + oneEnv.get(key).levels +
+							"\n\t\t\t - times:" + oneEnv.get(key).times +
+							"\n\t\t\t - curves:" + oneEnv.get(key).curves
+						).postln;
 					});
 				});
 			};
@@ -33,7 +29,7 @@
 			if(cyclesFolder.notNil) {
 				"cycles:".postln;
 				cyclesFolder.sortedKeysValuesDo({|oneCycleNames|
-					var oneCycle = library.atPath([\cycles] ++ oneCycleNames.asSymbol);
+					var oneCycle = library.atPath([this.envirKey.asSymbol,\cycles] ++ oneCycleNames.asSymbol);
 					("\t\\" ++ oneCycleNames ++ " -> NodeCycle [ dur:" + oneCycle.timeline.duration + "]").postln;
 					/*
 					oneCycle.storedControlNames.do({|oneControlName|
@@ -50,7 +46,7 @@
 			if(stageFolder.notNil) {
 				"stages:".postln;
 				stageFolder.sortedKeysValuesDo({|oneStageNames|
-					var oneStage = library.atPath([\stages] ++ oneStageNames.asSymbol);
+					var oneStage = library.atPath([this.envirKey.asSymbol,\stages] ++ oneStageNames.asSymbol);
 					("\t\\" ++ oneStageNames ++ " -> NodeStage [ dur:" + oneStage.timeline.duration + "]").postln;
 				});
 			};
@@ -97,7 +93,6 @@
 			}
 			;
 
-			this.post;
 
 		}.fork;
 	}
@@ -135,40 +130,64 @@
 		this.post;
 	}
 
-	env2 { |controlName|
-		// var library = this.prGetLibrary(controlName);
-		// if(envName.isNil) { envName = \default; };
-		^NodeEnv(this.envirKey, controlName.asSymbol);
+	env3 { |controlName = nil|
+		var library = this.prGetLibrary;
+		var nEnv = nil;
+		var nCycle, nStage;
+
+		if(controlName.notNil) {
+			// var envPath = [this.envirKey.asSymbol, \envelopes, controlName.asSymbol];
+			nEnv = NodeEnv(this.envirKey, controlName.asSymbol);
+			// library.putAtPath(envPath, nEnv);
+
+			nCycle = NodeCycle(this.envirKey, \default);
+			// nCycle.schedEnv(0, nEnv);
+
+			nStage = NodeStage(this.envirKey, \default);
+			// nStage.cleanTimeline;
+			/*
+			if(loopTime.notNil, {
+			nStage.loopCount_(inf);
+			// nStage.loopTime_(loopTime);
+			}, {
+			nStage.loopCount_(1);
+			// nStage.loopTime_(loopTime);
+			});
+
+			nStage.schedCycle(0, nCycle);
+
+			nStage.play;
+			*/
+		};
+		^nEnv;
 	}
 
-	cycle2 { |cycleName = nil|
+	cycle3 { |cycleName = nil|
 		var library = this.prGetLibrary;
 		if(cycleName.isNil) { cycleName = \default; };
 		^NodeCycle(this.envirKey, cycleName.asSymbol);
 	}
 
-	stage { |stageName = nil|
+	stage3 { |stageName = nil|
 		var library = this.prGetLibrary;
 		if(stageName.isNil) { stageName = \default; };
 		^NodeStage(this.envirKey, stageName.asSymbol);
 	}
 
 
-	prGetLibrary { |controlName = nil|
-		var library = this.nodeMap.get(\qMachine);
+	prGetLibrary {
+		var library = Library.at(\qMachine);
 
 		if(library.isNil) {
-			this.nodeMap.put(\qMachine, MultiLevelIdentityDictionary.new);
-			library = this.nodeMap.get(\qMachine);
+			Library.put(\qMachine, MultiLevelIdentityDictionary.new);
+			library = Library.at(\qMachine);
+
 			("NodeMap library qMachine prepared").postln;
 		};
-
-		if(controlName.notNil) {
-			if(library.at(controlName.asSymbol).isNil) {
-				var controlBus = Bus.control(Server.default, 1);
-				library.put(\envelopes, controlName.asSymbol, \controlBus, controlBus);
-			};
-		};
+		if(library.at(\node).isNil)
+		{
+			library.put(this.envirKey.asSymbol, \node, this);
+		}
 		^library;
 	}
 
