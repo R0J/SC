@@ -109,13 +109,13 @@ AutoIDE.run;
 
 ~tss8081.clear;
 ~tss8081.stop(fadeTime:40);
-~tss8081.play(vol:0.4, fadeTime:4, numChannels:2).quant_(4);
+~tss8081.play(vol:3, fadeTime:4, numChannels:2).quant_(4);
 (~tss8081[0]=Pbind(
 	\instrument, \tss808,
-	\amp,Pseq([1,0.5],inf),
+	\amp,Pseq([1,0.5,0.25,0.5,0.1],inf),
 	\dur,0.25,
 	\legato, 1.2,
-	\hpf,10000,
+	\hpf,[6400,8000],
 
 ););
 ~tss8081[6]=\filter->{arg in; Limiter.ar(GVerb.ar(in,10,SinOsc.kr(1/64).range(8,1),mul:0.8,add:in*2),0.9)};
