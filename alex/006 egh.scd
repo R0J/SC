@@ -8,9 +8,9 @@ p.gui;
 
 AutoIDE.run;
 
-
+~noisek1.quant_(4);
 ~noisek1.clear;
-~noisek1.play(vol:0.9, fadeTime:4, numChannels:2).quant_(4);
+~noisek1.play(vol:0.9, fadeTime:4, numChannels:2);
 (
 ~noisek1[0]=Pbind(
 	\instrument, \noisek,
@@ -30,8 +30,9 @@ AutoIDE.run;
 ~noisek1[32]=nil;
 )
 
+~noisek2.quant_(4);
 ~noisek2.clear;
-~noisek2.play(vol:0.1, fadeTime:4, numChannels:2).quant_(4);
+~noisek2.play(vol:0.1, fadeTime:4, numChannels:2);
 (
 ~noisek2[0]=Pbind(
 	\instrument, \noisek,
@@ -54,7 +55,8 @@ AutoIDE.run;
 ////////////////////////////////////////////////////////////////////////////////////////////////////these two
 ~kick.clear;
 ~kick.stop(freeTime:10);
-~kick.play(vol:0.2, fadeTime:4, numChannels:2).quant_(4);
+~kick.play(vol:0.9, fadeTime:4, numChannels:2);
+~kick.quant_(4);
 (~kick[0]=Pbind(
 	\instrument, \tum,
 	\amp, 1,
@@ -73,7 +75,8 @@ AutoIDE.run;
 ~kickg.clear;
 ~kickg.stop(freeTime:10);
 (h=Group.new;
-~kickg.play(vol:0.01, fadeTime:1, numChannels:2, group:h).quant_(4);)
+~kickg.quant_(4);
+~kickg.play(vol:0.01, fadeTime:1, numChannels:2, group:h);)
 (~kickg[0]=Pbind(
 	\instrument, \kickfill,
 	\amp, 1,
@@ -91,13 +94,14 @@ AutoIDE.run;
 
 ~tss8082.clear;
 ~tss8082.stop(fadeTime:40);
-~tss8082.play(vol:0.4, fadeTime:1, numChannels:2).quant_(4);
+~tss8082.play(vol:0.2, fadeTime:1, numChannels:2);
+~tss8082.quant_(4);
 (~tss8082[0]=Pbind(
 	\instrument, \tss808,
-	\amp,\amp,Pseq([1,0.5,0.1,2],inf)*6,,
+	\amp,Pseq([1,0.5,0.1,2],inf)*6,
 	\dur,3,
 	\legato, 0.6,
-	\hpf,6000,
+	\hpf,600,
 
 ););
 ~tss8082[6]=\filter->{arg ts; Limiter.ar(GVerb.ar(ts,10,SinOsc.kr(1/64).range(0.8,1),mul:0.8,add:ts*2),0.9)};
@@ -109,13 +113,14 @@ AutoIDE.run;
 
 ~tss8081.clear;
 ~tss8081.stop(fadeTime:40);
-~tss8081.play(vol:3, fadeTime:4, numChannels:2).quant_(4);
+~tss8081.play(vol:0.4, fadeTime:4, numChannels:2);
+~tss8081.quant_(4);
 (~tss8081[0]=Pbind(
 	\instrument, \tss808,
-	\amp,Pseq([1,0.5,0.25,0.5,0.1],inf),
+	\amp,Pseq([1,0.5,0.25,0.5],inf),
 	\dur,0.25,
 	\legato, 1.2,
-	\hpf,[6400,8000],
+	\hpf,[400,80],
 
 ););
 ~tss8081[6]=\filter->{arg in; Limiter.ar(GVerb.ar(in,10,SinOsc.kr(1/64).range(8,1),mul:0.8,add:in*2),0.9)};
@@ -127,7 +132,8 @@ AutoIDE.run;
 
 ~comb3.clear;
 ~comb3.stop(freeTime:60);
-~comb3.play(vol:0.1, fadeTime:4, numChannels:2).quant_(4);
+~comb3.play(vol:0.2, fadeTime:4, numChannels:2);
+~comb3.quant_(4);
 (~comb3[0]=Pbind(
 	\instrument, \string,
 	\amp, 1,
@@ -147,7 +153,8 @@ AutoIDE.run;
 
 ~comb4.clear;
 ~comb4.stop(freeTime:60);
-~comb4.play(vol:0.2, fadeTime:4, numChannels:2).quant_(4);
+~comb4.play(vol:0.2, fadeTime:4, numChannels:2);
+~comb4.quant_(4);
 (~comb4[0]=Pbind(
 	\instrument, \string,
 	\amp, 1,
@@ -171,7 +178,8 @@ AutoIDE.run;
 ~tum2.clear;
 ~tum2.stop(fadeTime:40);
 (f=Group.new;
-~tum2.play(vol:0.5, fadeTime:4, numChannels:2, group:f).quant_(4);)
+~tum2.quant_(4);
+~tum2.play(vol:0.1, fadeTime:4, numChannels:2, group:f);)
 (~tum2[0]=Pbind(
 	\instrument, \tum,
 	\amp,1,
