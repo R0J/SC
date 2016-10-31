@@ -1,0 +1,67 @@
+TITLE:: NetProxy
+summary:: Roj proxyspace sync by local network
+categories:: Libraries>RojUtils
+related:: Classes/ProxySpace
+
+DESCRIPTION::
+NetProxy is ProxySpace with sync net clock. When init is done new ProxySpace with TempoBusClock is prepared too. After is detect local IP addres and prepare UDP network connection.
+
+CLASSMETHODS::
+
+subsection::Working with session
+
+METHOD:: connect
+Create new ProxySpace with TempoBusClock. Detect local IP addres and prepare UDP network connection.
+
+ARGUMENT:: name
+Your name (Symbol). If name isNil, than will be used name of our machine.
+
+code::
+Kolektiv(\kof);
+Kolektiv(\joach);
+Kolektiv(\alex);
+::
+
+METHOD:: name
+Exit from Kolektiv instnace.
+
+METHOD:: bpm
+Set new BPM for all players.
+
+ARGUMENT:: bmp
+Bpm is Integer, for clock is compute like bmp/60.
+
+METHOD:: tempo
+BPM of ~tempo clocks.
+
+ARGUMENT:: bpm
+Set new BPM for all Kolektiv players ~tempo clocks(Integer)
+
+METHOD:: print
+Inforamtion about proxy, clocks and open OSCdef.
+
+subsection::Working with history
+
+METHOD:: historySave
+Save current history.
+
+METHOD:: historyReplay
+Replay selected history.
+
+METHOD:: historyRestart
+Restart current record of history.
+
+EXAMPLES::
+
+code::
+Kolektiv(\tester)
+Kolektiv.players
+Kolektiv.tempo
+Kolektiv.tempo_(160)
+Kolektiv.print
+Kolektiv.free
+
+Kolektiv.historyRestart
+Kolektiv.historySave
+Kolektiv.historyReplay
+::

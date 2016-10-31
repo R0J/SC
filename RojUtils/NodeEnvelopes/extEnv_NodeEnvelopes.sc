@@ -54,25 +54,36 @@
 		^cropedEnv;
 	}
 
-	extend {|extendTime, maxLimit = 60|
-		var extendedEnv = super.class.new(this.levels, this.times, this.curves);
-		var envDur = this.duration;
+	extend {|extendTime|
+		var extendEnv = super.class.new(this.levels, this.times, this.curves);
+		var envDur = extendEnv.duration;
+		var lastLevel = extendEnv.levels[extendEnv.levels.size-1];
+		extendEnv.levels = extendEnv.levels.asArray ++ lastLevel;
+		extendEnv.times = extendEnv.times.asArray ++ (extendTime - envDur);
+		extendEnv.curves = extendEnv.curves.asArray ++ \lin.asSymbol;
 
-		if(extendTime < envDur) {
-			("Env.extend(" ++ extendTime ++ ") is lower than evelope duration (" ++ envDur ++ ")").postln;
+		^extendEnv;
+	}
+
+	duplicate {|endTime, maxLimit = 60|
+		var duplicatedEnv = super.class.new(this.levels, this.times, this.curves);
+		var envDur = duplicatedEnv.duration;
+
+		if(endTime < envDur) {
+			("Env.extend(" ++ endTime ++ ") is lower than evelope duration (" ++ envDur ++ ")").postln;
 			^this;
 		};
-		if(maxLimit < extendTime) {
-			("Env.extend(" ++ extendTime ++ ") extendTime is higher than 2nd argument maxLimit (" ++ maxLimit ++ ")").postln;
-			extendTime = maxLimit;
+		if(maxLimit < endTime) {
+			("Env.extend(" ++ endTime ++ ") extendTime is higher than 2nd argument maxLimit (" ++ maxLimit ++ ")").postln;
+			endTime = maxLimit;
 		};
 
-		while ({ envDur < extendTime }, {
-			envDur = extendedEnv.duration;
+		while ({ envDur < endTime }, {
+			envDur = duplicatedEnv.duration;
 			envDur = envDur + this.duration;
-			extendedEnv = extendedEnv.connect(this);
+			duplicatedEnv = duplicatedEnv.connect(this);
 		});
-		^extendedEnv.crop(0, extendTime);
+		^duplicatedEnv.crop(0, endTime);
 	}
 
 	// mensi pro zapis array ale horsi vysledky fadu
@@ -123,6 +134,8 @@
 			var plotter;
 			plotWin.view.children[0].close;
 			plotter = Plotter(envName.asSymbol, parent:plotWin);
+			// plotter.front;
+			// plotter.alwaysOnTop_(true);
 			plotter.value = this.asSignal(size);
 			plotter.domainSpecs = [[0, this.duration, 0, 0, "", " s"]];
 			plotter.refresh;
