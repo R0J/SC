@@ -17,6 +17,17 @@ ProxySynthDef(\string, {
 }).add;
 
 
+ProxySynthDef(\leaky, {
+	arg  sustain,  amp, pan, freq;
+	var sig, env;
+	env=EnvGen.kr(Env([0,1,0],[1,0.001],\welch),timeScale:sustain,doneAction:2);
+	sig=BPF.ar(WhiteNoise.ar(LFNoise0.kr(50).range(0.1,1)!2),freq,LFNoise0.kr(2).range(0.001,2));
+	sig=Vibrato.ar(GVerb.ar(sig,2,5),delay:0.2,trig:env);
+	sig=sig*env*amp;
+
+}).add;
+
+
 ProxySynthDef(\noisek, {
 	arg  sustain,  amp, pan, freq, panpos=1;
 	var sig, env, feedback=0.7, local, feedenv, renv;

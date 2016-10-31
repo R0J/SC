@@ -25,6 +25,24 @@
 ~drujba[7]=\filter->{arg in; LPF.ar(in, SinOsc.kr(1/32).range(6400,400))};
 )
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// LEAKY NOISE
+
+
+~leaky.play(vol:0.4, numChannels:2).quant_(4);
+(
+~leaky[0]=Pbind(
+	\instrument, \leaky,
+	\dur,4,
+	\octave, Pseq([Pseries(2,0.1,100),6],inf),
+	\degree, [4,6,2],
+	\amp, 0.2,
+	\legato, Prand([2,1.6,1.4],inf),
+	\strum, 0.15,
+
+);
+)
+~leaky[4]=\filter->{arg in; GVerb.ar(in,40,8,mul:0.4,add:in)};
+~leaky[4]=nil;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// CHEAP high
 
