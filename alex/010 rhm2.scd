@@ -5,7 +5,7 @@ p=ProxySpace.push(s);
 p.makeTempoClock;
 ProxySynthDef.sampleAccurate = true;
 
-p.clock.tempo = 128/60;
+p.clock.tempo = 127/60;
 p.gui;
 
 AutoIDE.run;
@@ -13,7 +13,7 @@ AutoIDE.run;
 
 ~kick.clear;
 ~kick.stop(fadeTime:40);
-~kick.play(vol:1, fadeTime:4, numChannels:2);
+~kick.play(vol:0.8, fadeTime:4, numChannels:2);
 ~kick.quant_(4);
 (~kick[0]=Pbind(
 	\instrument, \kick,
@@ -27,17 +27,19 @@ AutoIDE.run;
 ););
 ~kick[6]=\filter->{arg in; Limiter.ar(GVerb.ar(in,30,mul:0.5,add:in*0.5),0.6)};
 ~kick[7]=\filter->{arg in; LPF.ar(in,SinOsc.kr(1/32).range(400,200))};
-~kick[6]=nil;
+~kick[7]=nil;
+
+
 
 ~bum.clear;
 ~bum.stop(freeTime:10);
-~bum.play(vol:0.5, fadeTime:4, numChannels:2);
-~bum.quant_(4);
+~bum.play(vol:0.4, fadeTime:4, numChannels:2);
+~bum.quant_(32);
 (~bum[0]=Pbind(
 	\instrument, \bum,
 	\legato,0.2,
 	\amp, 1,
-	\dur,Pseq([1,Rest(1)],inf),
+	\dur,Pseq([1,Rest(31)],inf),
 	\pan, 0,
 	\freq, [45,47],
 
@@ -47,11 +49,10 @@ AutoIDE.run;
 ~bum[4]=nil;
 
 
-m=Group.new;
 ~zit2.clear;
 ~zit2.stop(freeTime:20);
-~zit2.play(vol:0.01, fadeTime:4, numChannels:2,group:z, group:m);
-~zit2.quant_(4);
+~zit2.play(vol:1, fadeTime:4, numChannels:2);
+~zit2.quant_(32);
 (~zit2[0]=Pbind(
 	\instrument, \zit,
 	\amp, 0.8,

@@ -114,9 +114,8 @@ AutoIDE.run;
 
 ~imp.clear;
 ~imp.stop(freeTime:60);
-(t=Group.new;
-~imp.play(vol:0.9, fadeTime:4, numChannels:2, group:t)
-~imp.quant_(4));
+~imp.play(vol:0.9, fadeTime:4, numChannels:2)
+~imp.quant_(4);
 (~imp[0]=Pbind(
 	\instrument, \imp,
 	\amp, 3,
