@@ -5,7 +5,7 @@
 ~aural1.clear;
 ~aural1.stop(fadeTime:60);
 (
-~aural1.play(vol:0.04, fadeTime:4, numChannels:2);
+~aural1.play(vol:0.041, fadeTime:4, numChannels:2);
 ~aural1.quant_(4);)
 (~aural1[0]=Pbind(
 	\instrument, \aural,
@@ -55,7 +55,7 @@
 ~oto.clear;
 ~oto.stop(fadeTime:60);
 (
-~oto.play(vol:0.2, fadeTime:4, numChannels:2, group:g);
+~oto.play(vol:0.1, fadeTime:4, numChannels:2, group:g);
 ~oto.quant_(4);)
 (~oto[0]=Pbind(
 	\instrument, \oto,

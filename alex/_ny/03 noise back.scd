@@ -30,21 +30,23 @@
 
 ~chaap.stop(fadeTime:20);
 (
-~cheap.play(vol:1, numChannels:2);
+~cheap.play(vol:0.1, numChannels:2);
 ~cheap.quant_(4);)
 (
 ~cheap[0]=Pbind(
 	\instrument, \cheap,
 	\dur,Pseq([Pseq([2,[0.25!7,-0.25,0.25,0.1,-1].flatten,1].convertRhythm)],inf),
 	\dec, 2,
-	\octave, [4,2]+4,
+	\octave, [4,2],
 	\degree, [4,2],
-	\amp, 0.1,
+	\amp, 0.2,
 	\strum, 0.15,//Pseq([Pn(0.15,11),Pn(0.1,22)],inf),
 
 );
 )
 ~cheap[4]=\filter->{arg in; CheapVerb.ar(in,4)};
+~cheap[5]=\filter->{arg in; SinOsc.kr(1/64).range(0.4,0.7)*in};
+
 ~cheap[4]=nil;
 
 
@@ -56,7 +58,7 @@
 ~impcont.stop(freeTime:60);
 
 (t=Group.new;
-~impcont.play(vol:1, fadeTime:4, numChannels:2, group:t);
+~impcont.play(vol:0.2, fadeTime:4, numChannels:2, group:t);
 ~impcont.quant_(4);
 );
 (~impcont[0]=Pbind(

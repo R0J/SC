@@ -5,12 +5,12 @@
 ~kick1sec.clear;
 ~kick1sec.stop(freeTime:10);
 (
-~kick1sec.play(vol:0.7, fadeTime:4, numChannels:2);
+~kick1sec.play(vol:1, fadeTime:4, numChannels:2);
 ~kick1sec.quant_(4);)
 (~kick1sec[0]=Pbind(
 	\instrument, \kick,
 	\amp, 1,
-	\legato, 0.7,
+	\legato, 0.9,
 	\pan, 0,
 	\freq, [45,47]+10,
 	\dur, 1,
@@ -26,7 +26,7 @@
 ~kick2sec.clear;
 ~kick2sec.stop(fadeTime:40);
 (
-~kick2sec.play(vol:0.3, fadeTime:4, numChannels:2);
+~kick2sec.play(vol:0.2, fadeTime:4, numChannels:2);
 ~kick2sec.quant_(4);)
 (~kick2sec[0]=Pbind(
 	\instrument, \kickfill,

@@ -9,7 +9,7 @@
 
 (b=Group.new;
 ~tum2.quant_(4);
-~tum2.play(vol:0.1, fadeTime:4, numChannels:2, group:b);)
+~tum2.play(vol:0.02, fadeTime:4, numChannels:2, group:b);)
 (~tum2[0]=Pbind(
 	\instrument, \tum,
 	\amp,1,
@@ -32,7 +32,7 @@
 
 (f=Group.new;
 ~tum3.quant_(4);
-~tum3.play(vol:0.1, fadeTime:4, numChannels:2, group:f);)
+~tum3.play(vol:0.4, fadeTime:4, numChannels:2, group:f);)
 (~tum3[0]=Pbind(
 	\instrument, \tum,
 	\amp,Pseq([Pseq([2,[0.25!4, -0.25,0.25!2, -0.5,1,-0.5].flatten,1].convertRhythm)],inf),
@@ -55,7 +55,7 @@
 
 ~rhmdrum.clear;
 ~rhmdrum.stop(fadeTime:40);
-~rhmdrum.play(vol:1, fadeTime:4, numChannels:2).quant_(4);
+~rhmdrum.play(vol:0.4, fadeTime:4, numChannels:2).quant_(4);
 (~rhmdrum[0]=Pbind(
 	\instrument, \kick,
 	\amp,1,

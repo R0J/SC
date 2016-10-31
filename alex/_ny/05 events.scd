@@ -28,7 +28,7 @@
 ~sweepnoise.clear;
 ~sweepnoise.stop(fadeTime:20);
 (
-~sweepnoise.play(vol:0.1, fadeTime:4, numChannels:2);
+~sweepnoise.play(vol:0.06, fadeTime:4, numChannels:2);
 ~sweepnoise.quant_(4);)
 (
 ~sweepnoise[0]=Pbind(
