@@ -3,8 +3,9 @@ NodeStage {
 	var nodeName, stageName, library;
 	var <timeline;
 
-	var <stageGroup;
-	var <stageMultiplicationBus;
+	var stageGroup;
+	var stageMultBus;
+	var stageMultSynth;
 
 	var clock;
 	var loopTask;
@@ -23,7 +24,7 @@ NodeStage {
 
 	init {|path|
 		stageGroup = Group.new(nodeName.envirGet.group);
-		stageMultiplicationBus = BusPlug.control(Server.default, 1);
+		stageMultBus = BusPlug.control(Server.default, 1);
 
 		clock = nil;
 		timeline = Timeline.new();
@@ -67,14 +68,20 @@ NodeStage {
 		});
 	}
 
-	setFactor {|targetValue, fadeTime|
+	setFactor {|targetValue, fadeTime = 0|
 		var envSynthName = stageName ++ "_fade";
-		Synth(envSynthName.asSymbol, [
-			\bus: stageMultiplicationBus.index,
+		if(stageMultSynth.isPlaying) { stageMultSynth.free;	};
+
+		stageMultSynth = Synth(envSynthName.asSymbol, [
+			\bus: stageMultBus.index,
 			\target: targetValue,
 			\time, fadeTime
-		], target:stageGroup);
+		], target: stageGroup);
+		stageMultSynth.register;
 	}
+
+	fadeIn {|time| this.setFactor(1,time); }
+	fadeOut {|time| this.setFactor(0,time); }
 
 	schedCycle {|time, nodeCycle| timeline.put(time, nodeCycle, nodeCycle.duration, nodeCycle.cycleName); }
 
@@ -92,7 +99,7 @@ NodeStage {
 
 					timeline.times.do({|oneTime|
 						timeline.get(oneTime).asArray.do({|oneCycle|
-							clock.sched(oneTime, { oneCycle.trig(stageGroup, stageMultiplicationBus); } );
+							clock.sched(oneTime, { oneCycle.trig(stageGroup, stageMultBus); } );
 						});
 					});
 					// clock.sched(timeline.duration, { clock.stop; });

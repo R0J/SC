@@ -86,53 +86,27 @@ NodeEnv {
 		var envSynthName = nodeName ++ "_" ++ controlName ++ "_" ++ envelopeName;
 		var fTime = 0;
 		{
-			envSynthDef = {|cBus, multiplicationFactor|
+			envSynthDef = {|cBus|
 				var envelope = EnvGen.kr(
 					\env.kr(Env.newClear(200,1).asArray),
 					gate: \envTrig.tr(0),
 					timeScale: \tempoClock.kr(1).reciprocal,
 					doneAction: 2
 				);
-/*
-				var fade = EnvGen.kr(
-					Env([ \fromVal.kr(0), \toVal.kr(0)], \fadeTime.kr(fTime), \sin),
-					gate:\fadeTrig.tr(0),
-					timeScale: \tempoClock.kr(1).reciprocal
-				);
-				*/
 
-				Out.kr( cBus, envelope /** fade*/ * \multiplicationBus.kr(1));
+				Out.kr( cBus, envelope * \multiplicationBus.kr(1));
 			};
 			envSynthDef.asSynthDef(name:envSynthName.asSymbol).add;
 			("SynthDef" + envSynthName + "added").postln;
 
 			Server.default.sync;
-			// this.prFadeOutSynths(control, envName, fTime);
 
-			/*
-			synth = Synth(envSynthName.asSymbol, [
-			\cBus: controlBusIndex,
-			// \env: [envelope],
-			\fromVal, 0,
-			\toVal, 1,
-			\fadeTime, fTime,
-			\fadeTrig, 1
-			], nodeName.envirGet.group);
-			// synthID = synth.nodeID;
-			*/
 		}.fork;
 
 	}
 
 	trig {|targetGroup, targetBus|
 		// ("Synth trig to controlBus_" ++ controlBusIndex + "by synth:" + synth.nodeID + "env:" + this.print(1)).postln;
-		/*
-		synth.set(
-		\envTrig, 1,
-		\tempoClock, currentEnvironment.clock.tempo,
-		\env, [envelope]
-		);
-		*/
 		var envSynthName = nodeName ++ "_" ++ controlName ++ "_" ++ envelopeName;
 		var fTime = 0;
 
@@ -141,10 +115,6 @@ NodeEnv {
 			\env: [envelope],
 			\envTrig, 1,
 			\tempoClock, currentEnvironment.clock.tempo,
-			\fromVal, 0,
-			\toVal, 1,
-			\fadeTime, fTime,
-			\fadeTrig, 1,
 			\multiplicationBus, targetBus.asMap
 			], targetGroup);
 	}

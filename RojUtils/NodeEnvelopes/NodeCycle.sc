@@ -37,12 +37,12 @@ NodeCycle {
 				{ stream.isKindOf(Integer) } { stream = stream.asSymbol.asArray; }
 				{ stream.isKindOf(String) }	{ stream = stream.asSymbol.asArray; }
 				;
-				("controlName:" + controlName + "; stream:" + stream).postln;
+				// ("controlName:" + controlName + "; stream:" + stream).postln;
 
 				// remove old keys
 				stream.do({|oneEnvelopeName|
 					timeline.times.do({|oneTime|
-						("oneTime, oneEnvelopeName:" + [oneTime, oneEnvelopeName]).postln;
+						// ("oneTime, oneEnvelopeName:" + [oneTime, oneEnvelopeName]).postln;
 						timeline.take(oneTime, oneEnvelopeName);
 					});
 				});
