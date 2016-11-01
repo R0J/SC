@@ -67,13 +67,13 @@ NodeCycle {
 
 	duration { ^timeline.duration; }
 
-	trig {
+	trig {|targetGroup, targetBus|
 		if(clock.notNil) { clock.stop; };
 		clock = TempoClock.new(currentEnvironment.clock.tempo);
 
 		timeline.times.do({|oneTime|
 			timeline.get(oneTime).asArray.do({|oneEnv|
-				clock.sched(oneTime, { oneEnv.trig; } );
+				clock.sched(oneTime, { oneEnv.trig(targetGroup, targetBus); } );
 			});
 		});
 		clock.sched(timeline.duration, { clock.stop; });

@@ -3,6 +3,9 @@ NodeStage {
 	var nodeName, stageName, library;
 	var <timeline;
 
+	var <stageGroup;
+	var <stageMultiplicationBus;
+
 	var clock;
 	var loopTask;
 	var >loopCount;
@@ -19,11 +22,16 @@ NodeStage {
 	}
 
 	init {|path|
+		stageGroup = Group.new(nodeName.envirGet.group);
+		stageMultiplicationBus = BusPlug.control(Server.default, 1);
+
 		clock = nil;
 		timeline = Timeline.new();
 		loopTask = nil;
 		loopCount = 1;
 		library.putAtPath(path, this);
+
+		this.prepareSynthDef;
 	}
 
 
@@ -59,6 +67,15 @@ NodeStage {
 		});
 	}
 
+	setFactor {|targetValue, fadeTime|
+		var envSynthName = stageName ++ "_fade";
+		Synth(envSynthName.asSymbol, [
+			\bus: stageMultiplicationBus.index,
+			\target: targetValue,
+			\time, fadeTime
+		], target:stageGroup);
+	}
+
 	schedCycle {|time, nodeCycle| timeline.put(time, nodeCycle, nodeCycle.duration, nodeCycle.cycleName); }
 
 	duration { ^timeline.duration; }
@@ -75,7 +92,7 @@ NodeStage {
 
 					timeline.times.do({|oneTime|
 						timeline.get(oneTime).asArray.do({|oneCycle|
-							clock.sched(oneTime, { oneCycle.trig; } );
+							clock.sched(oneTime, { oneCycle.trig(stageGroup, stageMultiplicationBus); } );
 						});
 					});
 					// clock.sched(timeline.duration, { clock.stop; });
@@ -96,4 +113,22 @@ NodeStage {
 	}
 
 	printOn { |stream| stream << this.class.name << " [\\"  << stageName << ", dur:" << this.duration << "]" }
+
+	prepareSynthDef {
+		var envSynthDef;
+		var envSynthName = stageName ++ "_fade";
+		var fTime = 0;
+
+		envSynthDef = { |bus, target, time|
+			var fadeGen = EnvGen.kr(
+				envelope: Env([ In.kr(bus), [target]], time, \sin),
+				timeScale: \tempoClock.kr(1).reciprocal,
+				doneAction: 2
+			);
+			ReplaceOut.kr(bus, fadeGen);
+		};
+		envSynthDef.asSynthDef(name:envSynthName.asSymbol).add;
+		("SynthDef" + envSynthName + "added").postln;
+
+	}
 }

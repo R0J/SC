@@ -54,21 +54,21 @@
 			nCycle = NodeCycle(this.envirKey, \default);
 			nStage = NodeStage(this.envirKey, \default);
 		};
-		this.post;
+		// this.post;
 		^nEnv;
 	}
 
 	cycle { |cycleName = nil|
 		var library = this.prGetLibrary;
 		if(cycleName.isNil) { cycleName = \default; };
-		this.post;
+		// this.post;
 		^NodeCycle(this.envirKey, cycleName.asSymbol);
 	}
 
 	stage { |stageName = nil|
 		var library = this.prGetLibrary;
 		if(stageName.isNil) { stageName = \default; };
-		this.post;
+		// this.post;
 		^NodeStage(this.envirKey, stageName.asSymbol);
 	}
 
