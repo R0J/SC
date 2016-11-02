@@ -32,7 +32,8 @@ NodeStage {
 
 		fadeSynthName = stageName ++ "_fade";
 
-		clock = nil;
+		// clock = TempoClock.new(currentEnvironment.clock.tempo);
+		// clock = nil;
 		timeline = Timeline.new();
 		loopTask = nil;
 		loopCount = 1;
@@ -100,10 +101,10 @@ NodeStage {
 		if(timeline.duration > 0)
 		{
 			loopTask = Task({
+				clock = TempoClock.new(currentEnvironment.clock.tempo);
 				currentEnvironment.clock.timeToNextBeat(timeline.duration).wait;
 				loops.do({
-					clock = TempoClock.new(currentEnvironment.clock.tempo);
-
+					clock.beats = 0;
 					timeline.times.do({|oneTime|
 						timeline.get(oneTime).asArray.do({|oneCycle|
 							clock.sched(oneTime, { oneCycle.trig(stageGroup, stageMultBus); } );
