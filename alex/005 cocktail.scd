@@ -13,7 +13,8 @@ AutoIDE.run;
 
 
 ~bow1.clear;
-~bow1.play(vol:0.01, fadeTime:4, numChannels:2).quant_(4);
+~bow1.play(vol:0.01, fadeTime:4, numChannels:2);
+~bow1.quant_(4)
 (
 ~bow1[0]=Pbind(
 	\instrument, \bow,
@@ -36,7 +37,8 @@ AutoIDE.run;
 
 
 ~bow2.clear;
-~bow2.play(vol:0.04, fadeTime:4, numChannels:2).quant_(4);
+~bow2.play(vol:0.04, fadeTime:4, numChannels:2);
+~bow2.quant_(4);
 (
 ~bow2[0]=Pbind(
 	\instrument, \bow,
@@ -57,7 +59,8 @@ AutoIDE.run;
 
 ///////////////////////////////////////////////////////////// long tss
 ~v.clear;
-~v.play(vol:0.01, fadeTime:4, numChannels:2).quant_(4);
+~v.play(vol:0.01, fadeTime:4, numChannels:2);
+~v.quant_(4);
 (
 ~v[0]=Pbind(\instrument, \tss,
 	\dur, Prand([0.05!4,Rest(8)].flatten,inf),
@@ -73,7 +76,8 @@ AutoIDE.run;
 
 ~aural1.clear;
 ~aural1.stop(fadeTime:60);
-~aural1.play(vol:0.01, fadeTime:4, numChannels:2).quant_(4);
+~aural1.play(vol:0.01, fadeTime:4, numChannels:2);
+~aurall.quant_(4);
 (~aural1[0]=Pbind(
 	\instrument, \aural,
 	\amp,Prand([0.8,0.4,0.6],inf)/8,
@@ -93,7 +97,8 @@ AutoIDE.run;
 //////////////////////////////////////////////////////////////////////////////////// onion
 
 ~m.clear;
-~m.play(vol:0.06, fadeTime:4, numChannels:2).quant_(4);
+~m.play(vol:0.06, fadeTime:4, numChannels:2);
+~m.quant_(4);
 (
 ~m[0]=Pbind(\instrument, \onion,
 	\dur, Prand([16,32],inf)/2,
@@ -109,8 +114,8 @@ AutoIDE.run;
 
 ~imp.clear;
 ~imp.stop(freeTime:60);
-(t=Group.new;
-~imp.play(vol:0.9, fadeTime:4, numChannels:2, group:t).quant_(4));
+~imp.play(vol:0.9, fadeTime:4, numChannels:2)
+~imp.quant_(4);
 (~imp[0]=Pbind(
 	\instrument, \imp,
 	\amp, 3,
@@ -130,7 +135,8 @@ AutoIDE.run;
 
 ~tsn.clear;
 ~tsn.stop(fadeTime:40);
-~tsn.play(vol:0.02, fadeTime:4, numChannels:2).quant_(4);
+~tsn.play(vol:0.02, fadeTime:4, numChannels:2);
+~tsn.quant_(4);
 (~tsn[0]=Pbind(
 	\instrument, \tss,
 	\amp,Pseq([1,0.5],inf),
@@ -151,7 +157,9 @@ AutoIDE.run;
 ~tum1.clear;
 ~tum1.stop(fadeTime:40);
 (f=Group.new;
-~tum1.play(vol:0.005, fadeTime:4, numChannels:2, group:f).quant_(4);)
+~tum1.play(vol:0.005, fadeTime:4, numChannels:2, group:f);
+~tum1.quant_(4)
+)
 (~tum1[0]=Pbind(
 	\instrument, \tum,
 	\amp,1,
@@ -170,7 +178,8 @@ AutoIDE.run;
 
 ~bum1.clear;
 ~bum1.stop(fadeTime:40);
-~bum1.play(vol:0.1, fadeTime:4, numChannels:2).quant_(4);
+~num1.quant_(4);
+~bum1.play(vol:0.6, fadeTime:4, numChannels:2);
 (~bum1[0]=Pbind(
 	\instrument, \bum,
 	\amp,1,
@@ -181,7 +190,7 @@ AutoIDE.run;
 
 );
 ~bum1[6]=\filter->{arg in; Limiter.ar(GVerb.ar(in,10,1,mul:0.1,add:in*2),0.9)};
-~bum1[7]=\filter->{arg in; LPF.ar(in,SinOsc.kr(1/32).range(880,440))};
+~bum1[7]=\filter->{arg in; LPF.ar(in,SinOsc.kr(1/32).range(1880,440))};
 );
 ~bum1[6]=nil;
 
@@ -189,7 +198,8 @@ AutoIDE.run;
 
 ~tslong.clear;
 ~tslong.stop(fadeTime:40);
-~tslong.play(vol:0.0041, fadeTime:4, numChannels:2).quant_(4);
+~tslong.play(vol:0.0041, fadeTime:4, numChannels:2);
+~tslong.quant_(4);
 (~tslong[0]=Pbind(
 	\instrument, \tss,
 	\amp,0.5,
@@ -209,10 +219,10 @@ AutoIDE.run;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////every sec kick
 
-
+~kick.quant_(4)
 ~kick.clear;
 ~kick.stop(freeTime:10);
-~kick.play(vol:0.7, fadeTime:4, numChannels:2).quant_(4);
+~kick.play(vol:0.7, fadeTime:4, numChannels:2);
 (~kick[0]=Pbind(
 	\instrument, \kick,
 	\amp, 1,
@@ -229,15 +239,16 @@ AutoIDE.run;
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////2 sec kickfill
 
 
+~kickf.quant_(4);
 ~kickf.clear;
 ~kickf.stop(fadeTime:40);
-~kickf.play(vol:0.7, fadeTime:4, numChannels:2).quant_(4);
+~kickf.play(vol:1, fadeTime:4, numChannels:2);
 (~kickf[0]=Pbind(
 	\instrument, \kickfill,
 	\amp,1,
-	\freq, [46,48],
+	\freq, [66,68],
 	\dur,2,
-	\legato, 0.2,
+	\legato, 0.7,
 
 );
 ~kickf[6]=\filter->{arg in; Limiter.ar(GVerb.ar(in,30,mul:0.2,add:in*0.5),0.6)};
@@ -250,7 +261,8 @@ AutoIDE.run;
 ///////////////////////////////////////////////////////////////////////////////////////nice rhm these two
 ~kick2.clear;
 ~kick2.stop(fadeTime:40);
-~kick2.play(vol:0.7, fadeTime:4, numChannels:2).quant_(4);
+~kick2.play(vol:0.7, fadeTime:4, numChannels:2);
+~kick2.quant_(4);
 (~kick2[0]=Pbind(
 	\instrument, \kick,
 	\amp,1,
@@ -272,7 +284,8 @@ AutoIDE.run;
 
 ~ts1.clear;
 ~ts1.stop(fadeTime:40);
-~ts1.play(vol:0.1, fadeTime:4, numChannels:2).quant_(4);
+~ts1.play(vol:0.1, fadeTime:4, numChannels:2);
+~ts1.quant_(4);
 (~ts1[0]=Pbind(
 	\instrument, \tss,
 	\amp,1,
