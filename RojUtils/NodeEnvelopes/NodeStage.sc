@@ -1,11 +1,13 @@
 NodeStage {
 
+	classvar <currentStage = \default;
+
 	var nodeName, stageName, library;
 	var <timeline;
 
 	var stageGroup;
 	var stageMultBus;
-	var stageMultSynth;
+	var stageMultSynth, fadeSynthName;
 
 	var clock;
 	var loopTask;
@@ -22,9 +24,13 @@ NodeStage {
 		);
 	}
 
+	*current {|stage| currentStage = stage;	}
+
 	init {|path|
 		stageGroup = Group.new(nodeName.envirGet.group);
 		stageMultBus = BusPlug.control(Server.default, 1);
+
+		fadeSynthName = stageName ++ "_fade";
 
 		clock = nil;
 		timeline = Timeline.new();
@@ -35,6 +41,7 @@ NodeStage {
 		this.prepareSynthDef;
 	}
 
+	isCurrentStage { if((currentStage == stageName), { ^true; }, { ^false; }); }
 
 	set {|time, cyclePattern|
 		var stream = cyclePattern.asStream;
@@ -69,10 +76,10 @@ NodeStage {
 	}
 
 	setFactor {|targetValue, fadeTime = 0|
-		var envSynthName = stageName ++ "_fade";
+		// var fadeSynthName = stageName ++ "_fade";
 		if(stageMultSynth.isPlaying) { stageMultSynth.free;	};
 
-		stageMultSynth = Synth(envSynthName.asSymbol, [
+		stageMultSynth = Synth(fadeSynthName.asSymbol, [
 			\bus: stageMultBus.index,
 			\target: targetValue,
 			\time, fadeTime
@@ -122,20 +129,15 @@ NodeStage {
 	printOn { |stream| stream << this.class.name << " [\\"  << stageName << ", dur:" << this.duration << "]" }
 
 	prepareSynthDef {
-		var envSynthDef;
-		var envSynthName = stageName ++ "_fade";
-		var fTime = 0;
-
-		envSynthDef = { |bus, target, time|
+		var envSynthDef = { |bus, target, time|
 			var fadeGen = EnvGen.kr(
 				envelope: Env([ In.kr(bus), [target]], time, \sin),
-				timeScale: \tempoClock.kr(1).reciprocal,
+				timeScale: currentEnvironment.clock.tempo.reciprocal,
 				doneAction: 2
 			);
 			ReplaceOut.kr(bus, fadeGen);
 		};
-		envSynthDef.asSynthDef(name:envSynthName.asSymbol).add;
-		("SynthDef" + envSynthName + "added").postln;
-
+		envSynthDef.asSynthDef(name:fadeSynthName.asSymbol).add;
+		("SynthDef" + fadeSynthName + "added").postln;
 	}
 }

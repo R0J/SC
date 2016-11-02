@@ -55,7 +55,6 @@ NodeCycle {
 					this.schedEnv(currentTrigTime, oneEnv);
 					currentTrigTime = currentTrigTime + oneEnv.duration;
 				});
-
 			}
 		);
 
