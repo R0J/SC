@@ -24,7 +24,35 @@ NodeStage {
 		);
 	}
 
-	*current {|stage| currentStage = stage;	}
+	*current {|stage, fadeTime = 0|
+		Library.at(\qMachine).dictionary.keysValuesDo({|nodeName, dict|
+			var path = [nodeName.asSymbol, \stages];
+
+			nodeName.postln;
+			Library.at(\qMachine).atPath(path).keysValuesDo({|stageName, nStage|
+				stageName.postln; nStage.postln;
+				if((stage.asSymbol == stageName.asSymbol),
+					{
+						nStage.play;
+						nStage.fadeIn(fadeTime);
+					},
+					{
+						nStage.fadeOut(fadeTime);
+						nStage.stop;
+					}
+				);
+			});
+
+
+			// nodeName.postln; nStage.postln;
+		});
+
+
+
+
+		currentStage = stage;
+
+	}
 
 	init {|path|
 		stageGroup = Group.new(nodeName.envirGet.group);
@@ -32,8 +60,6 @@ NodeStage {
 
 		fadeSynthName = stageName ++ "_fade";
 
-		// clock = TempoClock.new(currentEnvironment.clock.tempo);
-		// clock = nil;
 		timeline = Timeline.new();
 		loopTask = nil;
 		loopCount = 1;
@@ -77,7 +103,6 @@ NodeStage {
 	}
 
 	setFactor {|targetValue, fadeTime = 0|
-		// var fadeSynthName = stageName ++ "_fade";
 		if(stageMultSynth.isPlaying) { stageMultSynth.free;	};
 
 		stageMultSynth = Synth(fadeSynthName.asSymbol, [
@@ -102,7 +127,7 @@ NodeStage {
 		{
 			loopTask = Task({
 				clock = TempoClock.new(currentEnvironment.clock.tempo);
-				currentEnvironment.clock.timeToNextBeat(timeline.duration).wait;
+				// currentEnvironment.clock.timeToNextBeat(timeline.duration).wait;
 				loops.do({
 					clock.beats = 0;
 					timeline.times.do({|oneTime|
@@ -119,12 +144,15 @@ NodeStage {
 		};
 	}
 
-	stop {
-		loopTask.stop;
-		clock.stop;
-		clock = nil;
-		loopTask = nil;
-		loopCount = 1;
+	stop {|releaseTime = 0|
+		Task({
+			releaseTime.wait;
+			loopTask.stop;
+			clock.stop;
+			clock = nil;
+			loopTask = nil;
+			loopCount = 1;
+		}).play;
 	}
 
 	printOn { |stream| stream << this.class.name << " [\\"  << stageName << ", dur:" << this.duration << "]" }
