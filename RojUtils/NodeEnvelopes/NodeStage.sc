@@ -31,9 +31,7 @@ NodeStage {
 			Library.at(\qMachine).dictionary.keysValuesDo({|nodeName, dict|
 				var path = [nodeName.asSymbol, \stages];
 
-				nodeName.postln;
 				Library.at(\qMachine).atPath(path).keysValuesDo({|stageName, nStage|
-					// stageName.postln; nStage.postln;
 					if((stage.asSymbol == stageName.asSymbol),
 						{
 							nStage.play;
@@ -52,20 +50,17 @@ NodeStage {
 	}
 
 	init {|path|
-		// {
-			stageGroup = Group.new(nodeName.envirGet.group);
-			stageMultBus = BusPlug.control(Server.default, 1);
-		// Server.default.sync;
+		stageGroup = Group.new(nodeName.envirGet.group);
+		stageMultBus = BusPlug.control(Server.default, 1);
 
-			fadeSynthName = stageName ++ "_fade";
+		fadeSynthName = stageName ++ "_fade";
 
-			timeline = Timeline.new();
-			loopTask = nil;
-			loopCount = 1;
-			library.putAtPath(path, this);
+		timeline = Timeline.new();
+		loopTask = nil;
+		loopCount = 1;
+		library.putAtPath(path, this);
 
-			this.prepareSynthDef;
-	// }.fork;
+		this.prepareSynthDef;
 	}
 
 	isCurrentStage { if((currentStage == stageName), { ^true; }, { ^false; }); }
@@ -135,8 +130,8 @@ NodeStage {
 							clock.sched(oneTime, { oneCycle.trig(stageGroup, stageMultBus); } );
 						});
 					});
-					// clock.sched(timeline.duration, { clock.stop; });
-					("loopCount:" + loopCount).postln;
+
+					// ("loopCount:" + loopCount).postln;
 					loopCount = loopCount + 1;
 					timeline.duration.wait;
 				});

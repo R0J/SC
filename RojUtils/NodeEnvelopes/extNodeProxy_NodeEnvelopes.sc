@@ -51,8 +51,8 @@
 
 		if(controlName.notNil) {
 			nEnv = NodeEnv(this.envirKey, controlName.asSymbol, \default);
-			nCycle = NodeCycle(this.envirKey, \default);
-			nStage = NodeStage(this.envirKey, \default);
+			// nCycle = NodeCycle(this.envirKey, \default);
+			// nStage = NodeStage(this.envirKey, \default);
 		};
 		// this.post;
 		^nEnv;
