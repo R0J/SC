@@ -24,48 +24,48 @@ NodeStage {
 		);
 	}
 
-	*current {|stage, fadeTime = 0|
-		Library.at(\qMachine).dictionary.keysValuesDo({|nodeName, dict|
-			var path = [nodeName.asSymbol, \stages];
+	*current {|stage, fadeTime = 0, quantOfChange = 1|
+		Task({
+			currentEnvironment.clock.timeToNextBeat(quantOfChange).wait;
 
-			nodeName.postln;
-			Library.at(\qMachine).atPath(path).keysValuesDo({|stageName, nStage|
-				stageName.postln; nStage.postln;
-				if((stage.asSymbol == stageName.asSymbol),
-					{
-						nStage.play;
-						nStage.fadeIn(fadeTime);
-					},
-					{
-						nStage.fadeOut(fadeTime);
-						nStage.stop;
-					}
-				);
+			Library.at(\qMachine).dictionary.keysValuesDo({|nodeName, dict|
+				var path = [nodeName.asSymbol, \stages];
+
+				nodeName.postln;
+				Library.at(\qMachine).atPath(path).keysValuesDo({|stageName, nStage|
+					// stageName.postln; nStage.postln;
+					if((stage.asSymbol == stageName.asSymbol),
+						{
+							nStage.play;
+							nStage.fadeIn(fadeTime);
+						},
+						{
+							nStage.fadeOut(fadeTime);
+							nStage.stop(fadeTime);
+						}
+					);
+				});
 			});
 
-
-			// nodeName.postln; nStage.postln;
-		});
-
-
-
-
-		currentStage = stage;
-
+			currentStage = stage;
+		}).play;
 	}
 
 	init {|path|
-		stageGroup = Group.new(nodeName.envirGet.group);
-		stageMultBus = BusPlug.control(Server.default, 1);
+		// {
+			stageGroup = Group.new(nodeName.envirGet.group);
+			stageMultBus = BusPlug.control(Server.default, 1);
+		// Server.default.sync;
 
-		fadeSynthName = stageName ++ "_fade";
+			fadeSynthName = stageName ++ "_fade";
 
-		timeline = Timeline.new();
-		loopTask = nil;
-		loopCount = 1;
-		library.putAtPath(path, this);
+			timeline = Timeline.new();
+			loopTask = nil;
+			loopCount = 1;
+			library.putAtPath(path, this);
 
-		this.prepareSynthDef;
+			this.prepareSynthDef;
+	// }.fork;
 	}
 
 	isCurrentStage { if((currentStage == stageName), { ^true; }, { ^false; }); }

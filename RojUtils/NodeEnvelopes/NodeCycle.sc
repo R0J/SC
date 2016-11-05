@@ -30,6 +30,7 @@ NodeCycle {
 		var currentTrigTime = time;
 
 		if(nEnv.isNil,
+			// { ("NodeEnv [\\" ++ nodeName ++ "\\" ++ controlName ++ "\\" ++ envPattern ++ "] not found in map").warn;  ^nil; },
 			{ ("NodeEnv [\\" ++ controlName ++ "\\" ++ envPattern ++ "] not found in map").warn;  ^nil; },
 			{
 				case
