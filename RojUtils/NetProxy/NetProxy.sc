@@ -1,5 +1,7 @@
 NetProxy : ProxySpace {
 
+	classvar isConnected = false;
+
 	var userName;
 	var netIP, broadcastIP;
 	var netAddrs;
@@ -8,6 +10,9 @@ NetProxy : ProxySpace {
 	var timeMaster;
 
 	var metronom;
+	var metronomSynth = nil;
+	var metroQuant, metroFreq;
+
 	var oscScTrigAddr, oscScTrigClock;
 
 	*push {
@@ -16,19 +21,15 @@ NetProxy : ProxySpace {
 			Server.default.latency = 0.0;
 			proxyspace.makeTempoClock;
 			proxyspace.prMetronomDef;
+			CmdPeriod.add(proxyspace);
 			"\nNetProxy init done...".postln;
 		});
 		^proxyspace;
 	}
 
 	*connect { |name = nil|
-
-		// var proxyspace = super.push(Server.default);
 		var proxyspace = this.push();
-		// Server.default.waitForBoot({
-			Server.default.doWhenBooted({
-			// Server.default.latency = 0;
-			// proxyspace.makeTempoClock;
+		Server.default.doWhenBooted({
 			proxyspace.initNet(name);
 		});
 		^proxyspace;
@@ -55,31 +56,60 @@ NetProxy : ProxySpace {
 
 		// this.prMetronomDef;
 		this.prGetBroadcastIP;
+		isConnected = true;
+	}
+
+	cmdPeriod {
+		"CMD period protection".warn;
+		("TempoClock.default.beats:" + TempoClock.default.beats).postln;
+		("currentEnvirnment.clock.beats:" + currentEnvironment.clock.beats).postln;
+		("metronomSynth:" + metronomSynth).postln;
+		if(metronomSynth.notNil){
+			metronom.stop;
+			metronom = nil;
+			metronomSynth = nil;
+			this.metro(metroQuant, metroFreq);
+		}
 	}
 
 	name { ^userName.asSymbol; }
 
-	bpm { |bpm|
-		{
-			currentEnvironment.clock.timeToNextBeat(1).wait;
-			TempoClock.setAllClocks(currentEnvironment.clock.beats, bpm/60);
-			sendMsg.clock_set;
-		}.fork;
+	bpm { |bpm = nil|
+		if((bpm.notNil), {
+			{
+				("\BPM set:" + bpm).postln;
+				currentEnvironment.clock.timeToNextBeat(1).wait;
+				TempoClock.setAllClocks(currentEnvironment.clock.beats, bpm/60);
+				if(isConnected) { sendMsg.clock_set; };
+			}.fork;
+		},{
+			("\Current BPM is:" + (currentEnvironment.clock.tempo * 60)).postln;
+			^nil;
+		});
 	}
 
-	time { sendMsg.clock_get; ^nil; }
+	time {
+		if(isConnected) { sendMsg.clock_get; };
+
+		("\nTempoClock.default.beats:" + TempoClock.default.beats).postln;
+		("currentEnvirnment.clock.beats:" + currentEnvironment.clock.beats).postln;
+		^nil;
+	}
 
 	restartClock {
-		sendMsg.clock_restart;
+		if(isConnected) { sendMsg.clock_restart; };
 		TempoClock.setAllClocks(0, currentEnvironment.clock.tempo);
 	}
 
 	metro {|quant = 1, freq = 800|
 
+		metroQuant = quant;
+		metroFreq = freq;
+
 		if(metronom.isNil, {
 			metronom = TempoClock.new(currentEnvironment.clock.tempo);
 			metronom.sched(currentEnvironment.clock.timeToNextBeat(quant), {
-				Synth(\metronom, [\freq: freq, \metronomTrig, 1]);
+				metronomSynth = Synth(\metronom, [\freq: freq, \metronomTrig, 1]);
 				("\nTempoClock.default.beats:" + TempoClock.default.beats).postln;
 				("currentEnvirnment.clock.beats:" + currentEnvironment.clock.beats).postln;
 				quant;
@@ -87,6 +117,7 @@ NetProxy : ProxySpace {
 		},{
 			metronom.stop;
 			metronom = nil;
+			metronomSynth = nil;
 		});
 	}
 
@@ -171,10 +202,10 @@ NetProxy : ProxySpace {
 				"Player % has joined to session".format(sender).warn;
 				netAddrs.put(sender, addr);
 				sendMsg.user_loged(sender);
-				if(timeMaster) {
-					sendMsg.user_timeMaster(sender);
-					sendMsg.clock_set;
-				};
+				// if(timeMaster) {
+				// sendMsg.user_timeMaster(sender);
+				sendMsg.clock_set;
+				// };
 				netAddrs.postln;
 			});
 		}, '/user/connected', nil).permanent_(true);

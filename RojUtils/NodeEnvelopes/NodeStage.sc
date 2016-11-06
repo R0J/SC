@@ -131,7 +131,7 @@ NodeStage {
 						});
 					});
 
-					// ("loopCount:" + loopCount).postln;
+					("stageName:" + stageName + "; loopCount:" + loopCount).postln;
 					loopCount = loopCount + 1;
 					timeline.duration.wait;
 				});
