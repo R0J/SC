@@ -17,6 +17,17 @@ ProxySynthDef(\string, {
 }).add;
 
 
+ProxySynthDef(\leaky, {
+	arg  sustain,  amp, pan, freq;
+	var sig, env;
+	env=EnvGen.kr(Env([0,1,0],[1,0.001],\welch),timeScale:sustain,doneAction:2);
+	sig=BPF.ar(WhiteNoise.ar(LFNoise0.kr(50).range(0.1,1)!2),freq,LFNoise0.kr(2).range(0.001,2));
+	sig=Vibrato.ar(GVerb.ar(sig,2,5),delay:0.2,trig:env);
+	sig=sig*env*amp;
+
+}).add;
+
+
 ProxySynthDef(\noisek, {
 	arg  sustain,  amp, pan, freq, panpos=1;
 	var sig, env, feedback=0.7, local, feedenv, renv;
@@ -30,7 +41,7 @@ ProxySynthDef(\noisek, {
 	local=AllpassN.ar(local,0.4, feedenv,SinOsc.kr(1/16).range(0.5,4));
 	LocalOut.ar(local*feedback);
 	local=LPF.ar(sig+local,800,mul:1);
-	local=BPF.ar(Limiter.ar(local), freq,rq:0.01)+(local*0.2)*10;
+	local=BPF.ar(Limiter.ar(local), freq,rq:0.1)+(local*0.2)*10;
 	local=Pan2.ar(Mix.new(local),SinOsc.kr(panpos));
 }).add;
 
@@ -61,7 +72,7 @@ ProxySynthDef(\cheap, {
 	arg  sustain,  amp, dec, freq;
 	var sig, env;
 	env=EnvGen.kr(Env([0,1,0],[0.4,0.001],\welch),timeScale:sustain,doneAction:2);
-	sig=SinOsc.ar(freq+[0,2]);
+	sig=SinOsc.ar(freq+fib(10).reciprocal,add:GrayNoise.ar(0.1)*LFSaw.kr(0.5));
 	sig=CheapVerb.ar(sig,decayTime:dec);
 	sig=sig*env*amp;
 
