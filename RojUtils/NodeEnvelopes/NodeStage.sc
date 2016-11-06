@@ -117,12 +117,15 @@ NodeStage {
 
 	play { |loops = inf|
 
+		var path = [nodeName.asSymbol, \node];
+		var node = library.atPath(path);
+
 		if(loopTask.notNil) { this.stop; };
 		if(timeline.duration > 0)
 		{
 			loopTask = Task({
+				// currentEnvironment.clock.timeToNextBeat(node.quant).wait;
 				clock = TempoClock.new(currentEnvironment.clock.tempo);
-				// currentEnvironment.clock.timeToNextBeat(timeline.duration).wait;
 				loops.do({
 					clock.beats = 0;
 					timeline.times.do({|oneTime|
