@@ -1,18 +1,6 @@
 
 p.clock.tempo(127/60);
 
-
-(
-    Task({
-        p.arProxyNames.do({|synth| p[synth.asSymbol].stop(10);});
-        ~master.play;
-        (11).wait;
-        //p.arProxyNames.do(p[_.asSymbol].clear);
-        p.clean;
-        ~tick.rebuild;
-    }).play(TempoClock.default);  
-)
-
 (
     ~tick.kr(1);
     ~tick.clock = p.clock;
@@ -75,9 +63,9 @@ p.restartClock;
         ];
         var mod2 = LFNoise2.kr(~tempo/16).range(10,80);
         var mod = LFDNoise1.kr(~tempo/32).range(20,50);
-        var imp = PulseDivider.kr(~tick.kr,4,~counter.kr%pat.size);
+        var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.001,2.5],[mod,-3.3]), imp * hit);
+        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.001,1.5],[mod,-3.3]), imp * hit);
         var sig;
         var hum = LFDNoise1.kr(~tempo).range(0.0,0.01);
 
@@ -90,7 +78,7 @@ p.restartClock;
     ~kick.play;
 );
 ~kick.stop(10);
-~kick.clear;
+~kick.clear(60);
 ~kick.pause;
 ~kick.resume;
 
@@ -158,7 +146,7 @@ p.restartClock;
 
 );
 ~raw.stop(5);
-~raw.clear;
+~raw.clear(5);
 ~raw.pause;
 ~raw.resume;
 
@@ -184,7 +172,7 @@ p.restartClock;
 ~crack.pause;
 ~crack.resume;
 
-
+~kick.clear(30)
 
 // under_bass synth ///////////////////////////////////////
 
@@ -196,7 +184,7 @@ p.restartClock;
     ~under_bass={
         var sig = SinOsc.ar(33.midicps!2,Pulse.ar(1/4/[1,2,3,4]*~tempo)*8pi) * SinOsc.ar(~tempo/4/[1,2,3,4]);
         sig = Limiter.ar(sig,0.9);
-        Splay.ar(sig,0.5,0.25);
+        Splay.ar(sig,0.5,0.5);
     };
     ~under_bass.play;
 );
@@ -225,14 +213,22 @@ p.restartClock;
         sig = Normalizer.ar(sig);
         sig = OnePole.ar(sig,LFDNoise1.ar(1/4!4 * ~tempo/2));
         sig = LPF.ar(sig,8000);
-        Splay.ar(sig,0.85,0.35,LFPar.kr(~tempo,mul:0.2));
+        Splay.ar(sig,0.85,0.5,LFPar.kr(~tempo,mul:0.2));
     };
     ~menavka_deep.play;
 );
 ~menavka_deep.stop(4);
-~menavka_deep.clear;
+~menavka_deep.clear(10);
 ~menavka_deep.pause;
 ~menavka_deep.resume;
+
+
+(
+//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+{
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(10);};});
+}.fork;  
+)
 
 // menavka_deep synth ///////////////////////////////////////
 
@@ -259,7 +255,7 @@ p.restartClock;
     ~menavka_deep_mod.play;
 );
 ~menavka_deep_mod.stop(4);
-~menavka_deep_mod.clear;
+~menavka_deep_mod.clear(30);
 ~menavka_deep_mod.pause;
 ~menavka_deep_mod.resume;
 
@@ -289,7 +285,7 @@ p.restartClock;
     ~menavka[1] = \filter -> {|sig| DWGReverb.ar(HPF.ar(LPF.ar(sig,3500),150),[4020,4000],1/5)};
 );
 ~menavka.stop(4);
-~menavka.clear;
+~menavka.clear(20);
 ~menavka.pause;
 ~menavka.resume;
 
@@ -374,7 +370,7 @@ p.restartClock;
     ~flute2[1] = \filter -> {|sig| DWGReverb.ar(HPF.ar(LPF.ar(sig,3500),150),[4020,4000],1/2)};
 );
 ~flute2.stop(30);
-~flute2.clear;
+~flute2.clear(20);
 ~flute2.pause;
 ~flute2.resume;
 
@@ -383,7 +379,7 @@ p.restartClock;
 (
     ~flute1.ar(2);
     ~flute1.quant=2;
-    ~flute1.fadeTime=4;
+    ~flute1.fadeTime=8;
     ~flute1={
         var speed = 1/8/[1,2,4] * ~tempo;
         var oct = TWChoose.kr(Impulse.kr(speed/4),[0,-1,2,1]*12,[1,0.2,0.1,0.5],1);
@@ -404,7 +400,7 @@ p.restartClock;
     ~flute1[1] = \filter -> {|sig| DWGReverb.ar(HPF.ar(LPF.ar(sig,3500),150),[4020,4000],1/2)};
 );
 ~flute1.stop(30);
-~flute1.clear;
+~flute1.clear(20);
 ~flute1.pause;
 ~flute1.resume;
 
@@ -444,5 +440,4 @@ p.restartClock;
 ~harm.clear;
 ~harm.pause;
 ~harm.resume;
-
 
