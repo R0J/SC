@@ -18,20 +18,25 @@ NodeEnv {
 	}
 
 	init { |path|
-		var node = library.atPath([nodeName.asSymbol, \node]);
-		controlBusIndex = library.atPath([nodeName.asSymbol, \buses, controlName.asSymbol]).index;
+		// var node = library.atPath([nodeName.asSymbol, \node]);
+		// controlBusIndex = library.atPath([nodeName.asSymbol, \buses, controlName.asSymbol]).index;
 		envelope = nil;
 		synth = nil;
 
-		node.set(controlName.asSymbol, BusPlug.for(controlBusIndex));
+		// node.set(controlName.asSymbol, BusPlug.for(controlBusIndex));
 		this.prepareSynthDef;
 
 		library.putAtPath(path, this);
 	}
 
 	set {|envName, env|
+		var node = library.atPath([nodeName.asSymbol, \node]);
 		var nEnv = super.class.new(nodeName, controlName, envName);
-		nEnv.envelope = env;
+				nEnv.envelope = env;
+
+		controlBusIndex = library.atPath([nodeName.asSymbol, \buses, controlName.asSymbol]).index;
+			node.set(controlName.asSymbol, BusPlug.for(controlBusIndex));
+
 		if(nEnv.setPlot) { nEnv.plot(envName); };
 		^nEnv;
 	}
@@ -65,9 +70,9 @@ NodeEnv {
 
 		if(envelope.notNil, {
 			txt = txt ++ tabs ++ "- levels:" + envelope.levels ++ "\n";
-				txt = txt ++ tabs ++ "- times:" + envelope.times ++ "\n";
-				txt = txt ++ tabs ++ "- curves:" + envelope.curves ++ "\n";
-			}, {
+			txt = txt ++ tabs ++ "- times:" + envelope.times ++ "\n";
+			txt = txt ++ tabs ++ "- curves:" + envelope.curves ++ "\n";
+		}, {
 			txt = tabs ++ "Env (nil)\n";
 		});
 
@@ -91,42 +96,31 @@ NodeEnv {
 					\env.kr(Env.newClear(200,1).asArray),
 					gate: \envTrig.tr(0),
 					timeScale: \tempoClock.kr(1).reciprocal,
-					doneAction: 0
+					doneAction: 2
 				);
 
-				var fade = EnvGen.kr(
-					Env([ \fromVal.kr(0), \toVal.kr(0)], \fadeTime.kr(fTime), \sin),
-					gate:\fadeTrig.tr(0),
-					timeScale: \tempoClock.kr(1).reciprocal
-				);
-
-				Out.kr( cBus, envelope * fade );
+				Out.kr( cBus, envelope * \multiplicationBus.kr(1));
 			};
 			envSynthDef.asSynthDef(name:envSynthName.asSymbol).add;
 			("SynthDef" + envSynthName + "added").postln;
 
 			Server.default.sync;
-			// this.prFadeOutSynths(control, envName, fTime);
 
-			synth = Synth(envSynthName.asSymbol, [
-				\cBus: controlBusIndex,
-				// \env: [envelope],
-				\fromVal, 0,
-				\toVal, 1,
-				\fadeTime, fTime,
-				\fadeTrig, 1
-			], nodeName.envirGet.group);
-			// synthID = synth.nodeID;
 		}.fork;
 
 	}
 
-	trig {
+	trig {|targetGroup, targetBus|
 		// ("Synth trig to controlBus_" ++ controlBusIndex + "by synth:" + synth.nodeID + "env:" + this.print(1)).postln;
-		synth.set(
+		var envSynthName = nodeName ++ "_" ++ controlName ++ "_" ++ envelopeName;
+		var fTime = 0;
+
+		synth = Synth(envSynthName.asSymbol, [
+			\cBus: controlBusIndex,
+			\env: [envelope],
 			\envTrig, 1,
 			\tempoClock, currentEnvironment.clock.tempo,
-			\env, [envelope]
-		);
+			\multiplicationBus, targetBus.asMap
+			], targetGroup);
 	}
 }

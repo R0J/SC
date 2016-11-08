@@ -20,6 +20,7 @@ NodeCycle {
 		clock = nil;
 		timeline = Timeline.new();
 		library.putAtPath(path, this);
+		clock = TempoClock.new(currentEnvironment.clock.tempo);
 	}
 
 	set {|controlName, envPattern, time = 0|
@@ -29,6 +30,7 @@ NodeCycle {
 		var currentTrigTime = time;
 
 		if(nEnv.isNil,
+			// { ("NodeEnv [\\" ++ nodeName ++ "\\" ++ controlName ++ "\\" ++ envPattern ++ "] not found in map").warn;  ^nil; },
 			{ ("NodeEnv [\\" ++ controlName ++ "\\" ++ envPattern ++ "] not found in map").warn;  ^nil; },
 			{
 				case
@@ -37,12 +39,12 @@ NodeCycle {
 				{ stream.isKindOf(Integer) } { stream = stream.asSymbol.asArray; }
 				{ stream.isKindOf(String) }	{ stream = stream.asSymbol.asArray; }
 				;
-				("controlName:" + controlName + "; stream:" + stream).postln;
+				// ("controlName:" + controlName + "; stream:" + stream).postln;
 
 				// remove old keys
 				stream.do({|oneEnvelopeName|
 					timeline.times.do({|oneTime|
-						("oneTime, oneEnvelopeName:" + [oneTime, oneEnvelopeName]).postln;
+						// ("oneTime, oneEnvelopeName:" + [oneTime, oneEnvelopeName]).postln;
 						timeline.take(oneTime, oneEnvelopeName);
 					});
 				});
@@ -55,7 +57,6 @@ NodeCycle {
 					this.schedEnv(currentTrigTime, oneEnv);
 					currentTrigTime = currentTrigTime + oneEnv.duration;
 				});
-
 			}
 		);
 
@@ -67,16 +68,16 @@ NodeCycle {
 
 	duration { ^timeline.duration; }
 
-	trig {
-		if(clock.notNil) { clock.stop; };
-		clock = TempoClock.new(currentEnvironment.clock.tempo);
-
+	trig {|targetGroup, targetBus|
+		// if(clock.notNil) { clock.stop; };
+		// clock = TempoClock.new(currentEnvironment.clock.tempo);
+clock.beats = 0;
 		timeline.times.do({|oneTime|
 			timeline.get(oneTime).asArray.do({|oneEnv|
-				clock.sched(oneTime, { oneEnv.trig; } );
+				clock.sched(oneTime, { oneEnv.trig(targetGroup, targetBus); } );
 			});
 		});
-		clock.sched(timeline.duration, { clock.stop; });
+		// clock.sched(timeline.duration, { clock.stop; });
 	}
 
 	printOn { |stream|
