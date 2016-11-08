@@ -18,20 +18,25 @@ NodeEnv {
 	}
 
 	init { |path|
-		var node = library.atPath([nodeName.asSymbol, \node]);
-		controlBusIndex = library.atPath([nodeName.asSymbol, \buses, controlName.asSymbol]).index;
+		// var node = library.atPath([nodeName.asSymbol, \node]);
+		// controlBusIndex = library.atPath([nodeName.asSymbol, \buses, controlName.asSymbol]).index;
 		envelope = nil;
 		synth = nil;
 
-		node.set(controlName.asSymbol, BusPlug.for(controlBusIndex));
+		// node.set(controlName.asSymbol, BusPlug.for(controlBusIndex));
 		this.prepareSynthDef;
 
 		library.putAtPath(path, this);
 	}
 
 	set {|envName, env|
+		var node = library.atPath([nodeName.asSymbol, \node]);
 		var nEnv = super.class.new(nodeName, controlName, envName);
-		nEnv.envelope = env;
+				nEnv.envelope = env;
+
+		controlBusIndex = library.atPath([nodeName.asSymbol, \buses, controlName.asSymbol]).index;
+			node.set(controlName.asSymbol, BusPlug.for(controlBusIndex));
+
 		if(nEnv.setPlot) { nEnv.plot(envName); };
 		^nEnv;
 	}

@@ -45,7 +45,7 @@
 	}
 
 	env { |controlName = nil|
-		var library = this.prGetLibrary;
+		var library = this.prGetLibrary(controlName);
 		var nEnv = nil;
 		var nCycle, nStage;
 
@@ -73,7 +73,7 @@
 	}
 
 
-	prGetLibrary {
+	prGetLibrary {|controlName = nil|
 		var library = Library.at(\qMachine);
 
 		if(library.isNil) {
@@ -88,6 +88,15 @@
 			library.put(this.envirKey.asSymbol, \node, this);
 		};
 
+		if(controlName.notNil)
+		{
+			var busPath = [this.envirKey.asSymbol, \buses, controlName.asSymbol];
+			if(library.atPath(busPath).isNil)
+			{
+				library.putAtPath(busPath, Bus.control(Server.default, 1));
+			};
+		};
+		/*
 		this.controlKeys.do({|oneControlName|
 			var busPath = [this.envirKey.asSymbol, \buses, oneControlName.asSymbol];
 			if(library.atPath(busPath).isNil)
@@ -95,6 +104,25 @@
 				library.putAtPath(busPath, Bus.control(Server.default, 1));
 			};
 		});
+
+		this.objects.do({|oneObj|
+			oneObj.postln;
+			if(oneObj.isKindOf(SynthControl)) {
+				var path = oneObj.synthDefPath;
+				// oneObj.postln;
+				oneObj.source.postln;
+				// oneObj.nodeID.postln;
+				oneObj.synthDefPath.postln;
+				// oneObj.synthDesc.postln;
+				// oneObj.controlNames.postln;
+				// SynthDescLib.global.read(oneObj.synthDefPath).name.postln;
+				// SynthDescLib.global.at(oneObj.synthDefPath).name.postln;
+				// SynthDescLib.default.at(oneObj.source).controlNames.postln;
+				SynthDescLib.global.synthDescs.at(oneObj.source.asSymbol).postln;
+			};
+		});
+*/
+
 
 		^library;
 	}
