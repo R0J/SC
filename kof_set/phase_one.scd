@@ -979,3 +979,30 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/violin.wav");
 ~moog2.resume;
 
 
+// shuttles synth ///////////////////////////////////////
+
+(
+~shuttles.ar(2);
+~shuttles.quant=2;
+~shuttles.fadeTime=4;
+~shuttles={
+    var mod = Duty.kr(4/~tempo,0,Dseq([1,2,1,4,1,1.5],inf));
+    var t = LFSaw.ar([1,1/4/[1,2,3,4]*~tempo,LFSaw.ar(1/5000).range(1,50)]) + LFSaw.ar(1/4000) * 40;
+  var sig = Perlin3.ar(t[0],t[1],t[2])/2;// * Decay.ar(Impulse.ar(8/[1,2,3,4]),0.02);
+  var f = 1/[100,200,2000,1000]/mod;// + (Pulse.ar(4/[1,2,3,4],mul:1/100000));
+  sig = LocalIn.ar(4) + sig;
+  sig = BPF.ar(sig,LFSaw.ar(1/16/[1,2,3,4]*~tempo).exprange(50.01,15000),0.1);
+  sig = DelayN.ar(sig,f,f) * LFTri.ar(1/32/[1,2,4,1.5] * ~tempo).range(0.15,1);
+  //sig = Normalizer.ar(sig)/2;
+  LocalOut.ar(sig/1.00001);
+
+  Splay.ar(sig,0.95,0.95,SinOsc.kr(2/[5,6]*~tempo));
+};
+~shuttles.play;
+);
+~shuttles.stop(4);
+~shuttles.clear(20);
+~shuttles.pause;
+~shuttles.resume;
+
+
