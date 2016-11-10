@@ -89,6 +89,6 @@ NodeProxy.help
     ~circular[2] = \filter -> {|sig| NumChannels.ar(Resonz.ar(sig,LFTri.ar(1/16/(1..16)).exprange(130,14000),0.42),2)*2+sig;};
 );
 ~circular.stop(4);
-~circular.clear;
+~circular.clear(20);
 ~circular.pause;
 ~circular.resume;
