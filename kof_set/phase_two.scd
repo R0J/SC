@@ -17,20 +17,34 @@ p.makeTempoClock;
     ~counter = {PulseCount.kr(~tick.kr);};
 );    
 
+(
+  s.latency=0;
+  //p.clock.tempo_(120/60);
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
+  ~tick.kr(1);
+  ~tick.clock = p.clock;
+  ~tick.quant=4;
+  ~counter.clock = p.clock;
+  ~counter.quant = 4;
+  ~counter = {PulseCount.kr(~tick.kr);};
+  ~tick = { Impulse.kr(~tempo*4); };
+);
 
 (
     ~master.quant=2;
     ~master.play;
     ~master.fadeTime = 0.01;
-    ~master = {|wet=0.35,lp=4500,hp=150,len=10,rev = 2|
+    ~master = {|wet=0.35,lp=4500,hp=150,len=10,rev = 1.5|
         var sig = In.ar([0,1]);
         var orig = sig;
         var fx,low,high,mid;
         //fx = Limiter.ar(sig,0.95);
+        
+        //sig = CombN.ar(sig,1/50,1/50,1);
         low = CompanderD.ar(LPF.ar(sig,LFNoise2.kr(1/4!2*~tempo).range(100,800)),3/4,1,1/2);
         mid = CompanderD.ar(BPF.ar(sig,LFNoise2.kr(1/8!2*~tempo).range(500,4500),1/2),3/4,1,1/2);
         high = CompanderD.ar(HPF.ar(sig,LFNoise2.kr(1/16!2*~tempo).range(3000,10000)),3/4,1,1/2);
-        sig = CompanderD.ar((high+mid+low).flat,3/4,1/2,1/2,0.002,0.035); 
+        sig = CompanderD.ar((high+mid+low).flat,3/4,1/1.4,1/1.2); 
         //sig = Compander.ar(sig,3/4,1/2,1/3);
         orig = sig;
         fx = LPF.ar(sig,lp);
@@ -43,7 +57,7 @@ p.makeTempoClock;
     };
 
     ~master_wet.quant = 4;
-    ~master_wet = {LFDNoise1.kr(~tempo/4).exprange(0.05,0.35);};
+    ~master_wet = {LFDNoise1.kr(~tempo/4!2).exprange(0.05,0.35);};
     ~master.map(\wet,~master_wet);
     p.moveNodeToTail(\master);
 );
@@ -62,7 +76,7 @@ p.restartClock;
     }.fork;  
 )
 
-
+/// 8 KICK start
 
 (
     ~kick.ar(2);
@@ -131,11 +145,12 @@ p.restartClock;
         sig = Resonz.ar(sig,[1000,2500,12500,15000,500,12500],LFDNoise1.kr(~tempo!6).range(0.01,0.9));
         sig = sig * env * LFPulse.ar(8/(1..6)*~tempo,0,1/2);
         sig = CompanderD.ar(sig,3/4,1,1/3,0.0002);
-        Splay.ar(sig,0.5,0.125,SinOsc.kr(~tempo,mul:0.24));
+        Splay.ar(sig,0.5,0.025,SinOsc.kr(~tempo,mul:0.24));
     };
     ~switch.play;
 );
 ~switch.play;
+~switch.clear(10);
 ~switch.stop(10);
 ~switch.clear;
 
@@ -179,7 +194,7 @@ p.restartClock;
     ~crack.fadeTime=4;
     ~crack={
         var sig = Crackle.ar(1+LFNoise2.kr(1/4).range(0.01,0.7),LFPulse.ar(5000*[1,2,1.3333,1.5])/LFSaw.ar(1/4*~tempo/2).range(1,50)) * Pulse.ar(8*~tempo/2) * LFPulse.ar(1*~tempo/2) * LFPulse.ar(7/[1,2,3,4]*~tempo/2);
-        Splay.ar(sig,0.5,0.25);
+        Splay.ar(sig,0.5,0.05);
     };
     ~crack.play;
 );
@@ -349,7 +364,7 @@ p.restartClock;
 (
 //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
 {
-  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(40);};});
 }.fork;  
 )
 
@@ -383,6 +398,13 @@ p.restartClock;
 ~flute3.clear(50);
 ~flute3.pause;
 ~flute3.resume;
+
+(
+//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+{
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+}.fork;  
+)
 
 // flute synth ///////////////////////////////////////
 
@@ -434,7 +456,7 @@ p.restartClock;
         sig = Vibrato.ar(sig,[5,6,7],0.02);
         //sig = LPF.ar(sig,f*4);
         sig = CompanderD.ar(sig,1,1/2);
-        Splay.ar(sig,0.35,0.05);
+        Splay.ar(sig,0.35,0.015);
     };
     ~flute1.play;
     ~flute1[1] = \filter -> {|sig| DWGReverb.ar(HPF.ar(LPF.ar(sig,3500),150),[4020,4000],1/2)};
@@ -445,12 +467,19 @@ p.restartClock;
 ~flute1.resume;
 
 
+(
+//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+{
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(10);};});
+}.fork;  
+)
+
 // harm synth ///////////////////////////////////////
 
 (
     ~harm.ar(2);
     ~harm.quant=2;
-    ~harm.fadeTime=2;
+    ~harm.fadeTime=16;
     ~harm={
         var speed = 1/16/(1..8) * ~tempo;
         var master = Duty.kr(1/speed,0,Dseq([1,1.33333,2,1.5].pyramid,inf));
