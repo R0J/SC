@@ -1,21 +1,40 @@
 (
+// INSTRUMENS ///////////////////////////////////////////
+
 ProxySynthDef(\kick, { |amp = 0.1, freq = 63, fplus = 0, noise = 0.6|
+	var bus = \out.kr;
 	var num = 4;
 	var sig = Mix.fill(num,{|i|
 		SinOsc.ar(
-			freq: freq + fplus,
-			phase: amp**(200+(i/200))*8pi) + BrownNoise.ar(noise)
+			freq: freq!2 + fplus,
+			phase: amp**(200+(i/200))*8pi
+		)
 	});
-	sig = sig * amp;
-	Splay.ar(sig, 0, center:\stereo.kr(0));
+	var noiseGen = BrownNoise.ar(noise);
+	Out.ar(bus, (sig + noiseGen) * amp);
 }).store;
 
-// \out.kr, \gate.kr, \fadeTime.kr
-ProxySynthDef(\lpf, { |flpf = 600|
+// FILTERS ///////////////////////////////////////////
+// \out.kr, \gate.kr, \fadeTime.kr - inner ControlNames of NodeProxy
+
+ProxySynthDef(\lpf, { |lpf = 600|
 	var bus = \out.kr;
+	var sig = LPF.ar(In.ar(bus,2), lpf);
 	// var fadeEnv = Line.kr(0,1,\fadeTime.kr, doneAction:0);
 	// XOut.ar(bus, fadeEnv, LPF.ar( In.ar(bus,2), flpf) );
-	ReplaceOut.ar(bus, LPF.ar( In.ar(bus,2), flpf) );
+	ReplaceOut.ar(bus, sig);
+}).store;
+
+ProxySynthDef(\stereo, { |stereo = 0|
+	var bus = \out.kr;
+	var sig = Splay.ar(In.ar(bus,2), 0, center: stereo);
+	ReplaceOut.ar(bus, sig);
+}).store;
+
+ProxySynthDef(\limiter, {
+	var bus = \out.kr;
+	var sig = Limiter.ar(In.ar(bus,2), 1, 0.1);
+	ReplaceOut.ar(bus, sig);
 }).store;
 
 /*
