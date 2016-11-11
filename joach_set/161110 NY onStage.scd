@@ -172,7 +172,9 @@ thisThread.clock_(currentEnvironment.clock)
 
 ///////////////////
 
-~spacePiknik.play(vol: 0.2, fadeTime: 8).quant_(2);
+~spacePiknik.play(vol: 0.2, fadeTime: 8)
+~spacePiknik.fadeTime = 8;
+~spacePiknik.quant_(2);
 (
 ~spacePiknik[0] = {
 
@@ -186,8 +188,8 @@ thisThread.clock_(currentEnvironment.clock)
 (
 ~spacePiknik[1] = \set -> Pbind(\args, [\aTrig], \aTrig, 1,
 	\dur, Pswitch([
-		Pseq([Pn(1/6,31), 1/12, 1/12]),
-		Pseq([Pn(1/6,7), Rest(1/6)],4)
+		Pseq([Pn(1/2,31), 1/4, 1/4]),
+		Pseq([Pn(1/4,7), Rest(1/4)],4)
 	], Pseq([0,0,0,1], inf)
 	);
 )
@@ -201,25 +203,22 @@ thisThread.clock_(currentEnvironment.clock)
 ~spacePiknik[5] = \filter -> {|in| CombC.ar(in, 1/3, 1/6, 5/6) };
 ~spacePiknik[5] = nil;
 
-~spacePiknik[6] = \filter -> {|in| GVerb.ar(in, \gverb_size.kr(4, 4), \gverb_time.kr(0.95, 10)) };
+~spacePiknik[6] = \filter -> {|in| GVerb.ar(in, \gverb_size.kr(4), \gverb_time.kr(0.25)) };
 ~spacePiknik[6] = nil;
 
 ~spacePiknik[7] = \filter -> {|in| CompanderD.ar( in,  0.55, 0.95) };
 
 ~spacePiknik.set(\lpf_freq, 5000);
 ~spacePiknik.set(\freq, 60);
-~spacePiknik.set(\freq, 600);
 ~spacePiknik.set(\pan, 0);
-~spacePiknik.scope;
-
-
 ~spacePiknik.stop(6);
 
 //////////////////
 
-~dirtyString.clock = t;
-~dirtyString.play(fadeTime:4, vol:0.45).quant_(8);
-~dirtyString.rebuild;
+~dirtyString.play(fadeTime:4, vol:0.15)
+~dirtyString.fadeTime = 8;
+~dirtyString.quant_(8);
+
 (
 ~dirtyString[0] = {
 	var ampEnv = EnvGen.ar(Env.perc(0.95,0.05),\aTrig.tr);
@@ -230,9 +229,9 @@ thisThread.clock_(currentEnvironment.clock)
 };
 ~dirtyString[1] = \set -> Pbind(\args, [\aTrig, \fTrig],
 	\dur,Pswitch([
-		Pseq([Pn(0.0625, 4),0.25, 3.5], inf),
-		Pseq([Pn(0.0625, 8),0.25, 3.25], inf),
-		Pseq([Pn(0.0625, 16), 0.5, 3], inf)
+		Pseq([Pn(0.125, 4), 0.5, 7], inf),
+		Pseq([Pn(0.125, 8), 0.5, 6.5], inf),
+		Pseq([Pn(0.125, 16), 0.5, 3], inf)
 	], Pseq([0,0,0,1,0,2], inf)),
 	\fTrig, 1,
 	\aTrig, Pseq([1,0,0], inf), \aTrig2, Pseq([0,1,0], inf), \aTrig3, Pseq([0,0,1], inf),
@@ -241,12 +240,12 @@ thisThread.clock_(currentEnvironment.clock)
 	\octave, Pstutter(Pseq([6,2], inf), Pseq([3,4], inf)),
 	\degree, Pseq([3,3,3,7], inf)
 );
+)
 // ~dirtyString[3] = nil;
 // ~dirtyString[3] = \set -> Pbind(\args, [\octave], \dur, Pseq([16,4], inf), );
 ~dirtyString[30] = \filter -> {|in| GVerb.ar(in, 180, 8) };
 ~dirtyString[31] = \filter -> {|in| LPF.ar(in, Saw.kr(4).range(400, 8000)) };
-)
-~dirtyString.end(10);
+~dirtyString.stop(10);
 
 ////////////////////////////
 
@@ -278,7 +277,7 @@ thisThread.clock_(currentEnvironment.clock)
 ~funaral[30] = \filter -> {|in| LPF.ar(in, 1800);};
 ~funaral[31] = \filter -> {|in| AllpassC.ar(in/2,0.5,0.25,8.5,1,in/2); };
 // )
-~funaral.free(10);
+~funaral.stop(10);
 
 //////////////////////
 
