@@ -18,49 +18,80 @@ NodeEnv {
 	}
 
 	init { |path|
-		// var node = library.atPath([nodeName.asSymbol, \node]);
-		// controlBusIndex = library.atPath([nodeName.asSymbol, \buses, controlName.asSymbol]).index;
+		var envSynthDef;
+		var envSynthName = nodeName ++ "_" ++ controlName ++ "_" ++ envelopeName;
+		{
+			envSynthDef = {|cBus|
+				var envelope = EnvGen.kr(
+					\env.kr(Env.newClear(200,1).asArray),
+					gate: \envTrig.tr(0),
+					timeScale: \tempoClock.kr(1).reciprocal,
+					doneAction: 2
+				);
+
+				Out.kr( cBus, envelope * \multiplicationBus.kr(1));
+			};
+			envSynthDef.asSynthDef(name:envSynthName.asSymbol).add;
+			("SynthDef" + envSynthName + "added").postln;
+
+			Server.default.sync;
+		}.fork;
+
 		envelope = nil;
 		synth = nil;
-
-		// node.set(controlName.asSymbol, BusPlug.for(controlBusIndex));
-		this.prepareSynthDef;
 
 		library.putAtPath(path, this);
 	}
 
-	set {|envName, env|
+	set {|env, fixDuration = nil|
 		var node = library.atPath([nodeName.asSymbol, \node]);
-		var nEnv = super.class.new(nodeName, controlName, envName);
-				nEnv.envelope = env;
+
+		this.envelope = env;
+		if(fixDuration.notNil) { this.fixDur(fixDuration); };
 
 		controlBusIndex = library.atPath([nodeName.asSymbol, \buses, controlName.asSymbol]).index;
-			node.set(controlName.asSymbol, BusPlug.for(controlBusIndex));
+		node.set(controlName.asSymbol, BusPlug.for(controlBusIndex));
 
-		if(nEnv.setPlot) { nEnv.plot(envName); };
-		^nEnv;
+		if(this.setPlot) { this.plot; };
+		^this;
 	}
 
-	fixDur {|envName, dur|
-		var nEnv = super.class.new(nodeName, controlName, envName);
+	remove {
+		var lib = Library.at(\qMachine);
+		var path = [nodeName.asSymbol, \envelopes, controlName.asSymbol, envelopeName.asSymbol];
+		lib.removeEmptyAtPath(path);
 
-		if(nEnv.envelope.notNil) {
-			var envDur = nEnv.duration;
-			case
-			{ dur < envDur } { nEnv.set(envelopeName, nEnv.envelope.crop(0, dur)); }
-			{ dur.asSymbol == envDur.asSymbol } {  }
-			{ dur > envDur } { nEnv.set(envelopeName, nEnv.envelope.extend(dur)); };
-
-			if(nEnv.setPlot) { nEnv.plot(envelopeName); };
-		}
-		^nEnv;
+		path = [nodeName.asSymbol, \envelopes, controlName.asSymbol];
+		if(lib.atPath(path).isNil) {
+			path = [nodeName.asSymbol, \buses, controlName.asSymbol];
+			lib.atPath(path).free;
+			lib.removeEmptyAtPath(path);
+		};
+		// lib.postTree;
+		^nil;
 	}
 
 	duration {
-		if(envelope.notNil,
-			{ ^envelope.duration; },
+		if(this.envelope.notNil,
+			{ ^this.envelope.duration; },
 			{ ^nil; }
 		);
+	}
+
+	fixDur {|dur|
+		if(this.envelope.notNil,
+			{
+				var envDur = this.duration;
+				case
+				{ dur < envDur } { this.set(this.envelope.crop(0, dur)); }
+				{ dur.asSymbol == envDur.asSymbol } {  }
+				{ dur > envDur } { this.set(this.envelope.extend(dur)); };
+
+				if(this.setPlot) { this.plot; };
+			},
+			{ ("Envelope of" + nodeName ++ "_" ++ controlName ++ "_" ++ envelopeName + "is not defined").warn; }
+		);
+		^this;
 	}
 
 	print { |cntTabs = 0|
@@ -81,33 +112,13 @@ NodeEnv {
 
 	printOn { |stream| stream << this.class.name << " [\\" << controlName << ", \\" << envelopeName << ", dur:" << this.duration << "]"; }
 
-	plot {|envName, size = 400|
-		envelope.plotNamedEnv(envName.asSymbol, size);
+	plot {|size = 400|
+		var plotName = nodeName ++ "_" ++ controlName ++ "_" ++ envelopeName;
+		if(envelope.notNil,
+			{ envelope.plotNamedEnv(plotName.asSymbol, size); },
+			{ ("Envelope of" + nodeName ++ "_" ++ controlName ++ "_" ++ envelopeName + "is not defined").warn; }
+		);
 		^this;
-	}
-
-	prepareSynthDef {
-		var envSynthDef;
-		var envSynthName = nodeName ++ "_" ++ controlName ++ "_" ++ envelopeName;
-		var fTime = 0;
-		{
-			envSynthDef = {|cBus|
-				var envelope = EnvGen.kr(
-					\env.kr(Env.newClear(200,1).asArray),
-					gate: \envTrig.tr(0),
-					timeScale: \tempoClock.kr(1).reciprocal,
-					doneAction: 2
-				);
-
-				Out.kr( cBus, envelope * \multiplicationBus.kr(1));
-			};
-			envSynthDef.asSynthDef(name:envSynthName.asSymbol).add;
-			("SynthDef" + envSynthName + "added").postln;
-
-			Server.default.sync;
-
-		}.fork;
-
 	}
 
 	trig {|targetGroup, targetBus|
@@ -121,6 +132,6 @@ NodeEnv {
 			\envTrig, 1,
 			\tempoClock, currentEnvironment.clock.tempo,
 			\multiplicationBus, targetBus.asMap
-			], targetGroup);
+		], targetGroup);
 	}
 }
