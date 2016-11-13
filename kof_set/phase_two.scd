@@ -13,7 +13,7 @@ p.makeTempoClock;
     ~tick.kr(1);
     ~tick.clock = p.clock;
     ~tick.quant=1;
-    ~tick = { Impulse.kr(~tempo * 4); };
+    ~tick = { Impulse.kr(~tempo * 2); };
     ~counter = {PulseCount.kr(~tick.kr);};
 );    
 
@@ -27,7 +27,7 @@ p.makeTempoClock;
   ~counter.clock = p.clock;
   ~counter.quant = 4;
   ~counter = {PulseCount.kr(~tick.kr);};
-  ~tick = { Impulse.kr(~tempo*4); };
+  ~tick = { Impulse.kr(~tempo*2); };
 );
 
 (
@@ -93,7 +93,7 @@ p.restartClock;
         ];
         var mod2 = LFNoise2.kr(~tempo/160).range(20,80);
         var mod = LFDNoise1.kr(~tempo/160).range(20,80);
-        var imp = PulseDivider.kr(~tick.kr,8,~counter.kr%pat.size);
+        var imp = PulseDivider.kr(~tick.kr,2,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2.5],[mod,-3.3]), imp * hit);
         var sig;
@@ -103,7 +103,7 @@ p.restartClock;
 
         sig = Mix.fill(4,{|i|SinOsc.ar(33.midicps+(env**mod2*33.midicps),env**(mod2+i)*8pi)})/2;
         sig = sig * env;
-        Splay.ar(sig,0.75,0.5);
+        Splay.ar(sig,0.75,0.75);
     };
     ~kick.play;
 );
@@ -117,7 +117,7 @@ p.restartClock;
     ~tick.kr(1);
     ~tick.clock = p.clock;
     ~tick.quant=1;
-    ~tick = { Impulse.kr(~tempo * 4); };
+    ~tick = { Impulse.kr(~tempo * 2); };
     ~counter = {PulseCount.kr(~tick.kr);};
 );    
 
@@ -215,7 +215,7 @@ p.restartClock;
     ~counter.clock = p.clock;
     ~counter.quant = 4;
     ~counter = {PulseCount.kr(~tick.kr);};
-    ~tick = { Impulse.kr(~tempo*4); };
+    ~tick = { Impulse.kr(~tempo*2); };
 );
 
 // under_bass synth ///////////////////////////////////////
@@ -339,7 +339,7 @@ p.restartClock;
     ~tick.kr(1);
     ~tick.clock = p.clock;
     ~tick.quant=1;
-    ~tick = { Impulse.kr(~tempo * 4); };
+    ~tick = { Impulse.kr(~tempo * 2); };
     ~counter = {PulseCount.kr(~tick.kr);};
 );   
 
