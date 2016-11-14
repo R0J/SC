@@ -44,13 +44,15 @@
 		}.fork;
 	}
 
-	env { |controlName = nil|
-		var library = this.prGetLibrary;
+	env { |controlName, envelopeName = nil|
 		var nEnv = nil;
-		var nCycle, nStage;
 
 		if(controlName.notNil) {
-			nEnv = NodeEnv(this.envirKey, controlName.asSymbol, \default);
+			var library = this.prGetLibrary(controlName);
+			if(envelopeName.isNil,
+				{ nEnv = NodeEnv(this.envirKey, controlName.asSymbol, \default); },
+				{ nEnv = NodeEnv(this.envirKey, controlName.asSymbol, envelopeName.asSymbol); }
+			);
 			// nCycle = NodeCycle(this.envirKey, \default);
 			// nStage = NodeStage(this.envirKey, \default);
 		};
@@ -73,7 +75,7 @@
 	}
 
 
-	prGetLibrary {
+	prGetLibrary {|controlName = nil|
 		var library = Library.at(\qMachine);
 
 		if(library.isNil) {
@@ -88,13 +90,14 @@
 			library.put(this.envirKey.asSymbol, \node, this);
 		};
 
-		this.controlKeys.do({|oneControlName|
-			var busPath = [this.envirKey.asSymbol, \buses, oneControlName.asSymbol];
+		if(controlName.notNil)
+		{
+			var busPath = [this.envirKey.asSymbol, \buses, controlName.asSymbol];
 			if(library.atPath(busPath).isNil)
 			{
 				library.putAtPath(busPath, Bus.control(Server.default, 1));
 			};
-		});
+		};
 
 		^library;
 	}

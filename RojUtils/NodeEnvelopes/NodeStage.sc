@@ -65,7 +65,7 @@ NodeStage {
 
 	isCurrentStage { if((currentStage == stageName), { ^true; }, { ^false; }); }
 
-	set {|time, cyclePattern|
+	set {|cyclePattern, time = 0|
 		var stream = cyclePattern.asStream;
 		var currentTrigTime = time;
 
