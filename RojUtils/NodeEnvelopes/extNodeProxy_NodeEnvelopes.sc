@@ -58,11 +58,8 @@
 			);
 
 			NodeComposition.addEnvelope(nEnv);
-			NodeComposition.addBus(this, controlName);
-			// nCycle = NodeCycle(this.envirKey, \default);
-			// nStage = NodeStage(this.envirKey, \default);
-
-		};
+			// NodeComposition.addBus(this, controlName);
+			};
 		// this.post;
 		^nEnv;
 	}

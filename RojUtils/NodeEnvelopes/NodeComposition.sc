@@ -28,12 +28,12 @@ NodeComposition {
 		^nil;
 	}
 
-	*addBus {|node, controlName|
-		var path = [node.envirKey.asSymbol, \buses, controlName.asSymbol];
+	*addBus {|nodeEnv|
+		var path = [nodeEnv.nodeName.asSymbol, \buses, nodeEnv.controlName.asSymbol];
 		if(library.atPath(path).isNil)
 		{
 			library.putAtPath(path, Bus.control(Server.default, 1));
-			("Control bus" + controlName + " maped to node" + node.envirKey).postln;
+			("Control bus" + nodeEnv.controlName + " maped to node" + nodeEnv.nodeName).postln;
 		};
 	}
 
