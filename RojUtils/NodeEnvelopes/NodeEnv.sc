@@ -1,6 +1,6 @@
 NodeEnv {
 
-	var nodeName, <controlName, <envelopeName, library;
+	var <nodeName, <controlName, <envelopeName, library;
 
 	var <>envelope;
 	var synth, controlBusIndex;
@@ -20,25 +20,24 @@ NodeEnv {
 	init { |path|
 		var envSynthDef;
 		var envSynthName = nodeName ++ "_" ++ controlName ++ "_" ++ envelopeName;
-		{
-			envSynthDef = {|cBus|
-				var envelope = EnvGen.kr(
-					\env.kr(Env.newClear(200,1).asArray),
-					gate: \envTrig.tr(0),
-					timeScale: \tempoClock.kr(1).reciprocal,
-					doneAction: 2
-				);
 
-				Out.kr( cBus, envelope * \multiplicationBus.kr(1));
-			};
-			envSynthDef.asSynthDef(name:envSynthName.asSymbol).add;
-			("SynthDef" + envSynthName + "added").postln;
+		envSynthDef = {|cBus|
+			var envelope = EnvGen.kr(
+				\env.kr(Env.newClear(200,1).asArray),
+				gate: \envTrig.tr(0),
+				timeScale: \tempoClock.kr(1).reciprocal,
+				doneAction: 2
+			);
 
-			Server.default.sync;
-		}.fork;
+			Out.kr( cBus, envelope * \multiplicationBus.kr(1));
+		};
+		envSynthDef.asSynthDef(name:envSynthName.asSymbol).add;
+		("SynthDef" + envSynthName + "added").postln;
 
 		envelope = nil;
 		synth = nil;
+
+		NodeComposition.addEnvelope(this);
 
 		library.putAtPath(path, this);
 	}
@@ -67,7 +66,6 @@ NodeEnv {
 			lib.atPath(path).free;
 			lib.removeEmptyAtPath(path);
 		};
-		// lib.postTree;
 		^nil;
 	}
 

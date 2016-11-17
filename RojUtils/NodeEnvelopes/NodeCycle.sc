@@ -17,10 +17,10 @@ NodeCycle {
 	}
 
 	init { |path|
-		clock = nil;
+		// clock = nil;
+		clock = TempoClock.new(currentEnvironment.clock.tempo);
 		timeline = Timeline.new();
 		library.putAtPath(path, this);
-		clock = TempoClock.new(currentEnvironment.clock.tempo);
 	}
 
 	set {|controlName, envPattern, time = 0|
@@ -54,24 +54,26 @@ NodeCycle {
 					var oneEnvPath = [nodeName.asSymbol, \envelopes, controlName.asSymbol, oneEnvelopeName.asSymbol];
 					var oneEnv = library.atPath(oneEnvPath);
 
-					this.schedEnv(currentTrigTime, oneEnv);
+					// this.schedEnv(currentTrigTime, oneEnv);
+					timeline.put(time, oneEnv, oneEnv.duration, oneEnv.envelopeName);
 					currentTrigTime = currentTrigTime + oneEnv.duration;
 				});
 			}
 		);
-
 	}
 
+	/*
 	schedEnv {|time, nodeEnv|
 		timeline.put(time, nodeEnv, nodeEnv.duration, nodeEnv.envelopeName);
 	}
+	*/
 
 	duration { ^timeline.duration; }
 
 	trig {|targetGroup, targetBus|
 		// if(clock.notNil) { clock.stop; };
 		// clock = TempoClock.new(currentEnvironment.clock.tempo);
-clock.beats = 0;
+		clock.beats = 0;
 		timeline.times.do({|oneTime|
 			timeline.get(oneTime).asArray.do({|oneEnv|
 				clock.sched(oneTime, { oneEnv.trig(targetGroup, targetBus); } );

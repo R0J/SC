@@ -47,8 +47,13 @@
 	env { |controlName, envelopeName = nil|
 		var nEnv = nil;
 
+		NodeComposition.addNode(this);
+
 		if(controlName.notNil) {
 			var library = this.prGetLibrary(controlName);
+
+			NodeComposition.addBus(this, controlName);
+
 			if(envelopeName.isNil,
 				{ nEnv = NodeEnv(this.envirKey, controlName.asSymbol, \default); },
 				{ nEnv = NodeEnv(this.envirKey, controlName.asSymbol, envelopeName.asSymbol); }
