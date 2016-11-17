@@ -7,17 +7,15 @@ NodeEnv {
 	var <>setPlot = false;
 
 	*new {|nodeName, controlName, envelopeName = \default|
-		var lib = Library.at(\qMachine);
-		var path = [nodeName.asSymbol, \envelopes, controlName.asSymbol, envelopeName.asSymbol];
-		var nEnv = lib.atPath(path);
+		var nEnv = NodeComposition.getEnvelope(nodeName, controlName, envelopeName);
 
 		if(nEnv.isNil,
-			{ ^super.newCopyArgs(nodeName.asSymbol, controlName.asSymbol, envelopeName.asSymbol, lib).init(path); },
+			{ ^super.newCopyArgs(nodeName.asSymbol, controlName.asSymbol, envelopeName.asSymbol).init; },
 			{ ^nEnv; }
 		);
 	}
 
-	init { |path|
+	init {
 		var envSynthDef;
 		var envSynthName = nodeName ++ "_" ++ controlName ++ "_" ++ envelopeName;
 
@@ -37,34 +35,34 @@ NodeEnv {
 		envelope = nil;
 		synth = nil;
 
-		NodeComposition.addEnvelope(this);
-
-		library.putAtPath(path, this);
+		// NodeComposition.addEnvelope(this);
 	}
 
 	set {|env, fixDuration = nil|
-		var node = library.atPath([nodeName.asSymbol, \node]);
+
+		var node = NodeComposition.getNode(nodeName);
 
 		this.envelope = env;
 		if(fixDuration.notNil) { this.fixDur(fixDuration); };
 
-		controlBusIndex = library.atPath([nodeName.asSymbol, \buses, controlName.asSymbol]).index;
+		controlBusIndex = NodeComposition.getBus(nodeName, controlName);
 		node.set(controlName.asSymbol, BusPlug.for(controlBusIndex));
 
 		if(this.setPlot) { this.plot; };
+		NodeComposition.updateTimes(nodeName, controlName, envelopeName);
+		NodeComposition.library.postTree;
 		^this;
 	}
 
 	remove {
-		var lib = Library.at(\qMachine);
 		var path = [nodeName.asSymbol, \envelopes, controlName.asSymbol, envelopeName.asSymbol];
-		lib.removeEmptyAtPath(path);
+		NodeComposition.library.removeEmptyAtPath(path);
 
 		path = [nodeName.asSymbol, \envelopes, controlName.asSymbol];
-		if(lib.atPath(path).isNil) {
+		if(NodeComposition.librar.atPath(path).isNil) {
 			path = [nodeName.asSymbol, \buses, controlName.asSymbol];
-			lib.atPath(path).free;
-			lib.removeEmptyAtPath(path);
+			NodeComposition.library.atPath(path).free;
+			NodeComposition.library.removeEmptyAtPath(path);
 		};
 		^nil;
 	}
@@ -120,9 +118,7 @@ NodeEnv {
 	}
 
 	trig {|targetGroup, targetBus|
-		// ("Synth trig to controlBus_" ++ controlBusIndex + "by synth:" + synth.nodeID + "env:" + this.print(1)).postln;
 		var envSynthName = nodeName ++ "_" ++ controlName ++ "_" ++ envelopeName;
-		var fTime = 0;
 
 		synth = Synth(envSynthName.asSymbol, [
 			\cBus: controlBusIndex,
@@ -131,5 +127,7 @@ NodeEnv {
 			\tempoClock, currentEnvironment.clock.tempo,
 			\multiplicationBus, targetBus.asMap
 		], targetGroup);
+
+		// ("Synth trig to controlBus_" ++ controlBusIndex + "by synth:" + synth.nodeID + "env:" + this.print(1)).postln;
 	}
 }

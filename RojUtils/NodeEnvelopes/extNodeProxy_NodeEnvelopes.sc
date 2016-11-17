@@ -50,36 +50,45 @@
 		NodeComposition.addNode(this);
 
 		if(controlName.notNil) {
-			var library = this.prGetLibrary(controlName);
-
-			NodeComposition.addBus(this, controlName);
+			// var library = this.prGetLibrary(controlName);
 
 			if(envelopeName.isNil,
 				{ nEnv = NodeEnv(this.envirKey, controlName.asSymbol, \default); },
 				{ nEnv = NodeEnv(this.envirKey, controlName.asSymbol, envelopeName.asSymbol); }
 			);
+
+			NodeComposition.addEnvelope(nEnv);
+			NodeComposition.addBus(this, controlName);
 			// nCycle = NodeCycle(this.envirKey, \default);
 			// nStage = NodeStage(this.envirKey, \default);
+
 		};
 		// this.post;
 		^nEnv;
 	}
 
 	cycle { |cycleName = nil|
-		var library = this.prGetLibrary;
+		// var library = this.prGetLibrary;
+		var nCycle;
 		if(cycleName.isNil) { cycleName = \default; };
 		// this.post;
-		^NodeCycle(this.envirKey, cycleName.asSymbol);
+		nCycle = NodeCycle(this.envirKey, cycleName.asSymbol);
+		NodeComposition.addCycle(nCycle);
+		^nCycle;
 	}
 
 	stage { |stageName = nil|
-		var library = this.prGetLibrary;
+		// var library = this.prGetLibrary;
+		var nStage;
 		if(stageName.isNil) { stageName = \default; };
 		// this.post;
-		^NodeStage(this.envirKey, stageName.asSymbol);
+		// ^NodeStage(this.envirKey, stageName.asSymbol);
+		nStage = NodeStage(this.envirKey, stageName.asSymbol);
+		NodeComposition.addStage(nStage);
+		^nStage;
 	}
 
-
+/*
 	prGetLibrary {|controlName = nil|
 		var library = Library.at(\qMachine);
 
@@ -106,7 +115,7 @@
 
 		^library;
 	}
-
+*/
 
 }
 
