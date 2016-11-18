@@ -26,7 +26,7 @@ NetProxy : ProxySpace {
 			proxyspace.makeTempoClock;
 			proxyspace.prMetronomDef;
 			// TempoClock.setAllClocks(0, currentEnvironment.clock.tempo);
-			TempoClock.setAllClocks(0, 127);
+			TempoClock.setAllClocks(0, 127/60);
 			CmdPeriod.add(proxyspace);
 			// fnc_onRestartClock = nil;
 			"\nNetProxy init done".postln;
