@@ -19,11 +19,12 @@ NetProxy : ProxySpace {
 		var proxyspace = super.push(Server.default);
 		Server.default.waitForBoot({
 			Server.default.latency = 0.0;
+			proxyspace.disconnect;
 			proxyspace.makeTempoClock;
 			proxyspace.prMetronomDef;
 			TempoClock.setAllClocks(0, currentEnvironment.clock.tempo);
 			CmdPeriod.add(proxyspace);
-			"\nNetProxy init done...".postln;
+			"\nNetProxy init done".postln;
 		});
 		^proxyspace;
 	}
@@ -32,8 +33,43 @@ NetProxy : ProxySpace {
 		var proxyspace = this.push();
 		Server.default.doWhenBooted({
 			proxyspace.initNet(name);
+			"\nNetProxy connected".postln;
 		});
 		^proxyspace;
+	}
+
+	disconnect {
+		CmdPeriod.remove(this);
+
+		if(isConnected) { sendMsg.user_exit };
+
+		OSCdef(\user_connected).free;
+		OSCdef(\user_loged).free;
+		OSCdef(\user_disconnected).free;
+		OSCdef(\user_timeMaster).free;
+		OSCdef(\clock_set).free;
+		OSCdef(\clock_restart).free;
+		OSCdef(\clock_get).free;
+		OSCdef(\clock_get_answer).free;
+		OSCdef(\metronom_answer).free;
+
+		userName = nil;
+		netIP = nil;
+		broadcastIP = nil;
+		netAddrs = nil;
+		sendMsg = nil;
+
+		if(metronomSynth.notNil)
+		{
+			metronom.clear;
+			metronom = nil;
+			metronomSynth = nil;
+		};
+
+		if(isConnected) {"\nNetProxy disconnected".postln;};
+		isConnected = false;
+
+		^nil;
 	}
 
 	initNet {|name|
@@ -71,7 +107,22 @@ NetProxy : ProxySpace {
 		}
 	}
 
-	name { ^userName.asSymbol; }
+	name { if(isConnected, { ^userName.asSymbol; },{ ^nil; }) }
+
+	players {
+		if(isConnected,
+			{
+				"\nyours profile:".postln;
+				("\t- name:" + userName).postln;
+				("\t- addr:" + netIP).postln;
+
+				"\nother profiles:".postln;
+				netAddrs.sortedKeysValuesDo({|playerName, playerNet|
+					("\t- name:" + playerName).postln;
+					("\t- addr:" + playerNet.ip + "\n").postln;
+				});
+		}, { ^nil });
+	}
 
 	bpm { |bpm = nil|
 		if((bpm.notNil), {
@@ -142,7 +193,7 @@ NetProxy : ProxySpace {
 			broadcastIP = broadcastIP.asSymbol;
 			this.prInitSendMsg;
 			this.prInitReceiveMsg;
-			("\nNetProxy init done...\nUserName:" +  userName + "; NetIP:" + addr.ip + "; BroadcastIP:" + broadcastIP).postln;
+			// ("\nUserName:" +  userName + "; NetIP:" + addr.ip + "; BroadcastIP:" + broadcastIP).postln;
 
 			oscScTrigAddr = NetAddr( broadcastIP.asString, 10000);
 			NetAddr( broadcastIP.asString, NetAddr.langPort).sendMsg('/user/connected', userName);
@@ -157,6 +208,13 @@ NetProxy : ProxySpace {
 		sendMsg.user_loged = {|event, target|
 			("sendMsg.user_loged to target % send").format(target).postln;
 			netAddrs.at(target.asSymbol).sendMsg('/user/loged', userName);
+		};
+
+		sendMsg.user_exit = {|event|
+			netAddrs.keysValuesDo {|key, target|
+				("sendMsg.user_exit to target % send").format(key).postln;
+				target.sendMsg('/user/exit', userName);
+			};
 		};
 
 		sendMsg.user_timeMaster = {|event, target|
@@ -205,7 +263,7 @@ NetProxy : ProxySpace {
 				// sendMsg.user_timeMaster(sender);
 				sendMsg.clock_set;
 				// };
-				netAddrs.postln;
+				this.players;
 			});
 		}, '/user/connected', nil).permanent_(true);
 
@@ -214,9 +272,18 @@ NetProxy : ProxySpace {
 				var sender = msg[1].asSymbol;
 				netAddrs.put(sender, addr);
 				"Player % is here too".format(sender).warn;
-				netAddrs.postln;
+				this.players;
 			});
 		}, '/user/loged', nil).permanent_(true);
+
+		OSCdef.newMatching(\user_disconnected, {|msg, time, addr, recvPort|
+			if(this.prSenderCheck(addr), {
+				var sender = msg[1].asSymbol;
+				netAddrs.removeAt(sender);
+				"Player % leaved from session".format(sender).warn;
+				this.players;
+			});
+		}, '/user/exit', nil).permanent_(true);
 
 		OSCdef.newMatching(\user_timeMaster, {|msg, time, addr, recvPort|
 			if(this.prSenderCheck(addr), {
