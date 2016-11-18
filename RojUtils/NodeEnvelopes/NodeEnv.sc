@@ -1,73 +1,84 @@
 NodeEnv {
 
-	var nodeName, <controlName, <envelopeName, library;
+	var <nodeName, <controlName, <envelopeName;
 
 	var <>envelope;
 	var synth, controlBusIndex;
+
+	var <buffer;
+	var controlRate;
+
 	var <>setPlot = false;
 
 	*new {|nodeName, controlName, envelopeName = \default|
-		var lib = Library.at(\qMachine);
-		var path = [nodeName.asSymbol, \envelopes, controlName.asSymbol, envelopeName.asSymbol];
-		var nEnv = lib.atPath(path);
+		var nEnv = NodeComposition.getEnvelope(nodeName, controlName, envelopeName);
 
 		if(nEnv.isNil,
-			{ ^super.newCopyArgs(nodeName.asSymbol, controlName.asSymbol, envelopeName.asSymbol, lib).init(path); },
+			{ ^super.newCopyArgs(nodeName.asSymbol, controlName.asSymbol, envelopeName.asSymbol).init; },
 			{ ^nEnv; }
 		);
 	}
 
-	init { |path|
-		var envSynthDef;
-		var envSynthName = nodeName ++ "_" ++ controlName ++ "_" ++ envelopeName;
-		{
-			envSynthDef = {|cBus|
-				var envelope = EnvGen.kr(
-					\env.kr(Env.newClear(200,1).asArray),
-					gate: \envTrig.tr(0),
-					timeScale: \tempoClock.kr(1).reciprocal,
-					doneAction: 2
-				);
+	init {
+		var bufferSynthDef;
+		var bufSynthName = nodeName ++ "_" ++ controlName ++ "_" ++ envelopeName;
 
-				Out.kr( cBus, envelope * \multiplicationBus.kr(1));
-			};
-			envSynthDef.asSynthDef(name:envSynthName.asSymbol).add;
-			("SynthDef" + envSynthName + "added").postln;
+		controlRate = Server.default.sampleRate / Server.default.options.blockSize;
 
-			Server.default.sync;
-		}.fork;
+		bufferSynthDef = {|cBus, bufnum, startTime = 0|
+			var controlRate = Server.default.sampleRate / Server.default.options.blockSize;
+			var buf = PlayBuf.kr(
+				numChannels: 1,
+				bufnum: bufnum,
+				startPos: startTime * controlRate,
+				rate: \tempoClock.kr(1),
+				loop: 0
+			);
+			FreeSelfWhenDone.kr(buf);
+			Out.kr(cBus,buf * \multiplicationBus.kr(1));
+		};
+		bufferSynthDef.asSynthDef(name:bufSynthName.asSymbol).add;
 
 		envelope = nil;
 		synth = nil;
 
-		library.putAtPath(path, this);
+		NodeComposition.addBus(this);
 	}
 
 	set {|env, fixDuration = nil|
-		var node = library.atPath([nodeName.asSymbol, \node]);
+
+		var node = NodeComposition.getNode(nodeName);
 
 		this.envelope = env;
 		if(fixDuration.notNil) { this.fixDur(fixDuration); };
 
-		controlBusIndex = library.atPath([nodeName.asSymbol, \buses, controlName.asSymbol]).index;
+		buffer = Buffer.alloc(
+			server: Server.default,
+			numFrames: (controlRate * this.duration).ceil,
+			numChannels: 1,
+		);
+		buffer.loadCollection(this.envelope.asSignal((controlRate * this.duration).ceil));
+
+		controlBusIndex = NodeComposition.getBus(nodeName, controlName);
 		node.set(controlName.asSymbol, BusPlug.for(controlBusIndex));
 
 		if(this.setPlot) { this.plot; };
+		NodeComposition.updateTimes(nodeName, controlName, envelopeName);
+		NodeComposition.library.postTree;
 		^this;
 	}
 
 	remove {
-		var lib = Library.at(\qMachine);
 		var path = [nodeName.asSymbol, \envelopes, controlName.asSymbol, envelopeName.asSymbol];
-		lib.removeEmptyAtPath(path);
+		NodeComposition.library.removeEmptyAtPath(path);
 
 		path = [nodeName.asSymbol, \envelopes, controlName.asSymbol];
-		if(lib.atPath(path).isNil) {
+		if(NodeComposition.librar.atPath(path).isNil) {
 			path = [nodeName.asSymbol, \buses, controlName.asSymbol];
-			lib.atPath(path).free;
-			lib.removeEmptyAtPath(path);
+			NodeComposition.library.atPath(path).free;
+			NodeComposition.library.removeEmptyAtPath(path);
 		};
-		// lib.postTree;
+		buffer.free;
 		^nil;
 	}
 
@@ -122,16 +133,16 @@ NodeEnv {
 	}
 
 	trig {|targetGroup, targetBus|
-		// ("Synth trig to controlBus_" ++ controlBusIndex + "by synth:" + synth.nodeID + "env:" + this.print(1)).postln;
-		var envSynthName = nodeName ++ "_" ++ controlName ++ "_" ++ envelopeName;
-		var fTime = 0;
+		var bufSynthName = nodeName ++ "_" ++ controlName ++ "_" ++ envelopeName;
 
-		synth = Synth(envSynthName.asSymbol, [
+		synth = Synth(bufSynthName.asSymbol, [
 			\cBus: controlBusIndex,
-			\env: [envelope],
-			\envTrig, 1,
+			\bufnum: buffer.bufnum,
+			\startTime, 0,
 			\tempoClock, currentEnvironment.clock.tempo,
 			\multiplicationBus, targetBus.asMap
 		], targetGroup);
+
+		// ("Synth trig to controlBus_" ++ controlBusIndex + "by synth:" + synth.nodeID + "env:" + this.print(1)).postln;
 	}
 }

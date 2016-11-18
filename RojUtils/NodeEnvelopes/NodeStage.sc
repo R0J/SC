@@ -2,7 +2,8 @@ NodeStage {
 
 	classvar <currentStage = \default;
 
-	var nodeName, stageName, library;
+	var <nodeName, <stageName;
+	var <cyclePattern;
 	var <timeline;
 
 	var stageGroup;
@@ -14,42 +15,15 @@ NodeStage {
 	var >loopCount;
 
 	*new {|nodeName, stageName = \default|
-		var lib = Library.at(\qMachine);
-		var path = [nodeName.asSymbol, \stages, stageName.asSymbol];
-		var nStage = lib.atPath(path);
+		var nStage = NodeComposition.getStage(nodeName, stageName);
 
 		if(nStage.isNil,
-			{ ^super.newCopyArgs(nodeName.asSymbol, stageName.asSymbol, lib).init(path); },
+			{ ^super.newCopyArgs(nodeName.asSymbol, stageName.asSymbol).init; },
 			{ ^nStage; }
 		);
 	}
 
-	*current {|stage, fadeTime = 0, quantOfChange = 1|
-		Task({
-			currentEnvironment.clock.timeToNextBeat(quantOfChange).wait;
-
-			Library.at(\qMachine).dictionary.keysValuesDo({|nodeName, dict|
-				var path = [nodeName.asSymbol, \stages];
-
-				Library.at(\qMachine).atPath(path).keysValuesDo({|stageName, nStage|
-					if((stage.asSymbol == stageName.asSymbol),
-						{
-							nStage.play;
-							nStage.fadeIn(fadeTime);
-						},
-						{
-							nStage.fadeOut(fadeTime);
-							nStage.stop(fadeTime);
-						}
-					);
-				});
-			});
-
-			currentStage = stage;
-		}).play;
-	}
-
-	init {|path|
+	init {
 		stageGroup = Group.new(nodeName.envirGet.group);
 		stageMultBus = BusPlug.control(Server.default, 1);
 
@@ -58,42 +32,51 @@ NodeStage {
 		timeline = Timeline.new();
 		loopTask = nil;
 		loopCount = 1;
-		library.putAtPath(path, this);
+
 
 		this.prepareSynthDef;
+
+		CmdPeriod.add(this);
+	}
+
+	cmdPeriod {
+		"cmdPeriod stage".warn;
+		("stageGroup.nodeID:" + stageGroup.nodeID).postln;
+		stageGroup = Group.new(nodeName.envirGet.group);
 	}
 
 	isCurrentStage { if((currentStage == stageName), { ^true; }, { ^false; }); }
 
-	set {|cyclePattern, time = 0|
-		var stream = cyclePattern.asStream;
+	set {|pattern, time = 0|
+		var stream = pattern.asStream;
 		var currentTrigTime = time;
 
 		timeline = Timeline.new();
 		loopCount = 1;
 
 		case
-		{ stream.isKindOf(Routine) } { stream = stream.all; } // Pseq([\aaa, \bbb], 3) ++ \ccc
-		{ stream.isKindOf(Symbol) }	{ stream = stream.asArray; }
-		{ stream.isKindOf(Integer) } { stream = stream.asSymbol.asArray; }
-		{ stream.isKindOf(String) }	{ stream = stream.asSymbol.asArray; }
+		{ stream.isKindOf(Routine) } { cyclePattern = stream.all; } // Pseq([\aaa, \bbb], 3) ++ \ccc
+		{ stream.isKindOf(Symbol) }	{ cyclePattern = stream.asArray; }
+		{ stream.isKindOf(Integer) } { cyclePattern = stream.asSymbol.asArray; }
+		{ stream.isKindOf(String) }	{ cyclePattern = stream.asSymbol.asArray; }
 		;
 		("stageName:" + stageName + "; stream:" + stream).postln;
 
 		// remove old keys
-		stream.do({|oneCycleName|
-			timeline.times.do({|oneTime|
-				timeline.take(oneTime, oneCycleName);
-			});
+		cyclePattern.do({|oneCycleName|
+			timeline.removeKeys(oneCycleName);
 		});
 
 		// add new keys
-		stream.do({|oneCycleName|
-			var oneCyclePath = [nodeName.asSymbol, \cycles, oneCycleName.asSymbol];
-			var oneCycle = library.atPath(oneCyclePath);
-
-			this.schedCycle(currentTrigTime, oneCycle);
-			currentTrigTime = currentTrigTime + oneCycle.duration;
+		cyclePattern.do({|oneCycleName|
+			var oneCycle = NodeComposition.getCycle(nodeName, oneCycleName);
+			if(oneCycle.isNil,
+				{ ("NodeCycle [\\" ++ oneCycleName ++ "] not found in map").warn;  ^nil; },
+				{
+					this.schedCycle(currentTrigTime, oneCycle);
+					currentTrigTime = currentTrigTime + oneCycle.duration;
+				}
+			);
 		});
 	}
 
@@ -117,8 +100,7 @@ NodeStage {
 
 	play { |loops = inf|
 
-		var path = [nodeName.asSymbol, \node];
-		var node = library.atPath(path);
+		var node = NodeComposition.getNode(nodeName);
 
 		if(loopTask.notNil) { this.stop; };
 		if(timeline.duration > 0)

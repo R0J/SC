@@ -46,31 +46,20 @@ Timeline {
 		{items.size > 1 } { ^items.asArray; }
 	}
 
-	take {|time, key = nil|
-		var oneTime = timeline[time];
-		var items = List.new();
+	removeKeys {|key = nil|
 		var rest = List.new();
-		oneTime.asArray.do({|oneTimebar|
-			if(key.notNil,
-				{
-					if((oneTimebar.key.asSymbol == key.asSymbol),
-						{ items.add(oneTimebar.item); },
-						{ rest.add(oneTimebar); }
-					);
-				},
-				{ items.add(oneTimebar.item); }
-			);
-		});
+		if(key.notNil)
+		{
+			this.times.do({|oneTime|
+				var arrTimebar = timeline[oneTime];
+				arrTimebar.asArray.do({|oneTimebar|
+					if(oneTimebar.key.asSymbol != key.asSymbol) { rest.add(oneTimebar); }
+				});
+			});
+		};
 
-		// timeline.removeAt(time);
-		case
-		{rest.isEmpty} { timeline.removeAt(time); }
-		{rest.notEmpty} { timeline.put(time, rest); };
-
-		case
-		{items.size < 1 } { ^nil; }
-		{items.size == 1 } { ^items[0]; }
-		{items.size > 1 } { ^items.asArray; };
+		timeline = Order.new();
+		rest.do({|oneRest| this.put(oneRest.from, oneRest.item, oneRest.duration, oneRest.key); });
 	}
 
 	times { ^timeline.indices; }
@@ -91,8 +80,9 @@ Timeline {
 		var tabs = "";
 		cntTabs.do({tabs = tabs ++ "\t"});
 		timeline.indicesDo({|oneArray, oneTime|
-			txt = txt ++ "\n" ++ tabs ++ "- time" + oneTime;
+			txt = txt ++  tabs ++ "- time" + oneTime;
 			oneArray.asArray.do({|item| txt = txt ++ "\n\t" ++ tabs ++ "-" + item; });
+			txt = txt ++ "\n";
 		});
 		txt.postln;
 	}

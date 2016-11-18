@@ -1,87 +1,126 @@
 NodeCycle {
 
-	var nodeName, <cycleName, library;
-
+	var <nodeName, <cycleName;
+	var <envelopePattern;
 	var clock;
 	var <timeline;
+	var <>quant;
 
 	*new {|nodeName, cycleName = \default|
-		var lib = Library.at(\qMachine);
-		var path = [nodeName.asSymbol, \cycles, cycleName.asSymbol];
-		var nCycle = lib.atPath(path);
+		var nCycle = NodeComposition.getCycle(nodeName, cycleName);
 
 		if(nCycle.isNil,
-			{ ^super.newCopyArgs(nodeName.asSymbol, cycleName.asSymbol, lib).init(path); },
+			{ ^super.newCopyArgs(nodeName.asSymbol, cycleName.asSymbol).init; },
 			{ ^nCycle; }
 		);
 	}
 
-	init { |path|
-		clock = nil;
-		timeline = Timeline.new();
-		library.putAtPath(path, this);
+	init {
+		envelopePattern = IdentityDictionary.new;
 		clock = TempoClock.new(currentEnvironment.clock.tempo);
+		timeline = Timeline.new();
+		quant = nil;
 	}
 
 	set {|controlName, envPattern, time = 0|
-		var path = [nodeName.asSymbol, \envelopes, controlName.asSymbol];
-		var nEnv = library.atPath(path);
+
 		var stream = envPattern.asStream;
 		var currentTrigTime = time;
 
-		if(nEnv.isNil,
-			// { ("NodeEnv [\\" ++ nodeName ++ "\\" ++ controlName ++ "\\" ++ envPattern ++ "] not found in map").warn;  ^nil; },
-			{ ("NodeEnv [\\" ++ controlName ++ "\\" ++ envPattern ++ "] not found in map").warn;  ^nil; },
-			{
-				case
-				{ stream.isKindOf(Routine) } { stream = stream.all; } // Pseq([\aaa, \bbb], 3) ++ \ccc
-				{ stream.isKindOf(Symbol) }	{ stream = stream.asArray; }
-				{ stream.isKindOf(Integer) } { stream = stream.asSymbol.asArray; }
-				{ stream.isKindOf(String) }	{ stream = stream.asSymbol.asArray; }
-				;
-				// ("controlName:" + controlName + "; stream:" + stream).postln;
+		case
+		{ stream.isKindOf(Routine) } { envelopePattern.put(controlName.asSymbol, stream.all); } // Pseq([\aaa, \bbb], 3) ++ \ccc
+		{ stream.isKindOf(Symbol) }	{ envelopePattern.put(controlName.asSymbol, stream.asArray); }
+		{ stream.isKindOf(Integer) } { envelopePattern.put(controlName.asSymbol, stream.asSymbol.asArray); }
+		{ stream.isKindOf(String) }	{ envelopePattern.put(controlName.asSymbol, stream.asSymbol.asArray); }
+		;
 
-				// remove old keys
-				stream.do({|oneEnvelopeName|
-					timeline.times.do({|oneTime|
-						// ("oneTime, oneEnvelopeName:" + [oneTime, oneEnvelopeName]).postln;
-						timeline.take(oneTime, oneEnvelopeName);
-					});
-				});
+		// ("controlName:" + controlName + "; stream:" + stream).postln;
 
-				// add new keys
-				stream.do({|oneEnvelopeName|
-					var oneEnvPath = [nodeName.asSymbol, \envelopes, controlName.asSymbol, oneEnvelopeName.asSymbol];
-					var oneEnv = library.atPath(oneEnvPath);
+		// remove old keys
+		envelopePattern.at(controlName.asSymbol).do({|oneEnvelopeName|
+			timeline.removeKeys(oneEnvelopeName);
+		});
 
-					this.schedEnv(currentTrigTime, oneEnv);
+		// add new keys
+		envelopePattern.at(controlName.asSymbol).do({|oneEnvelopeName|
+			var oneEnv = NodeComposition.getEnvelope(nodeName, controlName, oneEnvelopeName);
+			if(oneEnv.isNil,
+				{ ("NodeEnv [\\" ++ controlName ++ "\\" ++ envPattern ++ "] not found in map").warn;  ^nil; },
+				{
+					timeline.put(currentTrigTime, oneEnv, oneEnv.duration, oneEnv.envelopeName);
 					currentTrigTime = currentTrigTime + oneEnv.duration;
-				});
-			}
-		);
-
-	}
-
-	schedEnv {|time, nodeEnv|
-		timeline.put(time, nodeEnv, nodeEnv.duration, nodeEnv.envelopeName);
+				};
+			);
+		});
+		// }
 	}
 
 	duration { ^timeline.duration; }
 
 	trig {|targetGroup, targetBus|
+		var timeToQuant = 0;
+		if(quant.notNil) { timeToQuant = currentEnvironment.clock.timeToNextBeat(quant); };
+
 		// if(clock.notNil) { clock.stop; };
 		// clock = TempoClock.new(currentEnvironment.clock.tempo);
-clock.beats = 0;
-		timeline.times.do({|oneTime|
-			timeline.get(oneTime).asArray.do({|oneEnv|
-				clock.sched(oneTime, { oneEnv.trig(targetGroup, targetBus); } );
+		// Task({
+			// timeToQuant.wait;
+			clock.beats = 0;
+			// clock.clear;
+			timeline.times.do({|oneTime|
+				timeline.get(oneTime).asArray.do({|oneEnv|
+					clock.sched(oneTime, {
+						("currentEnvirnment.clock.beats:" + currentEnvironment.clock.beats).postln;
+						oneEnv.trig(targetGroup, targetBus);
+					} );
+				});
 			});
-		});
-		// clock.sched(timeline.duration, { clock.stop; });
+			// clock.sched(timeline.duration, { clock.stop; });
+// }).play(currentEnvironment.clock);
 	}
 
 	printOn { |stream|
 		stream << this.class.name << " [\\" << cycleName << ", dur:" << this.duration << "]";
+	}
+
+	plot {|size = 400|
+		var plotName = nodeName ++ "_" ++ cycleName;
+		var windows = Window.allWindows;
+		var plotWin = nil;
+		var envList = List.new();
+		var plotter;
+
+		windows.do({|oneW|
+			// ("oneW.name:" + oneW.name).postln;
+			if(plotName.asSymbol == oneW.name.asSymbol) { plotWin = oneW; };
+		});
+
+		envelopePattern.sortedKeysValuesDo({|oneControlName|
+			var controlEnvelopeStream = nil;
+			// ("oneControlName:" + oneControlName).postln;
+			envelopePattern.at(oneControlName.asSymbol).do({|oneEnvelopeName|
+				var oneEnv = NodeComposition.getEnvelope(nodeName, oneControlName, oneEnvelopeName);
+				if((controlEnvelopeStream.isNil),
+					{
+						controlEnvelopeStream = oneEnv.envelope;
+					},{
+						controlEnvelopeStream = controlEnvelopeStream.connect(oneEnv.envelope);
+					}
+				);
+			});
+			envList.add(controlEnvelopeStream.asSignal(size));
+		});
+
+		if(plotWin.isNil, {
+			plotter = envList.asArray.plot(name:plotName.asSymbol);
+			plotter.parent.alwaysOnTop_(true);
+		},{
+			plotWin.view.children[0].close;
+			plotter = Plotter(plotName.asSymbol, parent:plotWin);
+			plotter.value = envList.asArray;
+		});
+		plotter.domainSpecs = [[0, this.duration, 0, 0, "", " s"]];
+		plotter.refresh;
 	}
 
 
