@@ -71,5 +71,51 @@ NodeCycle {
 		stream << this.class.name << " [\\" << cycleName << ", dur:" << this.duration << "]";
 	}
 
+	plot {|size = 400|
+		var plotName = nodeName ++ "_" ++ cycleName;
+		var windows = Window.allWindows;
+		var plotWin = nil;
+		var envList = List.new();
+		var plotter;
+
+		windows.do({|oneW|
+			("oneW.name:" + oneW.name).postln;
+			if(plotName.asSymbol == oneW.name.asSymbol) { plotWin = oneW; };
+		});
+
+		envelopePattern.sortedKeysValuesDo({|oneControlName|
+			var controlEnvelopeStream = nil;
+			("oneControlName:" + oneControlName).postln;
+			envelopePattern.at(oneControlName.asSymbol).do({|oneEnvelopeName|
+				var oneEnv = NodeComposition.getEnvelope(nodeName, oneControlName, oneEnvelopeName);
+				if((controlEnvelopeStream.isNil),
+					{
+						controlEnvelopeStream = oneEnv.envelope;
+					},{
+						controlEnvelopeStream = controlEnvelopeStream.connect(oneEnv.envelope);
+					}
+				);
+			});
+			envList.add(controlEnvelopeStream.asSignal(size));
+		});
+
+		if(plotWin.isNil, {
+			plotter = envList.asArray.plot(name:plotName.asSymbol);
+			plotter.parent.alwaysOnTop_(true);
+		},{
+			plotWin.view.children[0].close;
+			plotter = Plotter(plotName.asSymbol, parent:plotWin);
+			// plotter = envList.asArray.plot;
+			plotter.value = envList.asArray;
+
+			// this.plot( size:size, name:envName.asSymbol ).parent.alwaysOnTop_(true);
+			// plotter.domainSpecs = [[0, this.duration, 0, 0, "", " s"]];
+
+		});
+		plotter.domainSpecs = [[0, this.duration, 0, 0, "", " s"]];
+		plotter.refresh;
+
+	}
+
 
 }
