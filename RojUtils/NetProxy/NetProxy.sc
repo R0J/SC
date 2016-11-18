@@ -1,7 +1,7 @@
 NetProxy : ProxySpace {
 
 	classvar isConnected = false;
-	classvar proxyInstace = nil;
+	// classvar proxyInstace = nil;
 
 	var userName;
 	var netIP, broadcastIP;
@@ -19,24 +19,32 @@ NetProxy : ProxySpace {
 	var fnc_onRestartClock;
 
 	*push {
-			proxyInstace = super.push(Server.default);
+		var proxyspace = super.push(Server.default);
 		Server.default.waitForBoot({
-			proxyInstace.initProxy;
+			Server.default.latency = 0.0;
+			proxyspace.disconnect;
+			proxyspace.makeTempoClock;
+			proxyspace.prMetronomDef;
+			// TempoClock.setAllClocks(0, currentEnvironment.clock.tempo);
+			TempoClock.setAllClocks(0, 127);
+			CmdPeriod.add(proxyspace);
+			// fnc_onRestartClock = nil;
+			"\nNetProxy init done".postln;
 		});
-		^proxyInstace;
+		^proxyspace;
 	}
 
 	*connect { |name = nil|
-		proxyInstace = this.push();
+		var proxyspace = this.push();
 		Server.default.doWhenBooted({
-			proxyInstace.initNet(name);
+			proxyspace.initNet(name);
 			"\nNetProxy connected".postln;
 		});
-		^proxyInstace;
+		^proxyspace;
 	}
 
 	disconnect {
-		CmdPeriod.remove(proxyInstace);
+		CmdPeriod.remove(this);
 
 		if(isConnected) { sendMsg.user_exit };
 
@@ -63,23 +71,12 @@ NetProxy : ProxySpace {
 			metronomSynth = nil;
 		};
 
-		fnc_onRestartClock = nil;
+		// thisfnc_onRestartClock = nil;
 
 		if(isConnected) {"\nNetProxy disconnected".postln;};
 		isConnected = false;
 
 		^nil;
-	}
-
-	initProxy {
-		Server.default.latency = 0.0;
-		proxyInstace.disconnect;
-		proxyInstace.makeTempoClock;
-		proxyInstace.prMetronomDef;
-		TempoClock.setAllClocks(0, currentEnvironment.clock.tempo);
-		CmdPeriod.add(proxyInstace);
-		fnc_onRestartClock = nil;
-		"\nNetProxy init done".postln;
 	}
 
 	initNet {|name|
