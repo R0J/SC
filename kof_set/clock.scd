@@ -4,15 +4,16 @@ p.metro(4);
 p.restartClock;
 p.bpm(127);
 
+
 p.makeTempoClock;
 (
-  TempoClock.default = p.clock;
   //p.clock.tempo_(120/60);
   //p.arProxyNames.do(p[_.asSymbol].rebuild);
 )
 
 
 (
+p.restartClock;
   ~tick.kr(1);
   ~tick.clock = p.clock;
   ~tick.quant=1;
@@ -20,18 +21,26 @@ p.makeTempoClock;
   ~counter = {PulseCount.kr(~tick.kr);};
 );    
 
+
+
+////////////////////////////////////////////////////
+////////////////////////////////////////////////////
+////////////////////////////////////////////////////
+
+
 (
-  s.latency=0;
-  //p.clock.tempo_(120/60);
-  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
-  ~tick.kr(1);
-  ~tick.clock = p.clock;
+  TempoClock.default = p.clock;
+  p.restartClock;
   ~tick.quant=4;
-  ~counter.clock = p.clock;
   ~counter.quant = 4;
   ~counter = {PulseCount.kr(~tick.kr);};
   ~tick = { Impulse.kr(~tempo*4); };
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
 );
+
+////////////////////////////////////////////////////
+////////////////////////////////////////////////////
+////////////////////////////////////////////////////
 
 (
 //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
