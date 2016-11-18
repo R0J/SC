@@ -61,6 +61,14 @@ NodeStage {
 
 
 		this.prepareSynthDef;
+
+		CmdPeriod.add(this);
+	}
+
+	cmdPeriod {
+		"cmdPeriod stage".warn;
+		("stageGroup.nodeID:" + stageGroup.nodeID).postln;
+		stageGroup = Group.new(nodeName.envirGet.group);
 	}
 
 	isCurrentStage { if((currentStage == stageName), { ^true; }, { ^false; }); }
