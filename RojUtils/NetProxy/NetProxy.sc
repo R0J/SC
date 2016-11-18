@@ -1,6 +1,7 @@
 NetProxy : ProxySpace {
 
 	classvar isConnected = false;
+	classvar proxyInstace = nil;
 
 	var userName;
 	var netIP, broadcastIP;
@@ -15,31 +16,27 @@ NetProxy : ProxySpace {
 
 	var oscScTrigAddr, oscScTrigClock;
 
+	var fnc_onRestartClock;
+
 	*push {
-		var proxyspace = super.push(Server.default);
+			proxyInstace = super.push(Server.default);
 		Server.default.waitForBoot({
-			Server.default.latency = 0.0;
-			proxyspace.disconnect;
-			proxyspace.makeTempoClock;
-			proxyspace.prMetronomDef;
-			TempoClock.setAllClocks(0, currentEnvironment.clock.tempo);
-			CmdPeriod.add(proxyspace);
-			"\nNetProxy init done".postln;
+			proxyInstace.initProxy;
 		});
-		^proxyspace;
+		^proxyInstace;
 	}
 
 	*connect { |name = nil|
-		var proxyspace = this.push();
+		proxyInstace = this.push();
 		Server.default.doWhenBooted({
-			proxyspace.initNet(name);
+			proxyInstace.initNet(name);
 			"\nNetProxy connected".postln;
 		});
-		^proxyspace;
+		^proxyInstace;
 	}
 
 	disconnect {
-		CmdPeriod.remove(this);
+		CmdPeriod.remove(proxyInstace);
 
 		if(isConnected) { sendMsg.user_exit };
 
@@ -66,10 +63,23 @@ NetProxy : ProxySpace {
 			metronomSynth = nil;
 		};
 
+		fnc_onRestartClock = nil;
+
 		if(isConnected) {"\nNetProxy disconnected".postln;};
 		isConnected = false;
 
 		^nil;
+	}
+
+	initProxy {
+		Server.default.latency = 0.0;
+		proxyInstace.disconnect;
+		proxyInstace.makeTempoClock;
+		proxyInstace.prMetronomDef;
+		TempoClock.setAllClocks(0, currentEnvironment.clock.tempo);
+		CmdPeriod.add(proxyInstace);
+		fnc_onRestartClock = nil;
+		"\nNetProxy init done".postln;
 	}
 
 	initNet {|name|
@@ -112,7 +122,7 @@ NetProxy : ProxySpace {
 	players {
 		if(isConnected,
 			{
-				"\nyours profile:".postln;
+				"\nyour profile:".postln;
 				("\t- name:" + userName).postln;
 				("\t- addr:" + netIP).postln;
 
@@ -149,6 +159,7 @@ NetProxy : ProxySpace {
 	restartClock {
 		if(isConnected) { sendMsg.clock_restart; };
 		TempoClock.setAllClocks(0, currentEnvironment.clock.tempo);
+		fnc_onRestartClock.value;
 	}
 
 	metro {|quant = 1, freq = 800|
@@ -308,6 +319,7 @@ NetProxy : ProxySpace {
 				var sender = msg[1].asSymbol;
 				var senderTempo = msg[2];
 				TempoClock.setAllClocks(0, senderTempo);
+				fnc_onRestartClock.value;
 				"Player % restart all clock".format(sender).warn;
 			});
 		}, '/clock/restart', nil).permanent_(true);
@@ -358,6 +370,8 @@ NetProxy : ProxySpace {
 		*/
 	}
 
+	addOnRestartClock { |function| fnc_onRestartClock = function; }
+	removeOnRestartClock { fnc_onRestartClock = nil; }
 
 	prSenderCheck{ |addr| if((addr.ip.asSymbol == netIP.asSymbol), { ^false; }, { ^true; } ); }
 
