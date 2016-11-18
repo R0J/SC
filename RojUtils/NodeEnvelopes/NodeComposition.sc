@@ -127,32 +127,35 @@ NodeComposition {
 	}
 
 	*stage {|stageName, fadeTime = 0, quantOfChange = 1|
-		this.initLibrary;
-		currentStage = stageName;
+		if(stageName.asSymbol != currentStage.asSymbol)
+		{
+			this.initLibrary;
+			currentStage = stageName;
 
-		Task({
-			currentEnvironment.clock.timeToNextBeat(quantOfChange).wait;
+			Task({
+				currentEnvironment.clock.timeToNextBeat(quantOfChange).wait;
 
-			library.dictionary.keysValuesDo({|nodeName, dict|
-				var path = [nodeName.asSymbol, \stages];
-				/*
-				(
-				"nodeName:" + nodeName +
-				"\ndict:" + dict
-				).postln;
-				*/
-				library.atPath(path).keysValuesDo({|oneStageName, nStage|
-					if((nStage.stageName.asSymbol == stageName.asSymbol),
-						{
-							nStage.play;
-							nStage.fadeIn(fadeTime);
-						},{
-							nStage.fadeOut(fadeTime);
-							nStage.stop(fadeTime);
+				library.dictionary.keysValuesDo({|nodeName, dict|
+					var path = [nodeName.asSymbol, \stages];
+					/*
+					(
+					"nodeName:" + nodeName +
+					"\ndict:" + dict
+					).postln;
+					*/
+					library.atPath(path).keysValuesDo({|oneStageName, nStage|
+						if((nStage.stageName.asSymbol == stageName.asSymbol),
+							{
+								nStage.play;
+								nStage.fadeIn(fadeTime);
+							},{
+								nStage.fadeOut(fadeTime);
+								nStage.stop(fadeTime);
+						});
 					});
 				});
-			});
-		}).play;
+			}).play;
+		};
 	}
 
 	*play {|from = 0, to = nil, loop = false|
