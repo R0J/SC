@@ -94,14 +94,14 @@ p.makeTempoClock;
 
 
 (
-    s.latency=0.2;
+    //s.latency=0.2;
     //p.clock.tempo_(120/60);
     p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
     ~tick.kr(1);
     ~tick.clock = p.clock;
-    ~tick.quant=0;
+    ~tick.quant=2;
     ~counter.clock = p.clock;
-    ~counter.quant = 0;
+    ~counter.quant = 2;
     ~counter = {PulseCount.kr(~tick.kr);};
     ~tick = { Impulse.kr(~tempo*4); };
 );

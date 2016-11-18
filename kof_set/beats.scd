@@ -116,7 +116,7 @@ p.moveNodeToTail(\master);
 (
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
     {
-        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(2);};});
+        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
     }.fork;  
 )
 
@@ -273,30 +273,33 @@ p.moveNodeToTail(\master);
 )
 ~scanner.resume;
 
+// switch synth ///////////////////////////////////////
 
 (
     ~switch.ar(2);
     ~switch.clock = p.clock;
-    ~switch.quant=[2,1/4];
+    ~switch.quant=[2,1/2];
     ~switch.fadeTime=8.2;
     ~switch={
-        var pat = [1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1];
+        var pat = [1,0,1,0,1,0,1,0,1,0,1,0,1,1,0,0].pyramid;
         //         |       |       |       |       |
-        var imp = PulseDivider.kr(~tick.kr,[1,2,3,4,5,6],~counter.kr%pat.size);
+        var imp = PulseDivider.kr(~tick.kr,[1,2,3,4,5,6].scramble,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.5*[1,2,3,4]/~tempo],[3,30]),imp * hit);
-        var sig = WhiteNoise.ar(0.4!4) + Crackle.ar(env+((1..6)/10))* SinOsc.ar(1/(1..6)*~tempo);
-        sig = Resonz.ar(sig,[1000,2500,12500,15000,500,12500],LFDNoise1.kr(~tempo!6).range(0.01,0.9));
-        sig = sig * env * LFPulse.ar(8/(1..6)*~tempo,0,1/2);
-        sig = CompanderD.ar(sig,3/4,1/1.2,1/3,0.0002);
-        Splay.ar(sig,0.5,0.35,SinOsc.kr(~tempo,mul:0.24));
+        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.1*[1,2,3,4]],[3,30]),imp * hit);
+        var sig = WhiteNoise.ar(0.4!4) * Pulse.ar(1000);
+        sig = RHPF.ar(sig,[1000,2500,12500,15000,1000,500,12500],LFNoise2.kr(1/4!4 * ~tempo/2).range(0.1,0.9));
+        sig = sig * env * LFPulse.ar(1/4/(1..6)*~tempo,0,1/4);
+        sig = CompanderD.ar(sig,3/4,1,1/3,0.0002);
+        Splay.ar(sig,0.5,0.245);
     };
     ~switch.play;
+    //~switch[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),5000),[4001,4011]),12000)+sig;};
 );
 ~switch.play;
-~switch.clear(10);
-~switch.stop(10);
+~switch.stop(4);
 ~switch.clear;
+
+
 
 
 
@@ -442,7 +445,7 @@ p.moveNodeToTail(\master);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.5],[3,-3],curve:'exp'),imp * hit);
         var sig = Crackle.ar([0.1,0.2,0.6]+env);
         sig = sig * env;
-        Splay.ar(sig,0.25,0.095);
+        Splay.ar(sig,0.25,0.195);
     };
     ~hiss.play;
 );
