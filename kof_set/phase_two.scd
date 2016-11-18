@@ -167,34 +167,6 @@ p.restartClock;
 ~switch.stop(10);
 ~switch.clear;
 
-// raw synth ///////////////////////////////////////
-
-(
-    ~raw.ar(2);
-    ~raw.clock = p.clock;
-    ~raw.quant=[2,1/8];
-    ~raw.fadeTime=8;
-    ~raw={|speed = 1|
-        var sig = VarSaw.ar([55,550] +.x [1,2,3,4,5],0,LFSaw.ar(speed/[1,2,3,4]*~tempo)**4) + GrayNoise.ar(0.5!2) * (1-(LFTri.ar(speed)**4));
-        //sig = Resonz.ar(sig,LFSaw.ar(1/32/[1,2,3,4]).exprange(160.001,250)+SinOsc.ar(4).range(-100,1000),LFNoise2.kr(1/32!2).range(0.02,0.6));
-        sig = Resonz.ar(sig,LFSaw.ar(speed*~tempo/2).exprange(55.01,5500),LFDNoise1.kr(1/[1,2,3,4]*~tempo/2).range(0.01,0.3));
-        sig = Limiter.ar(sig);// * Pulse.ar(4/[1,2,8,16]);
-        Splay.ar(sig,0.5,0.055);
-    };
-    ~raw.play;
-
-    ~raw.map(\speed,~ctl);
-
-    ~ctl.quant=2;
-    ~ctl = {Duty.kr(1/4/~tempo*2,0,Dseq([1,8,4,1,8,2,1,8,3,1,8,16,1,8,32,64,128],inf)) * ~tempo/2};
-
-);
-~raw.stop(5);
-~raw.clear(5);
-~raw.pause;
-~raw.resume;
-
-
 
 
 
@@ -405,13 +377,15 @@ p.restartClock;
         //sig = sig * Pulse.ar(1/4/[1,2,3,4]*~tempo);
         sig = CompanderD.ar(sig,3/4,1,1/2);
         sig = LPF.ar(sig,3000);
-        Splay.ar(sig,0.65,0.125);
+        sig = HPF.ar(sig,100);
+        sig = sig * Pulse.ar(2*~tempo);
+        Splay.ar(sig,0.65,0.25);
     };
     ~flute3.play;
     ~flute3[1] = \filter -> {|sig| DWGReverb.ar(HPF.ar(LPF.ar(sig,3500),150),[4020,4000],1/5)};
 );
 ~flute3.stop(30);
-~flute3.clear(50);
+~flute3.clear(5);
 ~flute3.pause;
 ~flute3.resume;
 
@@ -441,6 +415,7 @@ p.restartClock;
         sig = LeakDC.ar(sig);
         sig = Vibrato.ar(sig,[5,6,7],0.02);
         //sig = LPF.ar(sig,f*4);
+        sig = HPF.ar(sig,100);
         sig = CompanderD.ar(sig,1,1/2);
         Splay.ar(sig,0.35,0.15);
     };
@@ -470,6 +445,7 @@ p.restartClock;
         sig = Normalizer.ar(sig) * (LFTri.ar(speed/[1,2,3]/4) ** 4 * [1,0.66,0.33]);
         sig = LeakDC.ar(sig);
         sig = Vibrato.ar(sig,[5,6,7],0.02);
+        sig = HPF.ar(sig,100);
         //sig = LPF.ar(sig,f*4);
         sig = CompanderD.ar(sig,1,1/2);
         Splay.ar(sig,0.35,0.015);
@@ -515,6 +491,7 @@ p.restartClock;
         sig = LeakDC.ar(sig);
         sig = AllpassN.ar(sig * (LFTri.ar(speed)**2),1/f,1/f,8);
         sig = CompanderD.ar(sig,3/4,1,1/10);
+        sig = HPF.ar(sig,100);
         //sig = sig * LFSaw.ar(speed);
         Splay.ar(sig,0.95,0.15);
     };

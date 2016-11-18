@@ -51,7 +51,7 @@ p.bpm(127)
 
 
 (
-    s.latency=0;
+    s.latency=0.5;
     //p.clock.tempo_(120/60);
     p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
     ~tick.kr(1);
@@ -60,7 +60,7 @@ p.bpm(127)
     ~counter.clock = p.clock;
     ~counter.quant = 4;
     ~counter = {PulseCount.kr(~tick.kr);};
-    ~tick = { Impulse.kr(~tempo*2); };
+    ~tick = { Impulse.kr(~tempo*4); };
 );
 
 (
@@ -102,7 +102,7 @@ p.bpm(127)
     ~master_wet.quant = 4;
     ~master_wet = {LFDNoise1.kr(~tempo/2!2).exprange(0.15,0.45);};
     ~master.map(\wet,~master_wet);
-    //p.moveNodeToTail(\master);
+    p.moveNodeToTail(\master);
 );
 
 
@@ -368,7 +368,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
     ~tick.kr(1);
     ~tick.clock = p.clock;
     ~tick.quant=1;
-    ~tick = { Impulse.kr(~tempo * 2); };
+    ~tick = { Impulse.kr(~tempo * 4); };
     ~counter = {PulseCount.kr(~tick.kr);};
 );    
 
@@ -892,7 +892,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/violin.wav");
 (
     ~sw.ar(2);
     ~sw.clock = p.clock;
-    ~sw.quant=[2];
+    ~sw.quant=[2,1/8];
     ~sw.fadeTime=8.2;
     ~sw={
         var base = [72,60,48].midicps / Duty.kr(4/~tempo,0,Dseq([1,2,1.5,1.33333],inf));
@@ -932,12 +932,19 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/violin.wav");
 
 ~circular.clear(8)
 
+(
+//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+{
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+}.fork;  
+)
+
 // moog synth , DANEGEROUS LARGE offset ///////////////////////////////////////
 
 (
     ~moog2.ar(2);
     ~moog2.clock = p.clock;
-    ~moog2.quant=[2,1/2];
+    ~moog2.quant=[2,1/4];
     ~moog2.fadeTime=10.2;
     ~moog2={
         var mul = 1;
