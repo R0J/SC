@@ -63,8 +63,8 @@ NodeCycle {
 
 		// if(clock.notNil) { clock.stop; };
 		// clock = TempoClock.new(currentEnvironment.clock.tempo);
-		// Task({
-			// timeToQuant.wait;
+		Task({
+			timeToQuant.wait;
 			clock.beats = 0;
 			// clock.clear;
 			timeline.times.do({|oneTime|
@@ -76,7 +76,7 @@ NodeCycle {
 				});
 			});
 			// clock.sched(timeline.duration, { clock.stop; });
-// }).play(currentEnvironment.clock);
+		}).play(currentEnvironment.clock);
 	}
 
 	printOn { |stream|
