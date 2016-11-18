@@ -144,21 +144,21 @@ p.restartClock;
 (
     ~switch.ar(2);
     ~switch.clock = p.clock;
-    ~switch.quant=[2,1/2];
+    ~switch.quant=[2,1/4];
     ~switch.fadeTime=8.2;
     ~switch={
         var pat = [
-            0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,
+            0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,
         ];
         //         |       |       |       |       |
-        var imp = PulseDivider.kr(~tick.kr,[1,2,3,4,5,6]*2,~counter.kr%pat.size);
+        var imp = PulseDivider.kr(~tick.kr,[1,2,3,4,5,6],~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.15*[1,2,3,4]/~tempo],[3,30]),imp * hit);
         var sig = WhiteNoise.ar(0.4!4) + Crackle.ar(env+((1..6)/10))* SinOsc.ar(1/(1..6)*~tempo);
         sig = Resonz.ar(sig,[1000,2500,12500,15000,500,12500],LFDNoise1.kr(~tempo!6).range(0.01,0.9));
         sig = sig * env * LFPulse.ar(8/(1..6)*~tempo,0,1/2);
         sig = CompanderD.ar(sig,3/4,1,1/3,0.0002);
-        Splay.ar(sig,0.5,0.025,SinOsc.kr(~tempo,mul:0.24));
+        Splay.ar(sig,0.5,0.125,SinOsc.kr(~tempo,mul:0.24));
     };
     ~switch.play;
 );
@@ -172,7 +172,7 @@ p.restartClock;
 (
     ~raw.ar(2);
     ~raw.clock = p.clock;
-    ~raw.quant=[2];
+    ~raw.quant=[2,1/8];
     ~raw.fadeTime=8;
     ~raw={|speed = 1|
         var sig = VarSaw.ar([55,550] +.x [1,2,3,4,5],0,LFSaw.ar(speed/[1,2,3,4]*~tempo)**4) + GrayNoise.ar(0.5!2) * (1-(LFTri.ar(speed)**4));

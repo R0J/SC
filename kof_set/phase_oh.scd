@@ -122,7 +122,8 @@ p.makeTempoClock;
     ~kick.ar(2);
   //  ~kick.clock = p.clock;
     ~kick.quant = [1,0];
-    ~kick.fadeTime=16.2;
+    ~kick.fadeTime=0.02;
+
     ~kick={
         //         |       |       |       |       |  
         var pat = [
