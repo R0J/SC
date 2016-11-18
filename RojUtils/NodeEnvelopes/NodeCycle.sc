@@ -25,10 +25,6 @@ NodeCycle {
 		var stream = envPattern.asStream;
 		var currentTrigTime = time;
 
-		// if(nEnv.isNil,
-		// { ("NodeEnv [\\" ++ nodeName ++ "\\" ++ controlName ++ "\\" ++ envPattern ++ "] not found in map").warn;  ^nil; },
-		// { ("NodeEnv [\\" ++ controlName ++ "\\" ++ envPattern ++ "] not found in map").warn;  ^nil; },
-		// {
 		case
 		{ stream.isKindOf(Routine) } { envelopePattern.put(controlName.asSymbol, stream.all); } // Pseq([\aaa, \bbb], 3) ++ \ccc
 		{ stream.isKindOf(Symbol) }	{ envelopePattern.put(controlName.asSymbol, stream.asArray); }
@@ -40,10 +36,7 @@ NodeCycle {
 
 		// remove old keys
 		envelopePattern.at(controlName.asSymbol).do({|oneEnvelopeName|
-			timeline.times.do({|oneTime|
-				// ("oneTime, oneEnvelopeName:" + [oneTime, oneEnvelopeName]).postln;
-				timeline.take(oneTime, oneEnvelopeName);
-			});
+			timeline.removeKeys(oneEnvelopeName);
 		});
 
 		// add new keys

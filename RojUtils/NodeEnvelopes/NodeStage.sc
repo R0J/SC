@@ -22,32 +22,6 @@ NodeStage {
 			{ ^nStage; }
 		);
 	}
-/*
-	*current {|stage, fadeTime = 0, quantOfChange = 1|
-		Task({
-			currentEnvironment.clock.timeToNextBeat(quantOfChange).wait;
-
-			Library.at(\qMachine).dictionary.keysValuesDo({|nodeName, dict|
-				var path = [nodeName.asSymbol, \stages];
-
-				Library.at(\qMachine).atPath(path).keysValuesDo({|stageName, nStage|
-					if((stage.asSymbol == stageName.asSymbol),
-						{
-							nStage.play;
-							nStage.fadeIn(fadeTime);
-						},
-						{
-							nStage.fadeOut(fadeTime);
-							nStage.stop(fadeTime);
-						}
-					);
-				});
-			});
-
-			currentStage = stage;
-		}).play;
-	}
-*/
 
 	init {
 		stageGroup = Group.new(nodeName.envirGet.group);
@@ -90,9 +64,7 @@ NodeStage {
 
 		// remove old keys
 		cyclePattern.do({|oneCycleName|
-			timeline.times.do({|oneTime|
-				timeline.take(oneTime, oneCycleName);
-			});
+			timeline.removeKeys(oneCycleName);
 		});
 
 		// add new keys
@@ -101,7 +73,6 @@ NodeStage {
 			if(oneCycle.isNil,
 				{ ("NodeCycle [\\" ++ oneCycleName ++ "] not found in map").warn;  ^nil; },
 				{
-
 					this.schedCycle(currentTrigTime, oneCycle);
 					currentTrigTime = currentTrigTime + oneCycle.duration;
 				}
