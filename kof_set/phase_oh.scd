@@ -114,12 +114,14 @@ p.makeTempoClock;
 }.fork;  
 )
 
+
+(
 /// 8 KICK start
 
 (
     ~kick.ar(2);
   //  ~kick.clock = p.clock;
-    ~kick.quant = [2,0];
+    ~kick.quant = [1,0];
     ~kick.fadeTime=16.2;
     ~kick={
         //         |       |       |       |       |  
@@ -146,18 +148,12 @@ p.makeTempoClock;
     };
     ~kick.play;
 );
-~kick.stop(10);
-~kick.clear(6);
-~kick.pause;
-~kick.resume;
-
-NodeProxy.help;
-// one synth ///////////////////////////////////////
+)
 
 (
     ~onea.ar(2);
 //    ~onea.clock = p.clock;
-    ~onea.quant=[2,1/4];
+    ~onea.quant=[1,1/4];
     ~onea.fadeTime=0.02;
     ~onea={
         //         |       |       |       |       |  
@@ -188,6 +184,16 @@ NodeProxy.help;
     //~onea[1] = \filter -> {|sig| DWGReverb.ar(HPF.ar(LPF.ar(sig,5000),50),[5000,5050],1/2)+sig};
     ~onea.play;
 );
+
+
+(
+~kick.clear(1);
+~onea.clear(1);
+)
+
+)
+
+
 ~onea.stop(4);
 ~onea.clear(2);
 ~onea.pause;

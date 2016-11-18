@@ -7,7 +7,7 @@
 p.makeTempoClock;
 (
     TempoClock.default = p.clock;
-    p.clock.tempo_(127/60);
+//    p.clock.tempo_(127/60);
     p.arProxyNames.do(p[_.asSymbol].rebuild);
 )
 
@@ -91,6 +91,84 @@ p.moveNodeToTail(\master);
 )
 
 (
+/// 8 KICK start
+
+(
+    ~kick.ar(2);
+  //  ~kick.clock = p.clock;
+    ~kick.quant = [1,0];
+    ~kick.fadeTime=16.2;
+    ~kick={
+        //         |       |       |       |       |  
+        var pat = [
+            1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,
+            1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,
+            1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,
+            1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,
+        ];
+        var mod2 = LFNoise2.kr(~tempo/160!4).range(2,80);
+        var mod = LFDNoise1.kr(~tempo/160!4).range(2,80);
+        var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
+        var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
+        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2.5/[1,1.01,1.011,1.0111]],[2,-3.3]), imp * hit);
+        var hum = LFDNoise1.kr(~tempo).range(0.0,0.01);
+        var sig;
+        env = env ** LFNoise1.kr(1/64!4).range(0.07,1.6);
+
+        // env = DelayN.ar(env,hum,hum);
+
+        sig = Mix.fill(20,{|i|SinOsc.ar(55+(env**mod2*55),env**(mod2+i)*8pi)})/20.9;
+        sig = sig * env;
+        Splay.ar(sig,0.005,0.65);
+    };
+    ~kick.play;
+);
+)
+
+(
+    ~onea.ar(2);
+//    ~onea.clock = p.clock;
+    ~onea.quant=[1,1/4];
+    ~onea.fadeTime=0.02;
+    ~onea={
+        //         |       |       |       |       |  
+        var pat = [
+            1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
+            1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
+            1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
+            1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
+        ];
+        var imp = PulseDivider.kr(~tick.kr,1,~counter.kr);
+        var imp2 = PulseDivider.kr(~tick.kr,[4,8,16,3],~counter.kr);
+        var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
+        var hit2 = Select.kr(PulseCount.kr(imp2)%pat.size,pat);
+        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.5],[10,-3],curve:'exp'),imp * hit);
+        var env2 = EnvGen.ar(Env([0.001,1,0.0001],[0.02,1.15],[10,-3],curve:'exp'),imp2 * hit2);
+        var sig = SinOsc.ar(50 + (env**50*500));
+
+        //sig = LFSaw.ar([60,67,64].midicps*64+(env2**20*1500),mul:0.7)**LFNoise2.kr(1/16!2 * ~tempo).range(0.4,4)/1.5+sig;
+        sig = LPF.ar(sig,LFSaw.kr([1,2,3,4]/16*~tempo).range(190,9000));
+
+        sig = sig * env;
+
+        //sig = GVerb.ar(HPF.ar(sig,900),10,3)/4+sig;
+        //sig = GVerb.ar(LPF.ar(sig,900),100,10)/4+sig;
+        sig = CompanderD.ar(sig,3/4,1/1.5,1);
+        Splay.ar(sig,0.75,0.65);
+    };
+    //~onea[1] = \filter -> {|sig| DWGReverb.ar(HPF.ar(LPF.ar(sig,5000),50),[5000,5050],1/2)+sig};
+    ~onea.play;
+);
+
+
+(
+~kick.clear(1);
+~onea.clear(1);
+)
+
+
+
+(
     (
         ~sell.ar(4);
         // ~sell.quantize(~tick);
@@ -105,11 +183,11 @@ p.moveNodeToTail(\master);
     // scanner synth ///////////////////////////////////////
 
     (
-        ~scanner.ar(2);
-        ~scanner.clock = p.clock;
-        ~scanner.quant=[2,0];
+        //~scanner.ar(4);
+        //~scanner.clock = p.clock;
+        ~scanner.quant=[2,1/2];
         ~scanner.fadeTime=0.2;
-        ~scanner={
+        ~scanner[0]={
             //         |       |       |       |       |
             var pat = [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0];
             var imp = PulseDivider.kr(~tick.kr,[1,2,8,4],~counter.kr % pat.size);
@@ -123,21 +201,26 @@ p.moveNodeToTail(\master);
                 Pulse.ar(~tempo*[4,2]) * SinOsc.ar(60.midicps*8/[1,1.5],mul:0.12),
                 LFNoise1.ar(15800!2) * Pulse.ar(~tempo/[1,2,8,4]),
             ];
-            sig = SelectX.ar(~sell.ar*(sig.size+1) % (sig.size+1),sig);
-            sig = Resonz.ar(sig,LFNoise2.kr(1/4/[1,2,3,4] * ~tempo).exprange(100.01,1600),0.2,mul:2)+sig/2;
-            sig = HPF.ar(sig,20);
-            sig = Limiter.ar(sig,0.995);
-            sig = sig * env;
-            sig = CompanderD.ar(sig,3/4,1/2,1/20,0.002,1/2);
-            Splay.ar(sig,0.95,0.15,SinOsc.kr(4.01*~tempo)/1.2);
+
+            sig = sig * env
         };
+
+        ~scanner[1] = \filter -> {|sig| SelectX.ar(~sell.ar*(sig.size+1) % (sig.size+1),sig);};
+        ~scanner[2] = \filter -> {|sig| Resonz.ar(sig,LFNoise2.kr(1/4/[1,2,3,4] * ~tempo).exprange(100.01,1600),0.2,mul:2)+sig/2};
+        ~scanner[3] = \filter -> {|sig| HPF.ar(sig,20); };
+        ~scanner[4] = \filter -> {|sig| Limiter.ar(sig,0.995) };
+        ~scanner[6] = \filter -> {|sig| CompanderD.ar(sig,3/4,1/2,1/20,0.002,1/2) } ;
+        ~scanner[7] = \filter -> {|sig| Splay.ar(sig,0.95,0.15,SinOsc.kr(4.01*~tempo)/1.2); };
+
         ~scanner.play;
     );
 
 );
 ~scanner.stop(4);
-~scanner.clear(10);
+~scanner.clear;
 ~scanner.pause;
+
+~scanner.rebuild;
 
 (
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////

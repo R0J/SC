@@ -4,7 +4,7 @@ p.clock.tempo(127/60);
 p.makeTempoClock;
 (
     TempoClock.default = p.clock;
-    p.clock.tempo_(127/60);
+//    p.clock.tempo_(127/60);
     p.arProxyNames.do(p[_.asSymbol].rebuild);
 )
 
@@ -272,6 +272,7 @@ p.restartClock;
         sig = Normalizer.ar(sig);
         sig = OnePole.ar(sig,LFDNoise1.ar(1/4!4 * ~tempo/2));
         sig = LPF.ar(sig,8000);
+        sig = HPF.ar(sig,200);
         Splay.ar(sig,0.85,0.15,LFPar.kr(~tempo,mul:0.2));
     };
     ~menavka_deep.play;
@@ -309,6 +310,7 @@ p.restartClock;
         sig = Normalizer.ar(sig);
         sig = OnePole.ar(sig,LFDNoise1.ar(1/4!4*~tempo/2));
         sig = LPF.ar(sig,8000);
+        sig = HPF.ar(sig,200);
         Splay.ar(sig,0.85,0.25,LFPar.kr(~tempo/1.2,mul:0.2));
     };
     ~menavka_deep_mod.play;
@@ -338,7 +340,8 @@ p.restartClock;
         sig = Normalizer.ar(sig);
         sig = OnePole.ar(sig,LFDNoise1.ar(1/4!4 * tmod * ~tempo/2));
         sig = LPF.ar(sig,4000);
-        Splay.ar(sig,0.85,0.0155,LFPar.kr(~tempo/1.1,mul:0.2));
+        sig = HPF.ar(sig,200);
+        Splay.ar(sig,0.85,0.155,LFPar.kr(~tempo/1.1,mul:0.2));
     };
     ~menavka.play;
     ~menavka[1] = \filter -> {|sig| DWGReverb.ar(HPF.ar(LPF.ar(sig,3500),150),[4020,4000],1/5)};
