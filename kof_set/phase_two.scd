@@ -211,7 +211,7 @@ p.restartClock;
     ~under_bass.quant=4;
     ~under_bass.fadeTime=4;
     ~under_bass={
-        var sig = SinOsc.ar(33.midicps!2,Pulse.ar(1/4/[1,2,3,4]*~tempo)*8pi) * SinOsc.ar(~tempo/4/[1,2,4,8]);
+        var sig = SinOsc.ar(33.midicps!2,Pulse.ar(1/4/[1,2,3,4]*~tempo*2)*8pi) * SinOsc.ar(~tempo/2/[1,2,4,8]);
         sig = Limiter.ar(sig,0.9);
         Splay.ar(sig,0.5,0.5);
     };
