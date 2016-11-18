@@ -80,8 +80,9 @@ Timeline {
 		var tabs = "";
 		cntTabs.do({tabs = tabs ++ "\t"});
 		timeline.indicesDo({|oneArray, oneTime|
-			txt = txt ++ "\n" ++ tabs ++ "- time" + oneTime;
+			txt = txt ++  tabs ++ "- time" + oneTime;
 			oneArray.asArray.do({|item| txt = txt ++ "\n\t" ++ tabs ++ "-" + item; });
+			txt = txt ++ "\n";
 		});
 		txt.postln;
 	}

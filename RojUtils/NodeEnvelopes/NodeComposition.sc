@@ -137,8 +137,8 @@ NodeComposition {
 				var path = [nodeName.asSymbol, \stages];
 				/*
 				(
-					"nodeName:" + nodeName +
-					"\ndict:" + dict
+				"nodeName:" + nodeName +
+				"\ndict:" + dict
 				).postln;
 				*/
 				library.atPath(path).keysValuesDo({|oneStageName, nStage|
@@ -159,6 +159,49 @@ NodeComposition {
 
 	}
 
+	*print {
+		if(library.notNil) {
+			"\n\nNodeComposition library \n-----------------------".postln;
 
+			library.dictionary.sortedKeysValuesDo({|nodeName, dict|
+
+				var envFolder = library.atPath([nodeName.asSymbol, \envelopes]);
+				var cyclesFolder = library.atPath([nodeName.asSymbol, \cycles]);
+				var stageFolder = library.atPath([nodeName.asSymbol, \stages]);
+
+				("NodeProxy: ~" ++ nodeName).postln;
+
+				if(envFolder.notNil) {
+					"\tenvelopes:".postln;
+					library.atPath([nodeName.asSymbol,\envelopes]).sortedKeysValuesDo({|oneControlNames|
+						("\t\t \\" ++ oneControlNames).postln;
+						library.atPath([nodeName.asSymbol,\envelopes, oneControlNames.asSymbol]).sortedKeysValuesDo({|oneEnvName|
+							var oneEnv = library.atPath([nodeName.asSymbol, \envelopes, oneControlNames.asSymbol, oneEnvName.asSymbol]);
+							("\t\t\t \\" ++ oneEnvName ++ " -> NodeEnv [ dur:" + oneEnv.duration + "]").postln;
+							oneEnv.print(4);
+						});
+					});
+				};
+
+				if(cyclesFolder.notNil) {
+					"\tcycles:".postln;
+					cyclesFolder.sortedKeysValuesDo({|oneCycleNames|
+						var oneCycle = library.atPath([nodeName.asSymbol,\cycles] ++ oneCycleNames.asSymbol);
+						("\t\t\\" ++ oneCycleNames ++ " -> NodeCycle [ dur:" + oneCycle.timeline.duration + "]").postln;
+						oneCycle.timeline.print(3);
+					});
+				};
+
+				if(stageFolder.notNil) {
+					"\tstages:".postln;
+					stageFolder.sortedKeysValuesDo({|oneStageNames|
+						var oneStage = library.atPath([nodeName.asSymbol,\stages] ++ oneStageNames.asSymbol);
+						("\t\t\\" ++ oneStageNames ++ " -> NodeStage [ dur:" + oneStage.timeline.duration + "]").postln;
+						oneStage.timeline.print(3);
+					});
+				};
+			});
+		}
+	}
 
 }

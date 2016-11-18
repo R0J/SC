@@ -4,6 +4,7 @@ NodeCycle {
 	var <envelopePattern;
 	var clock;
 	var <timeline;
+	var <>quant;
 
 	*new {|nodeName, cycleName = \default|
 		var nCycle = NodeComposition.getCycle(nodeName, cycleName);
@@ -18,6 +19,7 @@ NodeCycle {
 		envelopePattern = IdentityDictionary.new;
 		clock = TempoClock.new(currentEnvironment.clock.tempo);
 		timeline = Timeline.new();
+		quant = nil;
 	}
 
 	set {|controlName, envPattern, time = 0|
@@ -56,15 +58,25 @@ NodeCycle {
 	duration { ^timeline.duration; }
 
 	trig {|targetGroup, targetBus|
+		var timeToQuant = 0;
+		if(quant.notNil) { timeToQuant = currentEnvironment.clock.timeToNextBeat(quant); };
+
 		// if(clock.notNil) { clock.stop; };
 		// clock = TempoClock.new(currentEnvironment.clock.tempo);
-		clock.beats = 0;
-		timeline.times.do({|oneTime|
-			timeline.get(oneTime).asArray.do({|oneEnv|
-				clock.sched(oneTime, { oneEnv.trig(targetGroup, targetBus); } );
+		// Task({
+			// timeToQuant.wait;
+			clock.beats = 0;
+			// clock.clear;
+			timeline.times.do({|oneTime|
+				timeline.get(oneTime).asArray.do({|oneEnv|
+					clock.sched(oneTime, {
+						("currentEnvirnment.clock.beats:" + currentEnvironment.clock.beats).postln;
+						oneEnv.trig(targetGroup, targetBus);
+					} );
+				});
 			});
-		});
-		// clock.sched(timeline.duration, { clock.stop; });
+			// clock.sched(timeline.duration, { clock.stop; });
+// }).play(currentEnvironment.clock);
 	}
 
 	printOn { |stream|
@@ -79,13 +91,13 @@ NodeCycle {
 		var plotter;
 
 		windows.do({|oneW|
-			("oneW.name:" + oneW.name).postln;
+			// ("oneW.name:" + oneW.name).postln;
 			if(plotName.asSymbol == oneW.name.asSymbol) { plotWin = oneW; };
 		});
 
 		envelopePattern.sortedKeysValuesDo({|oneControlName|
 			var controlEnvelopeStream = nil;
-			("oneControlName:" + oneControlName).postln;
+			// ("oneControlName:" + oneControlName).postln;
 			envelopePattern.at(oneControlName.asSymbol).do({|oneEnvelopeName|
 				var oneEnv = NodeComposition.getEnvelope(nodeName, oneControlName, oneEnvelopeName);
 				if((controlEnvelopeStream.isNil),
@@ -105,16 +117,10 @@ NodeCycle {
 		},{
 			plotWin.view.children[0].close;
 			plotter = Plotter(plotName.asSymbol, parent:plotWin);
-			// plotter = envList.asArray.plot;
 			plotter.value = envList.asArray;
-
-			// this.plot( size:size, name:envName.asSymbol ).parent.alwaysOnTop_(true);
-			// plotter.domainSpecs = [[0, this.duration, 0, 0, "", " s"]];
-
 		});
 		plotter.domainSpecs = [[0, this.duration, 0, 0, "", " s"]];
 		plotter.refresh;
-
 	}
 
 
