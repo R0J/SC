@@ -11,34 +11,13 @@ p.makeTempoClock;
   s.latency=0.2;
   //p.clock.tempo_(120/60);
   p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
-  ~tick.kr(1);
-  ~tick.clock = p.clock;
-  ~tick.quant=4;
-  ~counter.clock = p.clock;
-  ~counter.quant = 4;
-  ~counter = {PulseCount.kr(~tick.kr);};
-  ~tick = { Impulse.kr(~tempo*4); };
 );
 
 
 (
 
-    //    p.clock.tempo_(127/60);
-    //    TempoClock.default = p.clock;
-
     (
-        (
-            ~tick.kr(1);
-            ~tick.clock = p.clock;
-            ~tick.quant=4;
-            ~tick = { Impulse.kr(~tempo * 4); };
-            ~counter = {PulseCount.kr(~tick.kr);};
-        );    
-
-    );
-
-    (
-        ~master.quant=4;
+        ~master.quant=16;
         ~master.play;
         ~master.fadeTime = 0.01;
         ~master = {|wet=0.35,lp=4500,hp=150,len=10,rev = 2|
@@ -116,12 +95,20 @@ p.makeTempoClock;
 
 
 (
+//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+
+p.clock.sched(p.clock.timeToNextBeat(32),{
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(16);};});
+});  
+);
+
+(
 /// 8 KICK start
 
 (
     ~kick.ar(2);
   //  ~kick.clock = p.clock;
-    ~kick.quant = [1,0];
+    ~kick.quant = [32,0];
     ~kick.fadeTime=0.02;
 
     ~kick={
@@ -154,7 +141,7 @@ p.makeTempoClock;
 (
     ~onea.ar(2);
 //    ~onea.clock = p.clock;
-    ~onea.quant=[1,1/4];
+    ~onea.quant=[32,1/4];
     ~onea.fadeTime=0.02;
     ~onea={
         //         |       |       |       |       |  
@@ -265,7 +252,7 @@ p.makeTempoClock;
 (
     ~hiss.ar(2);
     ~hiss.clock = p.clock;
-    ~hiss.quant=[16,1/8];
+    ~hiss.quant=[32,1/8];
     ~hiss.fadeTime=2.2;
     ~hiss={
         //         |       |       |       |       |  
@@ -282,12 +269,14 @@ p.makeTempoClock;
 ~hiss.stop(4);
 ~hiss.clear(10);
 ~hiss.clear;
-~hiss.pause;
-~hiss.resume;
+(
+  p.clock.sched(p.clock.timeToNextBeat(16),{ ~hiss.clear; });
+);
+
 
 (
     ~chaos.clock = p.clock;
-    ~chaos.quant = [16,1/8];
+    ~chaos.quant = [32,1/8];
     ~chaos.fadeTime = 1;
     ~chaos={
         var sig;
@@ -303,6 +292,9 @@ p.makeTempoClock;
     ~chaos.play;
 );
 ~chaos.clear;
+(
+  p.clock.sched(p.clock.timeToNextBeat(16),{ ~chaos.clear; });
+);
 
 
 // shuttles synth ///////////////////////////////////////
@@ -310,7 +302,7 @@ p.makeTempoClock;
 (
     ~shuttles.ar(2);
     ~shuttles.clock = p.clock;
-    ~shuttles.quant=[4];
+    ~shuttles.quant=[32];
     ~shuttles.fadeTime=4;
     ~shuttles={
         var mod = Duty.kr(4/~tempo,0,Dseq([1,2,1,4,1,1.5],inf));
@@ -329,8 +321,12 @@ p.makeTempoClock;
 );
 ~shuttles.stop(4);
 ~shuttles.clear(20);
-~shuttles.pause;
-~shuttles.resume;
+(
+  p.clock.sched(p.clock.timeToNextBeat(16),{ ~shuttles.clear; });
+);
+
+
+
 
 
 (
@@ -345,7 +341,7 @@ p.makeTempoClock;
 (
     ~lark.ar(2);
     ~lark.clock = p.clock;
-    ~lark.quant=4;
+    ~lark.quant=16;
     ~lark.fadeTime=4;
     ~lark={
         var mod = Duty.kr(4/~tempo,0,Dseq([1,2,1.5,1.333333],inf));

@@ -77,7 +77,7 @@ p.bpm(127)
 );
 
 (
-    ~master.quant=2;
+    ~master.quant=32;
     ~master.clock = p.clock;
     ~master.play;
     ~master.fadeTime = 0.01;
@@ -105,6 +105,12 @@ p.bpm(127)
     p.moveNodeToTail(\master);
 );
 
+//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+(
+  p.clock.sched(p.clock.timeToNextBeat(32),{
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(0.2);};});
+});  
+);
 
 ProxyMixer.new(p,16);
 
@@ -141,7 +147,7 @@ p.clock.tempo_(127/60);
 (
     ~moog.ar(2);
     ~moog.clock = p.clock;
-    ~moog.quant=[4];
+    ~moog.quant=[16];
     ~moog.fadeTime=20.2;
     ~moog={
         var mul = 1;//1+2.reciprocal;
@@ -179,7 +185,7 @@ p.clock.tempo_(127/60);
 (
     ~karplus.ar(2);
     ~karplus.clock = p.clock;
-    ~karplus.quant=[4];
+    ~karplus.quant=[32];
     ~karplus.fadeTime=4;
     ~karplus={
         var pat = 1/4/[1,2,3,4] * ~tempo.kr;
@@ -230,7 +236,7 @@ p.clock.tempo_(127/60);
 (
     ~saw.ar(2);
     ~saw.clock = p.clock;
-    ~saw.quant=[4];
+    ~saw.quant=[32];
     ~saw.fadeTime=8.2;
     ~saw={
         var mod = Duty.kr([4,16,64]*8/~tempo.kr,0,Dseq([1,2,1.5,1.33333],inf));
@@ -263,7 +269,7 @@ p.clock.tempo_(127/60);
     ~sell.ar(4);
     ~sell.mold(4);
     ~sell.clock = p.clock;
-    ~sell.quant=[4];
+    ~sell.quant=[32];
     ~sell.fadeTime=4;
 
     ~sell={var t = LFTri.kr([1/1600,1/1600,[1/4,1/2,1/8,1/16]]*~tempo/400) * 1/2 + LFSaw.ar(1/4000,mul:2); Perlin3.ar(t[0],t[1],t[2]);};
@@ -295,7 +301,7 @@ p.clock.tempo_(127/60);
 (
     ~scanner.ar(2);
     ~scanner.clock = p.clock;
-    ~scanner.quant=[4,0];
+    ~scanner.quant=[32,0];
     ~scanner.fadeTime=4.2;
     ~scanner={
         //         |       |       |       |       |
@@ -376,7 +382,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 // first perlin noisy synth ///////////////////////////////////////
 (
     ~one_weird.ar(2);
-    ~one_weird.quant=[4];
+    ~one_weird.quant=[32];
     ~one_weird.clock = p.clock;
     ~one_weird.fadeTime=8;
     ~one_weird={
@@ -504,17 +510,17 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 (
     ~sup.ar(2);
     ~sup.clock = p.clock;
-    ~sup.quant=[4];
+    ~sup.quant=[32];
     ~sup.fadeTime=0.02;
     ~sup={
         //         |       |       |       |       |
         var pat = [
-            0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
-            0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
-            0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
-            0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         ];
-        var imp = PulseDivider.kr(~tick.kr,4,~counter.kr%pat.size);
+        var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.000001,1,0.0001],[4.00002,0.005]/~tempo*2,[3,-3]),imp * hit);
         var sig = Mix.fill(10,{|n| SinOsc.ar(33.midicps+(n/100),env**(10+(n*5))*8pi) + WhiteNoise.ar(env**4)})/2;
@@ -564,8 +570,8 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 
 (
     ~high_glitch.clock = p.clock;
-    ~high_glitch.quant=[4,1/8];
-    ~high_glitch.fadeTime=8.02;
+    ~high_glitch.quant=[32,1/4];
+    ~high_glitch.fadeTime=0.02;
     ~high_glitch={
         var imp = PulseDivider.kr(~tick.kr,[1,2],~counter.kr);
         //var imp = PulseDivider.kr(~tick.kr,[4,16]/4);
@@ -574,7 +580,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
         sig = HPF.ar(sig,LFNoise2.kr(1/16 * ~tempo/2 !4).range(1000,16000)) * LFPulse.ar(1/4/[1,4]*~tempo,0,1/4);
         sig = sig * env;
         sig = sig + (CombN.ar(sig * LFPulse.ar(1/4/[1,2,3,4] * ~tempo/2,0,0.15),1/50,1/50,0.5));
-        Splay.ar(sig,0.45,0.15);
+        Splay.ar(sig,0.45,0.25);
     };
     ~high_glitch.play;
     //~high_glitch[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),5000),[4001,4011]),12000)+sig;};
@@ -582,12 +588,32 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 ~high_glitch.stop(7);
 ~high_glitch.clear;
 
+// perl synth ///////////////////////////////////////
+
+(
+~perl.ar(2);
+~perl.quant=32;
+~perl.fadeTime=0.001;
+~perl={
+  var mod = Duty.kr(4/~tempo,0,Dseq([1,2,1.5,1.33333],inf))  ;
+  var sig = LFSaw.ar([1,1/4,500/mod]*~tempo) ** 4 * 400;
+  sig = Perlin3.ar(sig[0],sig[1],sig[2]) * (LFSaw.ar(1/4/[1,2,3,4] * ~tempo)**2);
+  Splay.ar(sig,0.75,0.25);
+};
+~perl.play;
+);
+~perl.stop(4);
+~perl.clear;
+~perl.pause;
+~perl.resume;
+
+
 // kick synth ///////////////////////////////////////
 
 (
     ~kick.ar(2);
     ~kick.clock = p.clock;
-    ~kick.quant=4;
+    ~kick.quant=[32];
     ~kick.fadeTime=0.02;
     ~kick={
         //         |       |       |       |       |
@@ -628,7 +654,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 (
     ~k_two.ar(2);
     ~k_two.clock = p.clock;
-    ~k_two.quant=[4];
+    ~k_two.quant=[32];
     ~k_two.fadeTime=0.2;
     ~k_two={
         //         |       |       |       |       |
@@ -653,7 +679,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 (
     ~hh3.ar(2);
     ~hh3.clock = p.clock;
-    ~hh3.quant=[4,1/2];
+    ~hh3.quant=[32,1/2];
     ~hh3.fadeTime=0.2;
     ~hh3={
         //         |       |       |       |       |
@@ -704,7 +730,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
     (
         ~tam.ar(2);
         ~tam.clock = p.clock;
-        ~tam.quant=4;
+        ~tam.quant=32;
         ~tam.fadeTime=0.2;
         ~tam={
             var pat = [
@@ -729,7 +755,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
     (
         ~zpet.ar(2);
         ~zpet.clock = p.clock;
-        ~zpet.quant=4;
+        ~zpet.quant=32;
         ~zpet.fadeTime=0.2;
         ~zpet={
          //     |       |       |       |       |
@@ -888,12 +914,25 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/violin.wav");
 ~violin.stop(10);
 ~violin.clear(10);
 
+
+(
+  p.clock.sched(p.clock.timeToNextBeat(32),{ 
+  (
+  //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+  {
+    p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+  }.fork;  
+  )
+  });
+);
+
+
 // sw synth ///////////////////////////////////////
 
 (
     ~sw.ar(2);
     ~sw.clock = p.clock;
-    ~sw.quant=[4,1/8];
+    ~sw.quant=[32,1/8];
     ~sw.fadeTime=8.2;
     ~sw={
         var base = [72,60,48].midicps / Duty.kr(4/~tempo,0,Dseq([1,2,1.5,1.33333],inf));
@@ -945,7 +984,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/violin.wav");
 (
     ~moog2.ar(2);
     ~moog2.clock = p.clock;
-    ~moog2.quant=[4,1/4];
+    ~moog2.quant=[32,1/4];
     ~moog2.fadeTime=10.2;
     ~moog2={
         var mul = 1;

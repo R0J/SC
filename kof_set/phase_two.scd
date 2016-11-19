@@ -31,7 +31,7 @@ p.makeTempoClock;
 );
 
 (
-    ~master.quant=4;
+    ~master.quant=32;
     ~master.play;
     ~master.fadeTime = 0.01;
     ~master = {|wet=0.35,lp=4500,hp=150,len=10,rev = 1.5|
@@ -69,6 +69,14 @@ p.clean;
 
 p.restartClock;
 
+p.arProxyNames;
+
+(
+  p.clock.sched(p.clock.timeToNextBeat(32),{ 
+  ~flute2.clear;
+  });
+);
+
 (
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
     {
@@ -76,24 +84,35 @@ p.restartClock;
     }.fork;  
 )
 
+
+(
+//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+
+p.clock.sched(p.clock.timeToNextBeat(16),{
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(1);};});
+};);  
+);
+
+
+
 /// 8 KICK start
 
 (
     ~kick.ar(2);
     ~kick.clock = p.clock;
-    ~kick.quant = [2];
+    ~kick.quant = [32];
     ~kick.fadeTime=0.2;
     ~kick={
         //         |       |       |       |       |  
         var pat = [
-            1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
-            1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
-            1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
-            1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
+            1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
+            1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
+            1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
+            1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,
         ];
         var mod2 = LFNoise2.kr(~tempo/160).range(20,80);
         var mod = LFDNoise1.kr(~tempo/160).range(20,80);
-        var imp = PulseDivider.kr(~tick.kr,2,~counter.kr%pat.size);
+        var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2.5],[mod,-3.3]), imp * hit);
         var sig;
@@ -122,19 +141,6 @@ p.restartClock;
 );    
 
 (
-  s.latency=0.2;
-  //p.clock.tempo_(120/60);
-  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
-  ~tick.kr(1);
-  ~tick.clock = p.clock;
-  ~tick.quant=4;
-  ~counter.clock = p.clock;
-  ~counter.quant = 2;
-  ~counter = {PulseCount.kr(~tick.kr);};
-  ~tick = { Impulse.kr(~tempo*4); };
-);
-
-(
     {
         p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
     }.fork;  
@@ -144,7 +150,7 @@ p.restartClock;
 (
     ~switch.ar(2);
     ~switch.clock = p.clock;
-    ~switch.quant=[4,1/4];
+    ~switch.quant=[16,1/4];
     ~switch.fadeTime=8.2;
     ~switch={
         var pat = [
@@ -175,7 +181,7 @@ p.restartClock;
 (
     ~crack.ar(2);
     ~crack.clock = p.clock;
-    ~crack.quant=[4,1/2];
+    ~crack.quant=[32,1/2];
     ~crack.fadeTime=4;
     ~crack={
         var sig = Crackle.ar(1+LFNoise2.kr(1/4).range(0.01,0.7),LFPulse.ar(5000*[1,2,1.3333,1.5])/LFSaw.ar(1/4*~tempo/2).range(1,50)) * Pulse.ar(8*~tempo/2) * LFPulse.ar(1*~tempo/2) * LFPulse.ar(7/[1,2,3,4]*~tempo/2);
@@ -190,25 +196,12 @@ p.restartClock;
 
 ~kick.clear(30)
 
-(
-    s.latency=0;
-    p.clock.tempo_(127/60);
-    p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
-    ~tick.kr(1);
-    ~tick.clock = p.clock;
-    ~tick.quant=4;
-    ~counter.clock = p.clock;
-    ~counter.quant = 4;
-    ~counter = {PulseCount.kr(~tick.kr);};
-    ~tick = { Impulse.kr(~tempo*4); };
-);
-
 // under_bass synth ///////////////////////////////////////
 
 (
     ~under_bass.ar(2);
     ~under_bass.clock = p.clock;
-    ~under_bass.quant=4;
+    ~under_bass.quant=16;
     ~under_bass.fadeTime=4;
     ~under_bass={
         var sig = SinOsc.ar(33.midicps!2,Pulse.ar(1/4/[1,2,3,4]*~tempo*2)*8pi) * SinOsc.ar(~tempo/2/[1,2,4,8]);
@@ -229,7 +222,7 @@ p.restartClock;
 (
     ~menavka_deep.ar(2);
     ~menavka_deep.clock = p.clock;
-    ~menavka_deep.quant=[4];
+    ~menavka_deep.quant=[32];
     ~menavka_deep.fadeTime=8;
     ~menavka_deep={
         var mal = TWChoose.kr(Impulse.kr(~tempo/8/[1,2,3,4]),[4,2,8,1],[4,0.5,0.3,0.1],1);
@@ -267,7 +260,7 @@ p.restartClock;
 (
     ~menavka_deep_mod.ar(2);
     ~menavka_deep_mod.clock = p.clock;
-    ~menavka_deep_mod.quant=[4];
+    ~menavka_deep_mod.quant=[32];
     ~menavka_deep_mod.fadeTime=8;
     ~menavka_deep_mod={
         var mal = TWChoose.kr(Impulse.kr(~tempo/8/[1,2,3,4]),[4,2,8,1],[4,0.5,0.3,0.1],1);
@@ -297,7 +290,7 @@ p.restartClock;
 (
     ~menavka.ar(2);
     ~menavka.clock = p.clock;
-    ~menavka.quant=[4,1/2];
+    ~menavka.quant=[32,1/2];
     ~menavka.fadeTime=16;
     ~menavka={
         var tmod = 1/16;//TWChoose.kr(Impulse.kr(~tempo/[1,2,3,4]!4),[1,2,1/4,1/8],[0.6,0.4,0.2,0.1],1);
@@ -323,26 +316,6 @@ p.restartClock;
 ~menavka.pause;
 ~menavka.resume;
 
-(
-    ~tick.kr(1);
-    ~tick.clock = p.clock;
-    ~tick.quant=4;
-    ~tick = { Impulse.kr(~tempo * 2); };
-    ~counter = {PulseCount.kr(~tick.kr);};
-);   
-
-(
-    s.latency=0;
-    //p.clock.tempo_(127/60);
-    p.arProxyNames.do({|synth| if(synth!=\master){p[synth.asSymbol].rebuild;};});
-    ~tick.kr(1);
-    ~tick.clock = p.clock;
-    ~tick.quant=4;
-    ~counter.clock = p.clock;
-    ~counter.quant = 4;
-    ~counter = {PulseCount.kr(~tick.kr);};
-    ~tick = { Impulse.kr(~tempo*4); };
-);
 
 ~chaos.clear(30)
 ~circular.clear(30)
@@ -359,7 +332,7 @@ p.restartClock;
 (
     ~flute3.ar(2);
     ~flute3.clock = p.clock;
-    ~flute3.quant=[4,1/2];
+    ~flute3.quant=[32,1/2];
     ~flute3.fadeTime=10;
     ~flute3={
         var speed = 1/8/[1,2,4] * ~tempo;
@@ -400,7 +373,7 @@ p.restartClock;
 
 (
     ~flute2.ar(2);
-    ~flute2.quant=4;
+    ~flute2.quant=32;
     ~flute2.fadeTime=8;
     ~flute2={
         var speed = 1/8/[1,2,4] * ~tempo;
@@ -431,7 +404,7 @@ p.restartClock;
 
 (
     ~flute1.ar(2);
-    ~flute1.quant=4;
+    ~flute1.quant=32;
     ~flute1.fadeTime=8;
     ~flute1={
         var speed = 1/8/[1,2,4] * ~tempo;
