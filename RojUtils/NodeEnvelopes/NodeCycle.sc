@@ -54,15 +54,22 @@ NodeCycle {
 		});
 	}
 
+	trigTimes {|controlName, envelopeName, trigTimes|
+		var eNode = NodeComposition.getEnvelope(nodeName, controlName, envelopeName);
+		trigTimes.asArray.do({|oneTime|
+			timeline.put(oneTime, eNode, eNode.duration, eNode.envelopeName);
+		});
+	}
+
 	duration { ^timeline.duration; }
 
 	trig {|targetGroup, targetBus|
-		var timeToQuant = 0;
-		if(cycleQuant.notNil) { timeToQuant = currentEnvironment.clock.timeToNextBeat(cycleQuant); };
+		// var timeToQuant = 0;
+		// if(cycleQuant.notNil) { timeToQuant = currentEnvironment.clock.timeToNextBeat(cycleQuant); };
 		// ("NodeCycle.trig.timeToQuant:" + timeToQuant).postln;
 		// ("NodeCycle.trig.currentEnvironment.clock.beats:" + currentEnvironment.clock.beats).postln;
 
-		timeline.play({|item| item.trig(targetGroup, targetBus);})
+		timeline.play({|item| item.trig(targetGroup, targetBus); }, cycleQuant)
 	}
 
 	printOn { |stream|

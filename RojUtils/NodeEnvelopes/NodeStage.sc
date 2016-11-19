@@ -72,7 +72,7 @@ NodeStage {
 				{ ("NodeCycle [\\" ++ oneCycleName ++ "] not found in map").warn;  ^nil; },
 				{
 					this.schedCycle(currentTrigTime, oneCycle);
-					currentTrigTime = currentTrigTime + oneCycle.duration;
+					currentTrigTime = currentTrigTime + oneCycle.cycleQuant;
 				}
 			);
 		});
@@ -92,7 +92,7 @@ NodeStage {
 	fadeIn {|time| this.setFactor(1,time); }
 	fadeOut {|time| this.setFactor(0,time); }
 
-	schedCycle {|time, nodeCycle| timeline.put(time, nodeCycle, nodeCycle.duration, nodeCycle.cycleName); }
+	schedCycle {|time, nodeCycle| timeline.put(time, nodeCycle, nodeCycle.cycleQuant, nodeCycle.cycleName); }
 
 	duration { ^timeline.duration; }
 

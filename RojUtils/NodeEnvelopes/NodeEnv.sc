@@ -143,6 +143,7 @@ NodeEnv {
 			\multiplicationBus, targetBus.asMap
 		], targetGroup);
 
+		"NodeEnv trig at time % [%_%_%]".format(currentEnvironment.clock.beats, nodeName, controlName, envelopeName).postln;
 		// ("Synth trig to controlBus_" ++ controlBusIndex + "by synth:" + synth.nodeID + "env:" + this.print(1)).postln;
 	}
 }
