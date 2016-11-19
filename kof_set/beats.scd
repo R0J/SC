@@ -17,37 +17,11 @@ p.clock.tempo_(127/60);
     ~tick.kr(1);
     ~tick.clock = p.clock;
     ~counter.clock = p.clock;
-    ~tick.quant=2;
-    ~counter.quant=2;
+    ~tick.quant=4;
+    ~counter.quant=4;
     ~tick = { Impulse.kr(~tempo * 4); };
     ~counter = {PulseCount.kr(~tick.kr);};
 );    
-
-
-
-(
-
-
-    (
-        (
-
-            ~tick.kr(1);
-            // p.arProxyNames.do({|synth| ~tick.quantize(p[synth.asSymbol]);});
-            ~tick.clock = p.clock;
-            ~tick.quant=[2,0];
-            ~tick = { Impulse.kr(~tempo * 4); };
-            ~counter = {PulseCount.kr(~tick.kr);};
-            //p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){~tick.quantize(p[synth.asSymbol]);};});
-            p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){
-                p[synth.asSymbol].clock=p.clock;
-                p[synth.asSymbol].fadeTime=0;
-                p[synth.asSymbol].rebuild;}
-              ;});
-        );    
-
-    );
-
-);
 
 
 (
@@ -57,9 +31,29 @@ p.clock.tempo_(127/60);
     }.fork;  
 )
 
-//HIGH
 (
-    ~master.quant=2;
+
+    ~tick.kr(1);
+    // p.arProxyNames.do({|synth| ~tick.quantize(p[synth.asSymbol]);});
+    ~tick.clock = p.clock;
+    ~tick.quant=[4,0];
+    ~tick = { Impulse.kr(~tempo * 4); };
+    ~counter = {PulseCount.kr(~tick.kr);};
+    //p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){~tick.quantize(p[synth.asSymbol]);};});
+    p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){
+        p[synth.asSymbol].clock=p.clock;
+        p[synth.asSymbol].fadeTime=0;
+        p[synth.asSymbol].rebuild;}
+        ;}
+
+    );
+
+);
+
+
+// BRIGHT MASTER ////////////////////////////////////////////////////////// ****
+(
+    ~master.quant=4;
     ~master.clock = p.clock;
     ~master.play;
     ~master.fadeTime = 0.01;
@@ -87,11 +81,11 @@ p.clock.tempo_(127/60);
     p.moveNodeToTail(\master);
 );
 
-//DEEP
+// DEEP MASTER //////////////////////////////////////////////////////////// ***
 (
 
     (
-        ~master.quant=2;
+        ~master.quant=4;
         ~master.play;
         ~master.fadeTime = 0.01;
         ~master = {|wet=0.35,lp=7500,hp=250,len=2,rev = 8|
@@ -133,20 +127,20 @@ p.moveNodeToTail(\master);
 )
 
 (
-    /// 8 KICK start
+    /// 8 KICK start //////////////////////////////////////////////////////// *****
 
     (
         ~kick_one.ar(2);
         ~kick_one.clock = p.clock;
-        ~kick_one.quant = [2,0];
+        ~kick_one.quant = [4,0];
         ~kick_one.fadeTime=0.02;
         ~kick_one={
             //         |       |       |       |       |  
             var pat = [
+                1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
+                1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
+                1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
                 1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,
-                1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,
-                1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,
-                1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,
             ];
             var mod2 = LFNoise2.kr(~tempo/160!4).range(2,80);
             var mod = LFDNoise1.kr(~tempo/160!4).range(2,80);
@@ -169,7 +163,7 @@ p.moveNodeToTail(\master);
     (
         ~onea.ar(2);
         ~onea.clock = p.clock;
-        ~onea.quant=[2,1/4];
+        ~onea.quant=[4,1/4];
         ~onea.fadeTime=0.02;
         ~onea={
             //         |       |       |       |       |  
@@ -232,7 +226,7 @@ p.moveNodeToTail(\master);
         // ~sell.quantize(~tick);
         ~sell.mold(4);
         ~sell.clock = p.clock;
-        ~sell.quant=[2,1/4];
+        ~sell.quant=[4,1/4];
         ~sell.fadeTime=4;
 
         ~sell={var t = LFSaw.ar([1/1600,1/1600,[1/4,1/3]]*~tempo) * 1 * LFSaw.ar(1/2000,mul:4); Perlin3.ar(t[0],t[1],t[2]) ** LFNoise2.kr(1/64*~tempo).range(0.4,4);};
@@ -243,7 +237,7 @@ p.moveNodeToTail(\master);
     (
         //~scanner.ar(4);
         //~scanner.clock = p.clock;
-        ~scanner.quant=[2,1/4];
+        ~scanner.quant=[4,1/4];
         ~scanner.fadeTime=0.2;
         ~scanner[0]={
             //         |       |       |       |       |
@@ -296,7 +290,7 @@ p.moveNodeToTail(\master);
 (
     ~switch.ar(2);
     ~switch.clock = p.clock;
-    ~switch.quant=[2,1/4];
+    ~switch.quant=[4,1/4];
     ~switch.fadeTime=8.2;
     ~switch={
         var pat = [1,0,1,0,1,0,1,0,1,0,1,0,1,1,0,0];
@@ -330,7 +324,7 @@ p.moveNodeToTail(\master);
     (
         ~modem.ar(2);
         ~modem.clock = p.clock;
-        ~modem.quant=[2,0];
+        ~modem.quant=[4,0];
         ~modem.fadeTime=1;
         ~modem={
             var mod = Duty.kr(128/~tempo*(1..16),0,Dseq([1,2,1.5,1.33333,4,8,1,1,1,1,1,1],inf));
@@ -359,7 +353,7 @@ p.moveNodeToTail(\master);
     (
         ~late_kick.ar(2);
         ~late_kick.clock = p.clock;
-        ~late_kick.quant=[2,0];
+        ~late_kick.quant=[4,0];
         ~late_kick.fadeTime=1.04;
         ~late_kick={
             var speed = 1/[1,2,4,3]/4;//TWChoose.kr(Impulse.ar(~tempo/8),[1,2,1/2,1/4,1/8],[8,3,2,1,0.2],1).lag(1);
@@ -368,14 +362,14 @@ p.moveNodeToTail(\master);
         };
         ~late_kick.play;
     );
-    
+
 )
 
 (
-//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
-{
-  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-}.fork;  
+    //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+    {
+        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+    }.fork;  
 )
 
 
@@ -384,7 +378,7 @@ p.moveNodeToTail(\master);
 (
     ~k_two.ar(2);
     ~k_two.clock = p.clock;
-    ~k_two.quant=[2];
+    ~k_two.quant=[4];
     ~k_two.fadeTime=0.2;
     ~k_two={
         //         |       |       |       |       |
@@ -405,10 +399,10 @@ p.moveNodeToTail(\master);
 ~k_two.resume;
 
 (
-//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
-{
-  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-}.fork;  
+    //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+    {
+        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+    }.fork;  
 )
 
 // hh synth ///////////////////////////////////////
@@ -416,7 +410,7 @@ p.moveNodeToTail(\master);
 (
     ~hh3.ar(2);
     ~hh3.clock = p.clock;
-    ~hh3.quant=[2,1/8];
+    ~hh3.quant=[4,1/8];
     ~hh3.fadeTime=0.2;
     ~hh3={
         //         |       |       |       |       |
@@ -448,7 +442,7 @@ p.moveNodeToTail(\master);
     (
         ~mel_tick.ar(2);
         ~mel_tick.clock = p.clock;
-        ~mel_tick.quant=[2,1/4];
+        ~mel_tick.quant=[4,1/4];
         ~mel_tick.fadeTime=0.2;
         ~mel_tick={
             var f,sig,slo;
@@ -478,7 +472,7 @@ p.moveNodeToTail(\master);
     (
         ~crack.ar(2);
         ~crack.clock = p.clock;
-        ~crack.quant=[2,1/2];
+        ~crack.quant=[4,1/2];
         ~crack.fadeTime=4;
         ~crack={
             var sig = Crackle.ar(1+LFNoise2.kr(1/4).range(0.01,0.7),LFPulse.ar(5000*[1,2,1.3333,1.5])/LFSaw.ar(1/4*~tempo/2).range(1,50)) * Pulse.ar(8*~tempo/2) * LFPulse.ar(1*~tempo/2) * LFPulse.ar(7/[1,2,3,4]*~tempo/2);
@@ -497,7 +491,7 @@ p.moveNodeToTail(\master);
     (
         ~hiss.ar(2);
         ~hiss.clock = p.clock;
-        ~hiss.quant=[16,1/8];
+        ~hiss.quant=[4,1/8];
         ~hiss.fadeTime=2.2;
         ~hiss={
             //         |       |       |       |       |  
@@ -542,7 +536,7 @@ p.moveNodeToTail(\master);
     (
         ~shuttles.ar(2);
         ~shuttles.clock = p.clock;
-        ~shuttles.quant=[2];
+        ~shuttles.quant=[4];
         ~shuttles.fadeTime=4;
         ~shuttles={
             var mod = Duty.kr(4/~tempo,0,Dseq([1,2,1,4,1,1.5],inf));
@@ -572,7 +566,7 @@ p.moveNodeToTail(\master);
     (
         ~raw.ar(2);
         ~raw.clock = p.clock;
-        ~raw.quant=[2,1/8];
+        ~raw.quant=[4,1/8];
         ~raw.fadeTime=8;
         ~raw={|speed = 1|
             var sig = VarSaw.ar([55,550] +.x [1,2,3,4,5],0,LFSaw.ar(speed/[1,2,3,4]*~tempo)**4) + GrayNoise.ar(0.5!2) * (1-(LFTri.ar(speed)**4));
@@ -585,7 +579,7 @@ p.moveNodeToTail(\master);
 
         ~raw.map(\speed,~ctl);
 
-        ~ctl.quant=2;
+        ~ctl.quant=4;
         ~ctl = {Duty.kr(1/4/~tempo*2,0,Dseq([1,8,4,1,8,2,1,8,3,1,8,16,1,8,32,64,128],inf)) * ~tempo/2};
 
     );

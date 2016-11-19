@@ -18,14 +18,15 @@ p.disconnect;
 
 
 (
-  p.restartClock;
+p.addOnRestartClock({
   ~tick.kr(1);
   ~tick.clock = p.clock;
   ~tick.quant=4;
   ~tick = { Impulse.kr(~tempo * 4); };
   ~counter = {PulseCount.kr(~tick.kr);};
-);    
-
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
+});    
+)
 
 
 ////////////////////////////////////////////////////
