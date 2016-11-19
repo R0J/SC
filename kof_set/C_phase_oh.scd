@@ -84,7 +84,7 @@ p.makeTempoClock;
             ];
             var mod2 = LFNoise2.kr(~tempo/160!4).range(2,80);
             var mod = LFDNoise1.kr(~tempo/160!4).range(2,80);
-            var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
+            var imp = PulseDivider.kr(~tick.kr,16,~counter.kr%pat.size);
             var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
             var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2.5/[1,1.01,1.011,1.0111]],[2,-3.3]), imp * hit);
             var hum = LFDNoise1.kr(~tempo).range(0.0,0.01);
