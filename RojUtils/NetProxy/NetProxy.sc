@@ -1,7 +1,6 @@
 NetProxy : ProxySpace {
 
 	classvar isConnected = false;
-	// classvar proxyInstace = nil;
 
 	var userName;
 	var netIP, broadcastIP;
@@ -18,17 +17,16 @@ NetProxy : ProxySpace {
 
 	var fnc_onRestartClock;
 
-	*push {
+	*push { |bpm = 127|
 		var proxyspace = super.push(Server.default);
+		isConnected = false;
 		Server.default.waitForBoot({
 			Server.default.latency = 0.0;
 			proxyspace.disconnect;
 			proxyspace.makeTempoClock;
 			proxyspace.prMetronomDef;
-			// TempoClock.setAllClocks(0, currentEnvironment.clock.tempo);
-			TempoClock.setAllClocks(0, 127/60);
+			TempoClock.setAllClocks(0, bpm/60);
 			CmdPeriod.add(proxyspace);
-			// fnc_onRestartClock = nil;
 			"\nNetProxy init done".postln;
 		});
 		^proxyspace;
@@ -44,19 +42,10 @@ NetProxy : ProxySpace {
 	}
 
 	disconnect {
-		CmdPeriod.remove(this);
+		CmdPeriod.removeAll;
+		OSCdef.freeAll;
 
 		if(isConnected) { sendMsg.user_exit };
-
-		OSCdef(\user_connected).free;
-		OSCdef(\user_loged).free;
-		OSCdef(\user_disconnected).free;
-		OSCdef(\user_timeMaster).free;
-		OSCdef(\clock_set).free;
-		OSCdef(\clock_restart).free;
-		OSCdef(\clock_get).free;
-		OSCdef(\clock_get_answer).free;
-		OSCdef(\metronom_answer).free;
 
 		userName = nil;
 		netIP = nil;
@@ -70,8 +59,6 @@ NetProxy : ProxySpace {
 			metronom = nil;
 			metronomSynth = nil;
 		};
-
-		// thisfnc_onRestartClock = nil;
 
 		if(isConnected) {"\nNetProxy disconnected".postln;};
 		isConnected = false;
@@ -102,10 +89,10 @@ NetProxy : ProxySpace {
 	}
 
 	cmdPeriod {
-		"CMD period protection".warn;
-		("TempoClock.default.beats:" + TempoClock.default.beats).postln;
-		("currentEnvirnment.clock.beats:" + currentEnvironment.clock.beats).postln;
-		("metronomSynth:" + metronomSynth).postln;
+		"NetProxy cmpPeriod protection".warn;
+		("\t- tempoClock.default.beats:" + TempoClock.default.beats).postln;
+		("\t- currentEnvirnment.clock.beats:" + currentEnvironment.clock.beats).postln;
+		("\t- metronomSynth:" + metronomSynth).postln;
 		if(metronomSynth.notNil){
 			metronom.stop;
 			metronom = nil;
@@ -367,7 +354,11 @@ NetProxy : ProxySpace {
 		*/
 	}
 
-	addOnRestartClock { |function| fnc_onRestartClock = function; }
+	addOnRestartClock { |function|
+		Server.default.waitForBoot({
+			fnc_onRestartClock = function;
+		});
+	}
 	removeOnRestartClock { fnc_onRestartClock = nil; }
 
 	prSenderCheck{ |addr| if((addr.ip.asSymbol == netIP.asSymbol), { ^false; }, { ^true; } ); }
