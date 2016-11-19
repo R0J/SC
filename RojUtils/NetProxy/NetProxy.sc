@@ -26,7 +26,7 @@ NetProxy : ProxySpace {
 			proxyspace.makeTempoClock;
 			proxyspace.prMetronomDef;
 			TempoClock.setAllClocks(0, bpm/60);
-			CmdPeriod.add(proxyspace);
+			// CmdPeriod.add(proxyspace);
 			"\nNetProxy init done".postln;
 		});
 		^proxyspace;
@@ -42,7 +42,7 @@ NetProxy : ProxySpace {
 	}
 
 	disconnect {
-		CmdPeriod.removeAll;
+		// CmdPeriod.removeAll;
 		OSCdef.freeAll;
 
 		if(isConnected) { sendMsg.user_exit };
@@ -87,19 +87,24 @@ NetProxy : ProxySpace {
 
 		this.prGetBroadcastIP;
 	}
-
+	/*
 	cmdPeriod {
-		"NetProxy cmpPeriod protection".warn;
-		("\t- tempoClock.default.beats:" + TempoClock.default.beats).postln;
-		("\t- currentEnvirnment.clock.beats:" + currentEnvironment.clock.beats).postln;
-		("\t- metronomSynth:" + metronomSynth).postln;
-		if(metronomSynth.notNil){
-			metronom.stop;
-			metronom = nil;
-			metronomSynth = nil;
-			this.metro(metroQuant, metroFreq);
-		}
+	"NetProxy cmpPeriod protection".warn;
+	("\t- tempoClock.default.beats:" + TempoClock.default.beats).postln;
+	("\t- currentEnvirnment.clock.beats:" + currentEnvironment.clock.beats).postln;
+	("\t- metronomSynth:" + metronomSynth).postln;
+	if(metronomSynth.notNil){
+	metronom.stop;
+	metronom = nil;
+	metronomSynth = nil;
+	this.metro(metroQuant, metroFreq);
+	};
+
+	// Server.freeAll;
+	Server.hardFreeAll;
+	Server.resumeThreads;
 	}
+	*/
 
 	name { if(isConnected, { ^userName.asSymbol; },{ ^nil; }) }
 
@@ -147,14 +152,13 @@ NetProxy : ProxySpace {
 	}
 
 	metro {|quant = 1, freq = 800|
-
 		metroQuant = quant;
 		metroFreq = freq;
-
 		if(metronom.isNil, {
 			metronom = TempoClock.new(currentEnvironment.clock.tempo);
 			metronom.sched(currentEnvironment.clock.timeToNextBeat(quant), {
 				metronomSynth = Synth(\metronom, [\freq: freq, \metronomTrig, 1]);
+				// NodeWatcher.register(metronomSynth.asTarget);
 				("\nTempoClock.default.beats:" + TempoClock.default.beats).postln;
 				("currentEnvirnment.clock.beats:" + currentEnvironment.clock.beats).postln;
 				quant;

@@ -10,7 +10,6 @@ NodeStage {
 	var stageMultBus;
 	var stageMultSynth, fadeSynthName;
 
-	var clock;
 	var loopTask;
 	var >loopCount;
 
@@ -32,7 +31,6 @@ NodeStage {
 		timeline = Timeline.new();
 		loopTask = nil;
 		loopCount = 1;
-
 
 		this.prepareSynthDef;
 
@@ -74,7 +72,7 @@ NodeStage {
 				{ ("NodeCycle [\\" ++ oneCycleName ++ "] not found in map").warn;  ^nil; },
 				{
 					this.schedCycle(currentTrigTime, oneCycle);
-					currentTrigTime = currentTrigTime + oneCycle.duration;
+					currentTrigTime = currentTrigTime + oneCycle.cycleQuant;
 				}
 			);
 		});
@@ -94,7 +92,7 @@ NodeStage {
 	fadeIn {|time| this.setFactor(1,time); }
 	fadeOut {|time| this.setFactor(0,time); }
 
-	schedCycle {|time, nodeCycle| timeline.put(time, nodeCycle, nodeCycle.duration, nodeCycle.cycleName); }
+	schedCycle {|time, nodeCycle| timeline.put(time, nodeCycle, nodeCycle.cycleQuant, nodeCycle.cycleName); }
 
 	duration { ^timeline.duration; }
 
@@ -106,15 +104,9 @@ NodeStage {
 		if(timeline.duration > 0)
 		{
 			loopTask = Task({
-				// currentEnvironment.clock.timeToNextBeat(node.quant).wait;
-				clock = TempoClock.new(currentEnvironment.clock.tempo);
 				loops.do({
-					clock.beats = 0;
-					timeline.times.do({|oneTime|
-						timeline.get(oneTime).asArray.do({|oneCycle|
-							clock.sched(oneTime, { oneCycle.trig(stageGroup, stageMultBus); } );
-						});
-					});
+
+					timeline.play({|item| item.trig(stageGroup, stageMultBus); });
 
 					("stageName:" + stageName + "; loopCount:" + loopCount).postln;
 					loopCount = loopCount + 1;
@@ -124,12 +116,14 @@ NodeStage {
 		};
 	}
 
+	trig {
+
+	}
+
 	stop {|releaseTime = 0|
 		Task({
 			releaseTime.wait;
 			loopTask.stop;
-			clock.stop;
-			clock = nil;
 			loopTask = nil;
 			loopCount = 1;
 		}).play;

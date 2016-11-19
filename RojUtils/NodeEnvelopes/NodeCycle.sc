@@ -1,10 +1,9 @@
 NodeCycle {
 
 	var <nodeName, <cycleName;
+	var <cycleQuant;
 	var <envelopePattern;
-	var clock;
 	var <timeline;
-	var <>quant;
 
 	*new {|nodeName, cycleName = \default|
 		var nCycle = NodeComposition.getCycle(nodeName, cycleName);
@@ -17,10 +16,11 @@ NodeCycle {
 
 	init {
 		envelopePattern = IdentityDictionary.new;
-		clock = TempoClock.new(currentEnvironment.clock.tempo);
 		timeline = Timeline.new();
-		quant = nil;
+		cycleQuant = nil;
 	}
+
+	quant {|quant| cycleQuant = quant; }
 
 	set {|controlName, envPattern, time = 0|
 
@@ -52,35 +52,28 @@ NodeCycle {
 				};
 			);
 		});
-		// }
+	}
+
+	trigTimes {|controlName, envelopeName, trigTimes|
+		var eNode = NodeComposition.getEnvelope(nodeName, controlName, envelopeName);
+		trigTimes.asArray.do({|oneTime|
+			timeline.put(oneTime, eNode, eNode.duration, eNode.envelopeName);
+		});
 	}
 
 	duration { ^timeline.duration; }
 
 	trig {|targetGroup, targetBus|
-		var timeToQuant = 0;
-		if(quant.notNil) { timeToQuant = currentEnvironment.clock.timeToNextBeat(quant); };
+		// var timeToQuant = 0;
+		// if(cycleQuant.notNil) { timeToQuant = currentEnvironment.clock.timeToNextBeat(cycleQuant); };
+		// ("NodeCycle.trig.timeToQuant:" + timeToQuant).postln;
+		// ("NodeCycle.trig.currentEnvironment.clock.beats:" + currentEnvironment.clock.beats).postln;
 
-		// if(clock.notNil) { clock.stop; };
-		// clock = TempoClock.new(currentEnvironment.clock.tempo);
-		Task({
-			timeToQuant.wait;
-			clock.beats = 0;
-			// clock.clear;
-			timeline.times.do({|oneTime|
-				timeline.get(oneTime).asArray.do({|oneEnv|
-					clock.sched(oneTime, {
-						("currentEnvirnment.clock.beats:" + currentEnvironment.clock.beats).postln;
-						oneEnv.trig(targetGroup, targetBus);
-					} );
-				});
-			});
-			// clock.sched(timeline.duration, { clock.stop; });
-		}).play(currentEnvironment.clock);
+		timeline.play({|item| item.trig(targetGroup, targetBus); }, cycleQuant)
 	}
 
 	printOn { |stream|
-		stream << this.class.name << " [\\" << cycleName << ", dur:" << this.duration << "]";
+		stream << this.class.name << " [\\" << cycleName << ", qnt:" << this.cycleQuant << ", dur:" << this.duration << "]";
 	}
 
 	plot {|size = 400|
