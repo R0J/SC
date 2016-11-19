@@ -25,6 +25,16 @@ p.metro(4);
 p.bpm(127)
 
 
+(
+
+            s.latency = 0.3;
+    (
+        p.clock.sched(p.clock.timeToNextBeat(16),{ 
+            p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
+            ~tick.rebuild;
+        });
+    );
+);
 
 (
     p=ProxySpace.push(s.reboot);
@@ -36,23 +46,23 @@ p.bpm(127)
 
 (
     var synths = [];
-     p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){synths ++ synth;};});
+    p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){synths ++ synth;};});
     "fading out "+synths.last.asSymbol;
-     p[synths.last.asSymbol].clear(2);
+    p[synths.last.asSymbol].clear(2);
 )
 
 (
-//////////////////////////  FADE -> OUT -> LONG ///////////////////////////////////////////////////////
-{
-  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-}.fork;
+    //////////////////////////  FADE -> OUT -> LONG ///////////////////////////////////////////////////////
+    {
+        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+    }.fork;
 )
 
 //////////////////////////  FADE -> OUT FAST ///////////////////////////////////////////////////////
 (
-  p.clock.sched(p.clock.timeToNextBeat(32),{
-  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(0.2);};});
-});  
+    p.clock.sched(p.clock.timeToNextBeat(32),{
+        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(0.2);};});
+    });  
 );
 
 ProxyMixer.new(p,16);
@@ -182,10 +192,10 @@ p.clock.tempo_(127/60);
 ~saw.resume;
 
 (
-//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
-{
-  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-}.fork;
+    //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+    {
+        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+    }.fork;
 )
 
 (
@@ -200,10 +210,10 @@ p.clock.tempo_(127/60);
 
 
 (
-//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
-{
-  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-}.fork;
+    //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+    {
+        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+    }.fork;
 )
 // scanner synth ///////////////////////////////////////
 
@@ -491,16 +501,16 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 // perl synth ///////////////////////////////////////
 
 (
-~perl.ar(2);
-~perl.quant=32;
-~perl.fadeTime=0.001;
-~perl={
-  var mod = Duty.kr(4/~tempo,0,Dseq([1,2,1.5,1.33333],inf))  ;
-  var sig = LFSaw.ar([1,1/4,500/mod]*~tempo) ** 4 * 400;
-  sig = Perlin3.ar(sig[0],sig[1],sig[2]) * (LFSaw.ar(1/4/[1,2,3,4] * ~tempo)**2);
-  Splay.ar(sig,0.75,0.25);
-};
-~perl.play;
+    ~perl.ar(2);
+    ~perl.quant=32;
+    ~perl.fadeTime=0.001;
+    ~perl={
+        var mod = Duty.kr(4/~tempo,0,Dseq([1,2,1.5,1.33333],inf))  ;
+        var sig = LFSaw.ar([1,1/4,500/mod]*~tempo) ** 4 * 400;
+        sig = Perlin3.ar(sig[0],sig[1],sig[2]) * (LFSaw.ar(1/4/[1,2,3,4] * ~tempo)**2);
+        Splay.ar(sig,0.75,0.25);
+    };
+    ~perl.play;
 );
 ~perl.stop(4);
 ~perl.clear;
@@ -531,8 +541,8 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
         //sig= Limiter.ar(sig,0.9);
         sig = sig * env/3.9;
         sig = CompanderD.ar(sig,3/4,1,1/3,0.0002);
-	SendTrig.kr(Impulse.kr(~tempo/8),1,1);
-	//sig = Clip.ar(sig,-0.95,0.95);
+        SendTrig.kr(Impulse.kr(~tempo/8),1,1);
+        //sig = Clip.ar(sig,-0.95,0.95);
 
         Splay.ar(sig,0.05,0.25);
     };
@@ -634,7 +644,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
         ~tam.fadeTime=0.2;
         ~tam={
             var pat = [
-         //     |       |       |       |       |
+                //     |       |       |       |       |
                 1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
                 1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
             ];
@@ -658,7 +668,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
         ~zpet.quant=32;
         ~zpet.fadeTime=0.2;
         ~zpet={
-         //     |       |       |       |       |
+            //     |       |       |       |       |
             var pat = [
                 0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,
                 0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,
@@ -816,14 +826,14 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/violin.wav");
 
 
 (
-  p.clock.sched(p.clock.timeToNextBeat(32),{ 
-  (
-  //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
-  {
-    p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-  }.fork;  
-  )
-  });
+    p.clock.sched(p.clock.timeToNextBeat(32),{ 
+        (
+            //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+            {
+                p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+            }.fork;  
+        )
+    });
 );
 
 
@@ -873,10 +883,10 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/violin.wav");
 ~circular.clear(8)
 
 (
-//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
-{
-  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-}.fork;
+    //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+    {
+        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+    }.fork;
 )
 
 // moog synth , DANEGEROUS LARGE offset ///////////////////////////////////////

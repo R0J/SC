@@ -56,7 +56,7 @@ s.latency = 0.2;
         sig = NumChannels.ar(sig,2);
         ReplaceOut.ar(0,sig);
     };
-    ~master_wet.quant = 4;
+    ~master_wet.quant = 32;
     ~master_wet = {LFDNoise1.kr(~tempo/2!2).exprange(0.15,0.25);};
     ~master.map(\wet,~master_wet);
 );
@@ -90,7 +90,7 @@ s.latency = 0.2;
             ReplaceOut.ar(0,sig);
         };
 
-        ~master_wet.quant = 4;
+        ~master_wet.quant = 32;
         ~master_wet = {LFDNoise1.kr(~tempo/640!2).exprange(0.05,0.85);};
         ~master.map(\wet,~master_wet);
     );
@@ -239,20 +239,37 @@ p.clock.queue.postln
 )
 
 
-//////// STOP KICKS /////////////////////////////
+//////// FADE-OUT KICKS /////////////////////////////
 (
-    p.clock.sched(p.clock.timeToNextBeat(16),{ 
-        ~kick.clear(8);
-        ~onea.clear(8);
-        ~scanner.clear(1);
-        ~kick_one.clear(8);
-        ~k_two.clear(8);
+    p.clock.sched(p.clock.timeToNextBeat(32),{ 
+        ~kick.stop(8);
+        ~onea.stop(11);
+        ~scanner.stop(12);
+        ~kick_one.stop(13);
+        ~k_two.stop(6);
+    });
+);
+
+//////// KICK-IN GROSS /////////////////////////////
+(
+    p.clock.sched(p.clock.timeToNextBeat(64),{ 
+        ~kick.quant=0;
+        ~onea.quant=0;
+        ~scanner.quant=0;
+        ~kick_one.quant=0;
+        ~k_two.quant=0;
+
+        ~kick.play;
+        ~onea.play;
+        ~scanner.play;
+        ~kick_one.play;
+        ~k_two.play;
     });
 );
 
 //////// SUPRESS KICKS /////////////////////////////
 (
-    p.clock.sched(p.clock.timeToNextBeat(16),{ 
+    p.clock.sched(p.clock.timeToNextBeat(4),{ 
         ~kick.pause;
         ~onea.pause;
         ~scanner.pause;
@@ -261,9 +278,9 @@ p.clock.queue.postln
     });
 );
 
-//////// KICK-IN KICKS /////////////////////////////
+//////// RESUME KICKS /////////////////////////////
 (
-    p.clock.sched(p.clock.timeToNextBeat(16),{ 
+    p.clock.sched(p.clock.timeToNextBeat(4),{ 
         ~kick.resume;
         ~onea.resume;
         ~scanner.resume;
@@ -273,24 +290,10 @@ p.clock.queue.postln
 );
 
 
-
-
-
-p
-
-
-(
-    p.clock.sched(p.clock.timeToNextBeat(64),{ 
-        ~kick.play;
-        ~onea.play;
-        ~scanner.play;
-    });
-);
-
 (
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
     {
-        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(60);};});
     }.fork;  
 )
 
