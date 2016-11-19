@@ -1,7 +1,8 @@
 NodeComposition {
 	classvar <library;
 	classvar currentStage;
-classvar compositionClock;
+	classvar compositionClock;
+	classvar stageChangeTask = nil;
 
 	*initLibrary {
 		if(library.isNil) {
@@ -16,7 +17,7 @@ classvar compositionClock;
 		if(library.atPath(path).isNil)
 		{
 			library.putAtPath(path, node);
-			("Node" +  node.envirKey + "added to library").postln;
+			("NodeProxy ~" ++  node.envirKey + "added to library").postln;
 		}
 	}
 
@@ -34,7 +35,7 @@ classvar compositionClock;
 		if(library.atPath(path).isNil)
 		{
 			library.putAtPath(path, Bus.control(Server.default, 1));
-			("Control bus" + nodeEnv.controlName + " maped to node" + nodeEnv.nodeName).postln;
+			("Control bus" + nodeEnv.controlName + "mapped to NodeProxy ~" ++ nodeEnv.nodeName).postln;
 		};
 	}
 
@@ -113,7 +114,6 @@ classvar compositionClock;
 			if(cyclesFolder.notNil) {
 				cyclesFolder.sortedKeysValuesDo({|oneCycleName|
 					var oneCycle = this.getCycle(nodeName, oneCycleName);
-					// ("NodeComposition.updateTimes:" + oneCycle.envelopePattern.at(controlName.asSymbol)).postln;
 					oneCycle.set(controlName, oneCycle.envelopePattern.at(controlName.asSymbol), 0)
 				});
 			};
@@ -132,18 +132,14 @@ classvar compositionClock;
 		{
 			this.initLibrary;
 			currentStage = stageName;
+			if(stageChangeTask.notNil) { stageChangeTask.stop; };
 
-			Task({
+			stageChangeTask = Task({
 				currentEnvironment.clock.timeToNextBeat(quantOfChange).wait;
 
 				library.dictionary.keysValuesDo({|nodeName, dict|
 					var path = [nodeName.asSymbol, \stages];
-					/*
-					(
-					"nodeName:" + nodeName +
-					"\ndict:" + dict
-					).postln;
-					*/
+
 					library.atPath(path).keysValuesDo({|oneStageName, nStage|
 						if((nStage.stageName.asSymbol == stageName.asSymbol),
 							{
@@ -155,15 +151,12 @@ classvar compositionClock;
 						});
 					});
 				});
+				stageChangeTask = nil;
 			}).play;
 		};
 	}
 
 	*play {|from = 0, to = nil, loop = false|
-
-	}
-
-	playStage {|stageName, fadeTime = 0|
 
 	}
 
@@ -195,7 +188,7 @@ classvar compositionClock;
 					"\tcycles:".postln;
 					cyclesFolder.sortedKeysValuesDo({|oneCycleNames|
 						var oneCycle = library.atPath([nodeName.asSymbol,\cycles] ++ oneCycleNames.asSymbol);
-						("\t\t\\" ++ oneCycleNames ++ " -> NodeCycle [ dur:" + oneCycle.timeline.duration + "]").postln;
+						("\t\t\\" ++ oneCycleNames ++ " -> NodeCycle [ qnt:" + oneCycle.cycleQuant + "; dur:" + oneCycle.duration + "]").postln;
 						oneCycle.timeline.print(3);
 					});
 				};

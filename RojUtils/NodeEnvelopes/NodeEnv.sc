@@ -64,7 +64,7 @@ NodeEnv {
 
 		if(this.setPlot) { this.plot; };
 		NodeComposition.updateTimes(nodeName, controlName, envelopeName);
-		NodeComposition.library.postTree;
+		// NodeComposition.library.postTree;
 		^this;
 	}
 
