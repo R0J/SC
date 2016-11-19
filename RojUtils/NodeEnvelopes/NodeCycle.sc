@@ -1,9 +1,9 @@
 NodeCycle {
 
 	var <nodeName, <cycleName;
+	var <cycleQuant;
 	var <envelopePattern;
 	var <timeline;
-	var <>quant;
 
 	*new {|nodeName, cycleName = \default|
 		var nCycle = NodeComposition.getCycle(nodeName, cycleName);
@@ -17,8 +17,10 @@ NodeCycle {
 	init {
 		envelopePattern = IdentityDictionary.new;
 		timeline = Timeline.new();
-		quant = nil;
+		cycleQuant = nil;
 	}
+
+	quant {|quant| cycleQuant = quant; }
 
 	set {|controlName, envPattern, time = 0|
 
@@ -50,13 +52,13 @@ NodeCycle {
 				};
 			);
 		});
-
 	}
 
 	duration { ^timeline.duration; }
 
 	trig {|targetGroup, targetBus|
-		var timeToQuant = currentEnvironment.clock.timeToNextBeat(quant);
+		var timeToQuant = 0;
+		if(cycleQuant.notNil) { timeToQuant = currentEnvironment.clock.timeToNextBeat(cycleQuant); };
 		("NodeCycle.trig.timeToQuant:" + timeToQuant).postln;
 		("NodeCycle.trig.currentEnvironment.clock.beats:" + currentEnvironment.clock.beats).postln;
 
@@ -72,7 +74,7 @@ NodeCycle {
 	}
 
 	printOn { |stream|
-		stream << this.class.name << " [\\" << cycleName << ", dur:" << this.duration << "]";
+		stream << this.class.name << " [\\" << cycleName << ", qnt:" << this.cycleQuant << ", dur:" << this.duration << "]";
 	}
 
 	plot {|size = 400|

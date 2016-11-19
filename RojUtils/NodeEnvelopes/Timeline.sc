@@ -62,6 +62,17 @@ Timeline {
 		rest.do({|oneRest| this.put(oneRest.from, oneRest.item, oneRest.duration, oneRest.key); });
 	}
 
+	array {
+		var items = List.new();
+		this.times.do({|oneTime|
+			var arrTimebar = timeline[oneTime];
+			arrTimebar.asArray.do({|oneTimebar|
+				items.add([oneTimebar.from, oneTimebar.item]);
+			});
+		});
+		^items.asArray;
+	}
+
 	times { ^timeline.indices; }
 
 	duration {
@@ -87,14 +98,34 @@ Timeline {
 		txt.postln;
 	}
 
-	play{ |clock, function|
-		timeline.indicesDo({|oneArray, oneTime|
-			oneArray.asArray.do({|item|
-				clock.sched(item.from, {item;} );
+	play {|function = nil, startQuant = 0|  // -> example of function -> {|item| item.postln; };
+		var clock = TempoClock.default;
+		if(currentEnvironment[\tempo].notNil) { clock = currentEnvironment.clock };
+		if(function.isNil) { function = {|item| item.postln }};
+
+		timeline.array.do({|oneTime, no|
+			oneTime.asArray.do({|oneTimebar|
+				// ("oneTimebar" + oneTimebar).postln;
+				("at % -> item: %").format(oneTimebar.from, oneTimebar.item).postln;
+				clock.sched(oneTimebar.from, {
+
+					function.value(oneTimebar.item);
+					nil;
+				});
 			});
-		});
-		clock.sched(this.duration, { clock.stop; "clock stoped".postln; });
+		})
 	}
+
+	/*
+	play{ |clock, function|
+	timeline.indicesDo({|oneArray, oneTime|
+	oneArray.asArray.do({|item|
+	clock.sched(item.from, {item;} );
+	});
+	});
+	clock.sched(this.duration, { clock.stop; "clock stoped".postln; });
+	}
+	*/
 }
 
 Timebar {
