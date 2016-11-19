@@ -29,6 +29,7 @@ p.disconnect;
     (
         p.clock.sched(p.clock.timeToNextBeat(4),{ 
             p.restartClock;
+            p.moveNodeToTail(\master);
 
         });
     );
