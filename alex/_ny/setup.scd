@@ -1,4 +1,5 @@
 p=NetProxy.connect(\alex);
+p=NetProxy.push; //if i wanna play alone
 p.bpm;
 p.time;
 p.restartClock;
