@@ -157,9 +157,9 @@ p.moveNodeToTail(\master);
 
 //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
 (
-  p.clock.sched(p.clock.timeToNextBeat(32),{
-  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(0.2);};});
-});  
+    p.clock.sched(p.clock.timeToNextBeat(32),{
+        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(0.2);};});
+    });  
 );
 
 (
