@@ -69,7 +69,7 @@ NodeCycle {
 		// ("NodeCycle.trig.timeToQuant:" + timeToQuant).postln;
 		// ("NodeCycle.trig.currentEnvironment.clock.beats:" + currentEnvironment.clock.beats).postln;
 
-		timeline.play({|item| item.trig(targetGroup, targetBus); }, cycleQuant)
+		timeline.play({|item| item.trig(targetGroup, targetBus); });
 	}
 
 	printOn { |stream|

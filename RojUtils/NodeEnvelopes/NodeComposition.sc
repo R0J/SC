@@ -1,6 +1,7 @@
 NodeComposition {
 	classvar <library;
 	classvar currentStage;
+classvar compositionClock;
 
 	*initLibrary {
 		if(library.isNil) {
@@ -126,7 +127,7 @@ NodeComposition {
 		}
 	}
 
-	*stage {|stageName, fadeTime = 0, quantOfChange = 1|
+	*stage {|stageName, fadeTime = 0, quantOfChange = 16|
 		if(stageName.asSymbol != currentStage.asSymbol)
 		{
 			this.initLibrary;
@@ -159,6 +160,10 @@ NodeComposition {
 	}
 
 	*play {|from = 0, to = nil, loop = false|
+
+	}
+
+	playStage {|stageName, fadeTime = 0|
 
 	}
 
