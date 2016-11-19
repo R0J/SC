@@ -59,18 +59,10 @@ NodeCycle {
 	trig {|targetGroup, targetBus|
 		var timeToQuant = 0;
 		if(cycleQuant.notNil) { timeToQuant = currentEnvironment.clock.timeToNextBeat(cycleQuant); };
-		("NodeCycle.trig.timeToQuant:" + timeToQuant).postln;
-		("NodeCycle.trig.currentEnvironment.clock.beats:" + currentEnvironment.clock.beats).postln;
+		// ("NodeCycle.trig.timeToQuant:" + timeToQuant).postln;
+		// ("NodeCycle.trig.currentEnvironment.clock.beats:" + currentEnvironment.clock.beats).postln;
 
-		timeline.times.do({|oneTime|
-			timeline.get(oneTime).asArray.do({|oneEnv|
-				var trigTime = oneTime + timeToQuant;
-				currentEnvironment.clock.sched(trigTime, {
-					("trigTime:" + currentEnvironment.clock.beats).postln;
-					oneEnv.trig(targetGroup, targetBus);
-				} );
-			});
-		});
+		timeline.play({|item| item.trig(targetGroup, targetBus);})
 	}
 
 	printOn { |stream|

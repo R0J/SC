@@ -105,11 +105,8 @@ NodeStage {
 		{
 			loopTask = Task({
 				loops.do({
-					timeline.times.do({|oneTime|
-						timeline.get(oneTime).asArray.do({|oneCycle|
-							currentEnvironment.clock.sched(oneTime, { oneCycle.trig(stageGroup, stageMultBus); } );
-						});
-					});
+
+					timeline.play({|item| item.trig(stageGroup, stageMultBus); });
 
 					("stageName:" + stageName + "; loopCount:" + loopCount).postln;
 					loopCount = loopCount + 1;
@@ -117,6 +114,10 @@ NodeStage {
 				});
 			}).play;
 		};
+	}
+
+	trig {
+
 	}
 
 	stop {|releaseTime = 0|
