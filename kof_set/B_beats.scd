@@ -335,12 +335,14 @@ p.clock.queue.postln
       0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,
       0,0,0,1,0,0,0,1,0,0,0,1,0,1,0,1,
   ];
+
+  //var mod2 = Duty.kr(4/~tempo,0,Dseq([1,2,1.5,1.33333],inf));
   var mod = Duty.kr(16/~tempo,0,Dseq([1,2,1.5,1.33333],inf));
   var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
   var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
   var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,1.25],[8,-3]),imp * hit);
-  var sig = WhiteNoise.ar(0.2**7*env) + VarSaw.ar(50/mod+(env**20*1400),0,env**2);
-  sig = LPF.ar(sig,env**0.2*1800+800);
+  var sig = WhiteNoise.ar(0.2**7*env) + VarSaw.ar(75/mod+(env**20*1400),0,env**2) * LFNoise2.kr(1/4!2*~tempo);
+  sig = LPF.ar(sig,env**0.2*5800+800);
   sig = sig * env;
   Splay.ar(sig,0.75,0.75);
 };
