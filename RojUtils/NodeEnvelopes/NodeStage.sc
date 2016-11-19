@@ -10,7 +10,6 @@ NodeStage {
 	var stageMultBus;
 	var stageMultSynth, fadeSynthName;
 
-	var clock;
 	var loopTask;
 	var >loopCount;
 
@@ -32,7 +31,6 @@ NodeStage {
 		timeline = Timeline.new();
 		loopTask = nil;
 		loopCount = 1;
-
 
 		this.prepareSynthDef;
 
@@ -106,13 +104,10 @@ NodeStage {
 		if(timeline.duration > 0)
 		{
 			loopTask = Task({
-				// currentEnvironment.clock.timeToNextBeat(node.quant).wait;
-				clock = TempoClock.new(currentEnvironment.clock.tempo);
 				loops.do({
-					clock.beats = 0;
 					timeline.times.do({|oneTime|
 						timeline.get(oneTime).asArray.do({|oneCycle|
-							clock.sched(oneTime, { oneCycle.trig(stageGroup, stageMultBus); } );
+							currentEnvironment.clock.sched(oneTime, { oneCycle.trig(stageGroup, stageMultBus); } );
 						});
 					});
 
@@ -128,8 +123,6 @@ NodeStage {
 		Task({
 			releaseTime.wait;
 			loopTask.stop;
-			clock.stop;
-			clock = nil;
 			loopTask = nil;
 			loopCount = 1;
 		}).play;

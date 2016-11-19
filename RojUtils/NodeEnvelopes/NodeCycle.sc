@@ -2,7 +2,6 @@ NodeCycle {
 
 	var <nodeName, <cycleName;
 	var <envelopePattern;
-	var clock;
 	var <timeline;
 	var <>quant;
 
@@ -17,7 +16,6 @@ NodeCycle {
 
 	init {
 		envelopePattern = IdentityDictionary.new;
-		clock = TempoClock.new(currentEnvironment.clock.tempo);
 		timeline = Timeline.new();
 		quant = nil;
 	}
@@ -52,31 +50,25 @@ NodeCycle {
 				};
 			);
 		});
-		// }
+
 	}
 
 	duration { ^timeline.duration; }
 
 	trig {|targetGroup, targetBus|
-		var timeToQuant = 0;
-		if(quant.notNil) { timeToQuant = currentEnvironment.clock.timeToNextBeat(quant); };
+		var timeToQuant = currentEnvironment.clock.timeToNextBeat(quant);
+		("NodeCycle.trig.timeToQuant:" + timeToQuant).postln;
+		("NodeCycle.trig.currentEnvironment.clock.beats:" + currentEnvironment.clock.beats).postln;
 
-		// if(clock.notNil) { clock.stop; };
-		// clock = TempoClock.new(currentEnvironment.clock.tempo);
-		Task({
-			timeToQuant.wait;
-			clock.beats = 0;
-			// clock.clear;
-			timeline.times.do({|oneTime|
-				timeline.get(oneTime).asArray.do({|oneEnv|
-					clock.sched(oneTime, {
-						("currentEnvirnment.clock.beats:" + currentEnvironment.clock.beats).postln;
-						oneEnv.trig(targetGroup, targetBus);
-					} );
-				});
+		timeline.times.do({|oneTime|
+			timeline.get(oneTime).asArray.do({|oneEnv|
+				var trigTime = oneTime + timeToQuant;
+				currentEnvironment.clock.sched(trigTime, {
+					("trigTime:" + currentEnvironment.clock.beats).postln;
+					oneEnv.trig(targetGroup, targetBus);
+				} );
 			});
-			// clock.sched(timeline.duration, { clock.stop; });
-		}).play(currentEnvironment.clock);
+		});
 	}
 
 	printOn { |stream|
