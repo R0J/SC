@@ -112,7 +112,7 @@ p.clock.sched(p.clock.timeToNextBeat(16),{
         ];
         var mod2 = LFNoise2.kr(~tempo/160).range(20,80);
         var mod = LFDNoise1.kr(~tempo/160).range(20,80);
-        var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
+        var imp = PulseDivider.kr(~tick.kr,8,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2.5],[mod,-3.3]), imp * hit);
         var sig;
@@ -150,11 +150,11 @@ p.clock.sched(p.clock.timeToNextBeat(16),{
 (
     ~switch.ar(2);
     ~switch.clock = p.clock;
-    ~switch.quant=[16,1/4];
+    ~switch.quant=[16,0];
     ~switch.fadeTime=8.2;
     ~switch={
         var pat = [
-            0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,
+            0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,
         ];
         //         |       |       |       |       |
         var imp = PulseDivider.kr(~tick.kr,[1,2,3,4,5,6],~counter.kr%pat.size);
@@ -164,7 +164,7 @@ p.clock.sched(p.clock.timeToNextBeat(16),{
         sig = Resonz.ar(sig,[1000,2500,12500,15000,500,12500],LFDNoise1.kr(~tempo!6).range(0.01,0.9));
         sig = sig * env * LFPulse.ar(8/(1..6)*~tempo,0,1/2);
         sig = CompanderD.ar(sig,3/4,1,1/3,0.0002);
-        Splay.ar(sig,0.5,0.125,SinOsc.kr(~tempo,mul:0.24));
+        Splay.ar(sig,0.5,0.5,SinOsc.kr(~tempo,mul:0.24));
     };
     ~switch.play;
 );

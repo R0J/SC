@@ -796,7 +796,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/violin.wav");
 (
     ~violin.ar(2);
     ~violin.clock = p.clock;
-    ~violin.quant=2;
+    ~violin.quant=4;
     ~violin.fadeTime=4.02;
     ~violin={
         var speed = 1/64/[1,2,3,4] * ~tempo.kr;
