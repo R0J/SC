@@ -82,19 +82,6 @@ TempoClock.default = p.clock;
 //p.arProxyNames.postln;
 p.clock.tempo_(127/60);
 
-(
-    //s.latency=0.2;
-    p.arProxyNames.do({|synth| if(synth.asSymbol!=\master) {p[synth.asSymbol].rebuild;};});
-    ~tick.kr(1);
-    ~tick.clock = p.clock;
-    ~tick.quant=4;
-    ~counter.clock = p.clock;
-    ~counter.quant = 4;
-    ~counter = {PulseCount.kr(~tick.kr);};
-    ~tick = { Impulse.kr(~tempo*4); };
-);
-// moog synth  ///////////////////////////////////////
-
 
 
 (
@@ -480,7 +467,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 
 (
     ~high_glitch.clock = p.clock;
-    ~high_glitch.quant=[32,1/4];
+    ~high_glitch.quant=[4,1/4];
     ~high_glitch.fadeTime=0.02;
     ~high_glitch={
         var imp = PulseDivider.kr(~tick.kr,[1,2],~counter.kr);
@@ -502,7 +489,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 
 (
     ~perl.ar(2);
-    ~perl.quant=32;
+    ~perl.quant=4;
     ~perl.fadeTime=0.001;
     ~perl={
         var mod = Duty.kr(4/~tempo,0,Dseq([1,2,1.5,1.33333],inf))  ;
@@ -534,9 +521,9 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
             1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
         ];
         var mod = LFNoise2.kr(1/4*~tempo).range(20,80);
-        var imp = PulseDivider.kr(~tick.kr,2,~counter.kr%pat.size);
+        var imp = PulseDivider.kr(~tick.kr,8,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2.75],[40,-10]),imp * hit);
+        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,3.75],[40,-10]),imp * hit);
         var sig = Mix.fill(8,{|n| SinOsc.ar(33.midicps+(env**1.95*2),env**(mod+(n/2000))*8pi) + BrownNoise.ar(env**mod)});
         //sig= Limiter.ar(sig,0.9);
         sig = sig * env/3.9;
@@ -584,22 +571,31 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 ~k_two.pause;
 ~k_two.resume;
 
+//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+(
+  p.clock.sched(p.clock.timeToNextBeat(32),{
+      ~k_two.clear(1);
+      ~kick.clear(1);
+      ~onea.clear(1);
+});  
+);
+
 // hh synth ///////////////////////////////////////
 
 (
     ~hh3.ar(2);
     ~hh3.clock = p.clock;
-    ~hh3.quant=[32,1/2];
+    ~hh3.quant=[4,0];
     ~hh3.fadeTime=0.2;
     ~hh3={
         //         |       |       |       |       |
         var pat = [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,0,0,1,0,1,0];
-        var imp = PulseDivider.kr(~tick.kr,[2,2,1,1],~counter.kr);
+        var imp = PulseDivider.kr(~tick.kr,[1,4],~counter.kr);
         var hit = Select.kr(PulseCount.kr(imp)/[1,2,3,4]%pat.size,pat);
-        var env = EnvGen.ar(Env([0.01,1,0.0001],[0.005,1/8*~tempo],[60,-5]),imp * hit);
-        var sig = LFNoise1.ar(16000/[1,4,8,16]) * Crackle.ar([0.1,0.7,0.4,0.6]+env);
+        var env = EnvGen.ar(Env([0.01,1,0.0001],[0.005,1/2*~tempo],[60,-5]),imp * hit);
+        var sig = LFNoise1.ar([1600,16000]/[1,4,8,16]) * Crackle.ar([0.1,0.7,0.4,0.6]+env);
         sig = sig * env;
-        Splay.ar(sig,0.75,0.115);
+        Splay.ar(sig,0.25,0.55);
     };
     ~hh3.play;
 );
