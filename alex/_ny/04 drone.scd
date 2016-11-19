@@ -11,7 +11,7 @@
 	\instrument, \aural,
 	\amp,Prand([0.8,0.4,0.6],inf)/8,
 	\legato, 0.2,
-	\octave, Prand([[5,6],[4,3],[5,4],[3,6]],inf)-1,
+	\octave, Prand([[5,6],[4,3],[5,4],[3,6]],inf)-2,
 	\degree, Prand([[1,5],[4,6],[6,2],[2,4],[2,6],[8,2]],inf),
 	\dur, Pseq([Pn(8,20),Pn(2,20),Pn(0.5,20)],inf),
 );)
@@ -55,7 +55,7 @@
 ~oto.clear;
 ~oto.stop(fadeTime:60);
 (
-~oto.play(vol:0.1, fadeTime:4, numChannels:2, group:g);
+~oto.play(vol:0.1, fadeTime:4, numChannels:2);
 ~oto.quant_(4);)
 (~oto[0]=Pbind(
 	\instrument, \oto,
@@ -67,7 +67,7 @@
 	\dist, Pseq([Pseries(2,1,40),Pseries(400,(-1),20)],inf),
 
 );
-g=Group.new;
+
 );
 ~oto[3]=\filter->{arg in; LPF.ar(in,2800)};
 ~oto[4]=\filter->{arg in; Rotate2.ar(Mix.new(in),Mix.new(DelayN.ar(HPF.ar(in,\hpf.kr(2000)),1,0.5)),SinOsc.kr(0.25))};

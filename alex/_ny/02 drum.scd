@@ -9,7 +9,7 @@
 
 (
 ~tum01.quant_(4);
-~tum01.play(vol:0.02, fadeTime:4, numChannels:2);)
+~tum01.play(vol:0.2, fadeTime:4, numChannels:2);)
 (~tum01[0]=Pbind(
 	\instrument, \tum,
 	\amp,Pseq([
@@ -26,7 +26,7 @@
 
 );
 ~tum01[6]=\filter->{arg in; GVerb.ar(in,roomsize:40,revtime:4,earlyreflevel:0.8,mul:SinOsc.kr(1/32).range(0.01,0.4))+in};
-~tum01[12]=\filter->{arg in; LPF.ar(in, SinOsc.ar(1/64).range(2420,600))};
+~tum01[12]=\filter->{arg in; HPF.ar(in, SinOsc.ar(1/64).range(2420,600))};
 );
 ~tum01[6]=nil;
 
@@ -38,23 +38,23 @@
 
 (
 ~tum02.quant_(4);
-~tum02.play(vol:0.02, fadeTime:4, numChannels:2);)
+~tum02.play(vol:0.05, fadeTime:4, numChannels:2);)
 (~tum02[0]=Pbind(
-	\instrument, \tum,
+	\instrument, \tum2,
 	\amp,Pseq([
 		Pseq([ 1,1,0, 1,   1,0.7,1,1,  0,1,0.1,0,  0,0.8,0,1],4),
 		Pseq([ 1,0,0.6,1,  1,0.6,0,1,  0,0.5,1,0,  0,0,0,1],2),
 
 	],inf),
-	\octave,1,
+	\octave,3,
 	\degree, 1,
 	\dur, 0.25,
-	\rq, 0.02,
+	\rq, 0.8,
 	\sustain, 1.2,
 
 );
-~tum02[6]=\filter->{arg in; GVerb.ar(in,roomsize:40,revtime:4,earlyreflevel:0.8,mul:SinOsc.kr(1/32).range(0.01,0.4))+in};
-~tum02[12]=\filter->{arg in; LPF.ar(in, SinOsc.ar(1/64).range(2420,600))};
+~tum02[6]=\filter->{arg in; GVerb.ar(in,roomsize:40,revtime:0.2,earlyreflevel:0.8,mul:SinOsc.kr(1/32).range(0.01,0.4))+in};
+~tum02[12]=\filter->{arg in; HPF.ar(in, SinOsc.ar(1/64).range(200,600))};
 );
 ~tum02[6]=nil;
 
@@ -113,18 +113,18 @@
 
 (
 ~tum6.quant_(4);
-~tum6.play(vol:0.1, fadeTime:4, numChannels:2);)
+~tum6.play(vol:0.4, fadeTime:4, numChannels:2);)
 (~tum6[0]=Pbind(
-	\instrument, \tum,
+	\instrument, \tum2,
 	\amp,1,
-	\octave, 2,
+	\octave, 1,
 	\degree, 1,
-	\dur,2,
+	\dur,8,
 	\rq, 0.02,
 	\sustain, 0.4,
 
 );
-~tum6[6]=\filter->{arg in; GVerb.ar(in,roomsize:60,revtime:SinOsc.kr(1/64).range(3,0.4),mul:SinOsc.kr(1/64).range(0.01,0.4))+in};
+~tum6[6]=\filter->{arg in; GVerb.ar(in,roomsize:60,revtime:18,mul:SinOsc.kr(1/64).range(0.01,0.4))+in};
 );
 ~tum6[6]=nil;
 

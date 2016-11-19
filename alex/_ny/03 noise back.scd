@@ -8,7 +8,7 @@
 ~drujba.clear;
 ~drujba.stop(fadeTime:20);
 (
-~drujba.play(vol:0.02, fadeTime:4, numChannels:2);
+~drujba.play(vol:0.2, fadeTime:4, numChannels:2);
 ~drujba.quant_(4);)
 (~drujba[0]=Pbind(
 	\instrument, \zit,
@@ -16,19 +16,19 @@
 	\legato, 0.5,
 	\freq,80,//Prand([200,400,1200,100,65,200,400],inf),
 	\noise, 0.9,
-	\dur, Pseq([0.2],inf),
+	\dur, Pseq([Pn(0.2,40),Pn(0.2,80),Rest(4)],inf),
 );
 
 );
 (
-~drujba[6]=\filter->{arg in; Limiter.ar(GVerb.ar(in,[40,80],revtime:LFSaw.kr(1/16).range(4,40),damping:SinOsc.kr(0.125).range(0.6,0.9),mul:0.1,add:in*0.5),0.7)};
-~drujba[7]=\filter->{arg in; LPF.ar(in, SinOsc.kr(1/32).range(6400,400))};
+~drujba[6]=\filter->{arg in; Limiter.ar(GVerb.ar(in,[40,80],revtime:LFSaw.kr(1/16).range(8,40),damping:SinOsc.kr(0.125).range(0.6,0.9),mul:0.1,add:in*0.5),0.7)};
+~drujba[7]=\filter->{arg in; LPF.ar(in, SinOsc.kr(1/32).range(200,1400))};
 )
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// LEAKY NOISE
 
 
-~leaky.play(vol:0.4, numChannels:2).quant_(4);
+~leaky.play(vol:0.1, numChannels:2).quant_(4);
 (
 ~leaky[0]=Pbind(
 	\instrument, \leaky,
@@ -41,12 +41,12 @@
 
 );
 )
-~leaky[4]=\filter->{arg in; GVerb.ar(in,40,8,mul:0.4,add:in)};
+~leaky[4]=\filter->{arg in; GVerb.ar(in,40,8,mul:0.4,add:in)*SinOsc.kr(1/32).range(0.01,0.2)};
 ~leaky[4]=nil;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// CHEAP high
 
-~chaap.stop(fadeTime:20);
+~cheap.stop(fadeTime:20);
 (
 ~cheap.play(vol:0.1, numChannels:2);
 ~cheap.quant_(4);)
@@ -75,8 +75,8 @@
 ~impcont.clear;
 ~impcont.stop(freeTime:60);
 
-(t=Group.new;
-~impcont.play(vol:0.2, fadeTime:4, numChannels:2, group:t);
+(
+~impcont.play(vol:0.2, fadeTime:4, numChannels:2,);
 ~impcont.quant_(4);
 );
 (~impcont[0]=Pbind(

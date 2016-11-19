@@ -97,7 +97,7 @@ ProxySynthDef(\onion, {
 	sig=Mix.fill(15, {arg i;
 		SinOsc.ar(SinOsc.kr(LFNoise0.kr(500).range(fenv,fenv+i)).range(fenv,fenv+i),[0,i,pi],add:GrayNoise.ar(nenv))})*SinOsc.ar(fsaw);
 	sig=Pan2.ar(Limiter.ar(sig+WhiteNoise.ar(0.1),1)*amp,penv);
-sig=Mix.ar(sig);
+	sig=Mix.ar(sig);
 }).add;
 
 
@@ -139,7 +139,7 @@ ProxySynthDef(\tss, {
 	sig=AllpassN.ar(sig,0.04,0.02);
 	sig=Pan2.ar(Splay.ar(sig),pan);
 	sig=sig*env*amp;
-	sig=Mix.ar(sig);
+	sig=Mix.ar(sig!2);
 }).add;
 
 ProxySynthDef(\tss808, {
@@ -150,7 +150,7 @@ ProxySynthDef(\tss808, {
 	sig = RHPF.ar(RHPF.ar(pulse, hpf), hpf);
 	env = EnvGen.kr(Env.perc(0,release),timeScale:sustain,doneAction:2);
 	sig = Pan2.ar(Mix.new(sig*env*amp),pan);
-	sig=Mix.ar(sig);
+	sig=Mix.ar(sig!2);
 }).add;
 
 
@@ -166,7 +166,7 @@ ProxySynthDef(\ju, {
 	sig=FreeVerb.ar(sig,room:2,damp:0.1,add:sig);
 	sig=Pan2.ar(sig*env,SinOsc.kr(fenv));
 	sig=FreeVerb.ar(sig,room:2);
-sig=Mix.ar(sig);
+	sig=Mix.ar(sig);
 	sig=sig*env*amp;
 
 }).add;
@@ -198,7 +198,7 @@ ProxySynthDef(\noiserand, {
 	sig=Clip.ar(Splay.ar(sig),-1,1);
 	sig=Pan2.ar(sig, SinOsc.kr(0.25));
 	sig=sig*env*amp;
-sig=Mix.ar(sig);
+	sig=Mix.ar(sig);
 }).add;
 
 
@@ -230,7 +230,7 @@ ProxySynthDef(\oto, {
 	sig = LPF.ar(sig, [200, 400, 600, 100], lpfmul);
 	sig = tanh(sig * dist);
 	sig=sig*env*amp;
-sig=Mix.ar(sig);
+	sig=Mix.ar(sig);
 }).add;
 
 
@@ -243,7 +243,7 @@ ProxySynthDef(\noiselong, {
 	sig=DFM1.ar(WhiteNoise.ar(0.7),\freq.kr,fib(10),type:0);
 	sig=Pan2.ar(sig,SinOsc.kr(pan));
 	sig=sig*env*amp;
-sig=Mix.ar(sig);
+	sig=Mix.ar(sig);
 }).add;
 
 ProxySynthDef(\blow, {
@@ -254,7 +254,7 @@ ProxySynthDef(\blow, {
 	sig=WhiteNoise.ar(LFNoise1.kr(10).range(0.01,0.1))+PinkNoise.ar(LFNoise2.kr(4).range(0.01,0.1));
 	sig=BPF.ar(sig,[\freq.kr.lag(0.2),\freq.kr.lag(0.02),\freq.kr.lag(2)]+fib(10),LFNoise2.kr(200).range(0.001,0.01),5);
 	sig=Limiter.ar(sig*env*amp,0.8);
-sig=Mix.ar(sig);
+	sig=Mix.ar(sig);
 }).add;
 
 
@@ -267,7 +267,7 @@ ProxySynthDef(\mel, {
 	sig=sig*LFPulse.ar([13,15]);
 	sig=LPF.ar(sig,1800);
 	sig=sig*env*amp;
-sig=Mix.ar(sig);
+	sig=Mix.ar(sig);
 }).add;
 
 
@@ -280,7 +280,7 @@ ProxySynthDef(\kickfill,{
 	sig = Mix.fill(10,{|n| SinOsc.ar(\freq.kr,env**(n+10)*8pi)});
 	sig = Pan2.ar(sig * env*amp,pan);
 	Splay.ar(sig,0.75,0.25);
-	sig=Mix.ar(sig);
+	sig=Mix.ar(sig!2);
 }).add;
 
 ProxySynthDef(\kick,{
@@ -291,7 +291,7 @@ ProxySynthDef(\kick,{
 	sig = SinOsc.ar(\freq.kr,env**top*8pi);
 	sig = Pan2.ar(sig * env*amp,pan);
 	Splay.ar(sig,0.75,0.25);
-	sig=Mix.ar(sig);
+	sig=Mix.ar(sig!2);
 }).add;
 
 
@@ -304,7 +304,7 @@ ProxySynthDef(\aural, {
 	sig=SinOsc.ar(\freq.kr+LFNoise0.ar([100,160]).range(2,40).round(2));
 	sig=sig+BPF.ar(PinkNoise.ar([0.4,0.6]),\freq.kr,0.1);
 	sig=sig*env*amp;
-sig=Mix.ar(sig);
+	sig=Mix.ar(sig);
 }).add;
 
 
@@ -317,10 +317,26 @@ ProxySynthDef(\tum, {
 	env=EnvGen.kr(Env([0.5,1,0.5,0],[0.001,0.06,0.26],[-4,-2,-4]),timeScale:sustain,doneAction:2);
 	fenv= EnvGen.kr(Env([\freq.kr,\freq.kr*\top.kr(4), \freq.kr],[0.005,0.026]));
 	sig=SinOsc.ar(fenv,env**20*8pi);
-	sig=sig+BPF.ar(GrayNoise.ar(1!2),fenv,rq);
+	sig=sig+BPF.ar(GrayNoise.ar(1!2),fenv+200,rq);
 
 	sig=Pan2.ar(Splay.ar(sig)*env*amp, pan);
-sig=Mix.ar(sig);
+	sig=Mix.ar(sig);
+
+}).add;
+
+
+ProxySynthDef(\tum2, {
+	arg  sustain,  amp, pan, rq;
+	var sig, env, fenv;
+
+	env=EnvGen.kr(Env([0.5,1,0.5,0],[0.001,0.06,0.26],[-4,-2,-4]),timeScale:sustain,doneAction:2);
+	fenv= EnvGen.kr(Env([\freq.kr,\freq.kr*\top.kr(4), \freq.kr],[0.005,0.026]));
+	sig=SinOsc.ar(fenv,env**20*10);
+	sig=sig+BPF.ar(GrayNoise.ar(1!2),fenv+200,rq);
+
+	sig=Pan2.ar(Splay.ar(sig)*env*amp, pan);
+	sig=Mix.ar(sig!2);
+
 }).add;
 
 
@@ -332,8 +348,9 @@ ProxySynthDef(\bum, {
 	fenv= EnvGen.kr(Env([\freq.kr,\freq.kr*4, \freq.kr],[0.001,0.05]));
 	sig=SinOsc.ar(fenv!2+fib(10).reciprocal)+HPF.ar(GrayNoise.ar(noise!2),200);
 	sig=FreeVerb.ar(sig,mix:0.3,room:1,damp:1);
-	sig=Splay.ar(sig)*env*amp;
-sig=Mix.ar(sig);
+	sig=Mix.ar(sig);
+	sig=sig*env*amp;
+
 }).add;
 
 ProxySynthDef(\drum, {
@@ -344,7 +361,7 @@ ProxySynthDef(\drum, {
 	fenv= EnvGen.kr(Env([\freq.kr,\freq.kr*5, \freq.kr],[0.01,0.5]));
 	sig=BPF.ar(GrayNoise.ar(0.8)+BrownNoise.ar(1),fenv+fib(5).reciprocal,rq)*20;
 	sig=Clip.ar(sig*env*amp,-0.5,0.6);
-sig=Mix.ar(sig);
+	sig=Mix.ar(sig);
 }).add;
 
 
@@ -357,7 +374,7 @@ ProxySynthDef(\voice, {
 	sig=Gendy4.ar(1,1,1,1,\freq.kr,\freq.kr+100,0.01,0.05,10);
 	sig=Pan2.ar(sig,SinOsc.kr(0.125));
 	sig=sig*env*amp;
-sig=Mix.ar(sig);
+	sig=Mix.ar(sig);
 }).add;
 
 
