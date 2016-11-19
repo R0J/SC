@@ -1,22 +1,5 @@
 
 
-(
-    TempoClock.default = p.clock;
-    p.arProxyNames.do(p[_.asSymbol].rebuild);
-)
-
-
-
-(
-    ~tick.kr(1);
-    ~tick.clock = p.clock;
-    ~counter.clock = p.clock;
-    ~tick.quant=4;
-    ~counter.quant=4;
-    ~tick = { Impulse.kr(~tempo * 4); };
-    ~counter = {PulseCount.kr(~tick.kr);};
-);    
-
 
 (
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////

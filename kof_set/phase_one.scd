@@ -45,7 +45,7 @@ p.bpm(127)
 //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
 {
   p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-}.fork;  
+}.fork;
 )
 
 
@@ -114,7 +114,7 @@ ProxyMixer.new(p,16);
     ~tick.quant=4;
     ~tick = { Impulse.kr(~tempo*4); };
     ~counter = {PulseCount.kr(~tick.kr);};
-);    
+);
 
 
 p.makeTempoClock;
@@ -171,7 +171,7 @@ p.clock.tempo_(127/60);
 (
     {
         p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(30);};});
-    }.fork;  
+    }.fork;
 )
 
 // karplus.g synth ///////////////////////////////////////
@@ -211,7 +211,7 @@ p.clock.tempo_(127/60);
     ~tick.quant=4;
     ~tick = { Impulse.kr(~tempo * 4); };
     ~counter = {PulseCount.kr(~tick.kr);};
-);    
+);
 (
     s.latency=0;
     //p.clock.tempo_(120/60);
@@ -256,7 +256,7 @@ p.clock.tempo_(127/60);
 //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
 {
   p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-}.fork;  
+}.fork;
 )
 
 (
@@ -288,7 +288,7 @@ p.clock.tempo_(127/60);
 //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
 {
   p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-}.fork;  
+}.fork;
 )
 // scanner synth ///////////////////////////////////////
 
@@ -370,7 +370,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
     ~tick.quant=4;
     ~tick = { Impulse.kr(~tempo * 4); };
     ~counter = {PulseCount.kr(~tick.kr);};
-);    
+);
 
 
 // first perlin noisy synth ///////////////////////////////////////
@@ -419,7 +419,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
     {
         p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(30);};});
-    }.fork;  
+    }.fork;
 )
 
 (
@@ -428,7 +428,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
     ~tick.quant=4;
     ~tick = { Impulse.kr(~tempo * 2); };
     ~counter = {PulseCount.kr(~tick.kr);};
-);    
+);
 
 ///// second perlin noisy weirdo FFT_WEIRDO ///////////////////////////////////////////////////////////////////////////
 
@@ -494,7 +494,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
         ~master.play;
         30.wait;
         p.clean;
-    }.fork;  
+    }.fork;
 )
 
 
@@ -605,7 +605,8 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
         //sig= Limiter.ar(sig,0.9);
         sig = sig * env/3.9;
         sig = CompanderD.ar(sig,3/4,1,1/3,0.0002);
-        //sig = Clip.ar(sig,-0.95,0.95);
+	SendTrig.kr(Impulse.kr(~tempo/8),1,1);
+	//sig = Clip.ar(sig,-0.95,0.95);
 
         Splay.ar(sig,0.05,0.25);
     };
@@ -619,7 +620,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 (
     {
         p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(8);};});
-    }.fork;  
+    }.fork;
 )
 
 // two synth ///////////////////////////////////////
@@ -689,7 +690,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
     {
         p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-    }.fork;  
+    }.fork;
 )
 
 (
@@ -707,7 +708,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
         ~tam.fadeTime=0.2;
         ~tam={
             var pat = [
-         //     |       |       |       |       |  
+         //     |       |       |       |       |
                 1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
                 1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
             ];
@@ -731,7 +732,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
         ~zpet.quant=4;
         ~zpet.fadeTime=0.2;
         ~zpet={
-         //     |       |       |       |       |  
+         //     |       |       |       |       |
             var pat = [
                 0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,
                 0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,
@@ -760,7 +761,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
     {
         p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(4);};});
-    }.fork;  
+    }.fork;
 )
 
 (
@@ -840,7 +841,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
     ~tick.quant=4;
     ~tick = { Impulse.kr(~tempo * 4); };
     ~counter = {PulseCount.kr(~tick.kr);};
-);    
+);
 
 
 (
@@ -936,7 +937,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/violin.wav");
 //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
 {
   p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-}.fork;  
+}.fork;
 )
 
 // moog synth , DANEGEROUS LARGE offset ///////////////////////////////////////
