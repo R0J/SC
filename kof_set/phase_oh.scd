@@ -30,7 +30,7 @@ p.makeTempoClock;
         (
             ~tick.kr(1);
             ~tick.clock = p.clock;
-            ~tick.quant=1;
+            ~tick.quant=4;
             ~tick = { Impulse.kr(~tempo * 4); };
             ~counter = {PulseCount.kr(~tick.kr);};
         );    
@@ -38,7 +38,7 @@ p.makeTempoClock;
     );
 
     (
-        ~master.quant=2;
+        ~master.quant=4;
         ~master.play;
         ~master.fadeTime = 0.01;
         ~master = {|wet=0.35,lp=4500,hp=150,len=10,rev = 2|
@@ -99,7 +99,7 @@ p.makeTempoClock;
     p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
     ~tick.kr(1);
     ~tick.clock = p.clock;
-    ~tick.quant=2;
+    ~tick.quant=4;
     ~counter.clock = p.clock;
     ~counter.quant = 2;
     ~counter = {PulseCount.kr(~tick.kr);};
@@ -310,7 +310,7 @@ p.makeTempoClock;
 (
     ~shuttles.ar(2);
     ~shuttles.clock = p.clock;
-    ~shuttles.quant=[2];
+    ~shuttles.quant=[4];
     ~shuttles.fadeTime=4;
     ~shuttles={
         var mod = Duty.kr(4/~tempo,0,Dseq([1,2,1,4,1,1.5],inf));
@@ -345,7 +345,7 @@ p.makeTempoClock;
 (
     ~lark.ar(2);
     ~lark.clock = p.clock;
-    ~lark.quant=2;
+    ~lark.quant=4;
     ~lark.fadeTime=4;
     ~lark={
         var mod = Duty.kr(4/~tempo,0,Dseq([1,2,1.5,1.333333],inf));
@@ -372,7 +372,7 @@ p.makeTempoClock;
 (
 	~mel_tick.ar(2);
 	~mel_tick.clock = p.clock;
-	~mel_tick.quant=2;
+	~mel_tick.quant=4;
 	~mel_tick.fadeTime=32;
 	~mel_tick={
 		var f,sig,slo;

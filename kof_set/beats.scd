@@ -1,11 +1,5 @@
 
-(
-    p=ProxySpace.push(s.reboot);
-    p.makeTempoClock;
-);
 
-p.makeTempoClock;
-p.clock.tempo_(127/60);
 (
     TempoClock.default = p.clock;
     p.arProxyNames.do(p[_.asSymbol].rebuild);

@@ -111,7 +111,7 @@ ProxyMixer.new(p,16);
 (
     ~tick.kr(1);
     ~tick.clock = p.clock;
-    ~tick.quant=1;
+    ~tick.quant=4;
     ~tick = { Impulse.kr(~tempo*4); };
     ~counter = {PulseCount.kr(~tick.kr);};
 );    
@@ -141,7 +141,7 @@ p.clock.tempo_(127/60);
 (
     ~moog.ar(2);
     ~moog.clock = p.clock;
-    ~moog.quant=[2];
+    ~moog.quant=[4];
     ~moog.fadeTime=20.2;
     ~moog={
         var mul = 1;//1+2.reciprocal;
@@ -208,7 +208,7 @@ p.clock.tempo_(127/60);
 (
     ~tick.kr(1);
     ~tick.clock = p.clock;
-    ~tick.quant=1;
+    ~tick.quant=4;
     ~tick = { Impulse.kr(~tempo * 4); };
     ~counter = {PulseCount.kr(~tick.kr);};
 );    
@@ -263,7 +263,7 @@ p.clock.tempo_(127/60);
     ~sell.ar(4);
     ~sell.mold(4);
     ~sell.clock = p.clock;
-    ~sell.quant=[2];
+    ~sell.quant=[4];
     ~sell.fadeTime=4;
 
     ~sell={var t = LFTri.kr([1/1600,1/1600,[1/4,1/2,1/8,1/16]]*~tempo/400) * 1/2 + LFSaw.ar(1/4000,mul:2); Perlin3.ar(t[0],t[1],t[2]);};
@@ -295,7 +295,7 @@ p.clock.tempo_(127/60);
 (
     ~scanner.ar(2);
     ~scanner.clock = p.clock;
-    ~scanner.quant=[2,0];
+    ~scanner.quant=[4,0];
     ~scanner.fadeTime=4.2;
     ~scanner={
         //         |       |       |       |       |
@@ -340,7 +340,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
     ~smp.ar(2);
     ~smp.clock = p.clock;
 
-    ~smp.quant=[2,1/4];
+    ~smp.quant=[4,1/4];
     ~smp.fadeTime=2.02;
     ~smp={
         var mod = 1/4/[1,1.5,1.3333,2];
@@ -367,7 +367,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 (
     ~tick.kr(1);
     ~tick.clock = p.clock;
-    ~tick.quant=1;
+    ~tick.quant=4;
     ~tick = { Impulse.kr(~tempo * 4); };
     ~counter = {PulseCount.kr(~tick.kr);};
 );    
@@ -376,7 +376,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 // first perlin noisy synth ///////////////////////////////////////
 (
     ~one_weird.ar(2);
-    ~one_weird.quant=[2];
+    ~one_weird.quant=[4];
     ~one_weird.clock = p.clock;
     ~one_weird.fadeTime=8;
     ~one_weird={
@@ -391,7 +391,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 
     ~one_weird_env.ar(2);
     ~one_weird_env.clock = p.clock;
-    ~one_weird_env.quant=[2,1/2];
+    ~one_weird_env.quant=[4,1/2];
     ~one_weird_env.fadeTime=0.2;
     ~one_weird_env={
         //         |       |       |       |       |
@@ -425,7 +425,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 (
     ~tick.kr(1);
     ~tick.clock = p.clock;
-    ~tick.quant=1;
+    ~tick.quant=4;
     ~tick = { Impulse.kr(~tempo * 2); };
     ~counter = {PulseCount.kr(~tick.kr);};
 );    
@@ -504,7 +504,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 (
     ~sup.ar(2);
     ~sup.clock = p.clock;
-    ~sup.quant=[2];
+    ~sup.quant=[4];
     ~sup.fadeTime=0.02;
     ~sup={
         //         |       |       |       |       |
@@ -564,7 +564,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 
 (
     ~high_glitch.clock = p.clock;
-    ~high_glitch.quant=[2,1/8];
+    ~high_glitch.quant=[4,1/8];
     ~high_glitch.fadeTime=8.02;
     ~high_glitch={
         var imp = PulseDivider.kr(~tick.kr,[1,2],~counter.kr);
@@ -773,7 +773,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 (
     ~switch.ar(2);
     ~switch.clock = p.clock;
-    ~switch.quant=[2,1/2];
+    ~switch.quant=[4,1/2];
     ~switch.fadeTime=8.2;
     ~switch={
         var pat = [1,0,1,0,1,0,1,0,1,0,1,0,1,1,0,0].pyramid;
@@ -837,8 +837,8 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 (
     ~tick.kr(1);
     ~tick.clock = p.clock;
-    ~tick.quant=1;
-    ~tick = { Impulse.kr(~tempo * 2); };
+    ~tick.quant=4;
+    ~tick = { Impulse.kr(~tempo * 4); };
     ~counter = {PulseCount.kr(~tick.kr);};
 );    
 
@@ -853,7 +853,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
     ~counter.clock = p.clock;
     ~counter.quant = 4;
     ~counter = {PulseCount.kr(~tick.kr);};
-    ~tick = { Impulse.kr(~tempo*2); };
+    ~tick = { Impulse.kr(~tempo * 4); };
 );
 
 b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/violin.wav");
@@ -892,7 +892,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/violin.wav");
 (
     ~sw.ar(2);
     ~sw.clock = p.clock;
-    ~sw.quant=[2,1/8];
+    ~sw.quant=[4,1/8];
     ~sw.fadeTime=8.2;
     ~sw={
         var base = [72,60,48].midicps / Duty.kr(4/~tempo,0,Dseq([1,2,1.5,1.33333],inf));
@@ -944,7 +944,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/violin.wav");
 (
     ~moog2.ar(2);
     ~moog2.clock = p.clock;
-    ~moog2.quant=[2,1/4];
+    ~moog2.quant=[4,1/4];
     ~moog2.fadeTime=10.2;
     ~moog2={
         var mul = 1;

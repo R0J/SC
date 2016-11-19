@@ -12,7 +12,7 @@ p.makeTempoClock;
 (
     ~tick.kr(1);
     ~tick.clock = p.clock;
-    ~tick.quant=1;
+    ~tick.quant=4;
     ~tick = { Impulse.kr(~tempo * 2); };
     ~counter = {PulseCount.kr(~tick.kr);};
 );    
@@ -31,7 +31,7 @@ p.makeTempoClock;
 );
 
 (
-    ~master.quant=2;
+    ~master.quant=4;
     ~master.play;
     ~master.fadeTime = 0.01;
     ~master = {|wet=0.35,lp=4500,hp=150,len=10,rev = 1.5|
@@ -116,7 +116,7 @@ p.restartClock;
 (
     ~tick.kr(1);
     ~tick.clock = p.clock;
-    ~tick.quant=1;
+    ~tick.quant=4;
     ~tick = { Impulse.kr(~tempo * 2); };
     ~counter = {PulseCount.kr(~tick.kr);};
 );    
@@ -127,7 +127,7 @@ p.restartClock;
   p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
   ~tick.kr(1);
   ~tick.clock = p.clock;
-  ~tick.quant=2;
+  ~tick.quant=4;
   ~counter.clock = p.clock;
   ~counter.quant = 2;
   ~counter = {PulseCount.kr(~tick.kr);};
@@ -144,7 +144,7 @@ p.restartClock;
 (
     ~switch.ar(2);
     ~switch.clock = p.clock;
-    ~switch.quant=[2,1/4];
+    ~switch.quant=[4,1/4];
     ~switch.fadeTime=8.2;
     ~switch={
         var pat = [
@@ -175,7 +175,7 @@ p.restartClock;
 (
     ~crack.ar(2);
     ~crack.clock = p.clock;
-    ~crack.quant=[2,1/2];
+    ~crack.quant=[4,1/2];
     ~crack.fadeTime=4;
     ~crack={
         var sig = Crackle.ar(1+LFNoise2.kr(1/4).range(0.01,0.7),LFPulse.ar(5000*[1,2,1.3333,1.5])/LFSaw.ar(1/4*~tempo/2).range(1,50)) * Pulse.ar(8*~tempo/2) * LFPulse.ar(1*~tempo/2) * LFPulse.ar(7/[1,2,3,4]*~tempo/2);
@@ -326,7 +326,7 @@ p.restartClock;
 (
     ~tick.kr(1);
     ~tick.clock = p.clock;
-    ~tick.quant=1;
+    ~tick.quant=4;
     ~tick = { Impulse.kr(~tempo * 2); };
     ~counter = {PulseCount.kr(~tick.kr);};
 );   
@@ -359,7 +359,7 @@ p.restartClock;
 (
     ~flute3.ar(2);
     ~flute3.clock = p.clock;
-    ~flute3.quant=[2,1/2];
+    ~flute3.quant=[4,1/2];
     ~flute3.fadeTime=10;
     ~flute3={
         var speed = 1/8/[1,2,4] * ~tempo;
@@ -400,7 +400,7 @@ p.restartClock;
 
 (
     ~flute2.ar(2);
-    ~flute2.quant=2;
+    ~flute2.quant=4;
     ~flute2.fadeTime=8;
     ~flute2={
         var speed = 1/8/[1,2,4] * ~tempo;
@@ -431,7 +431,7 @@ p.restartClock;
 
 (
     ~flute1.ar(2);
-    ~flute1.quant=2;
+    ~flute1.quant=4;
     ~flute1.fadeTime=8;
     ~flute1={
         var speed = 1/8/[1,2,4] * ~tempo;
@@ -470,7 +470,7 @@ p.restartClock;
 
 (
     ~harm.ar(2);
-    ~harm.quant=2;
+    ~harm.quant=4;
     ~harm.fadeTime=16;
     ~harm={
         var speed = 1/16/(1..8) * ~tempo;
