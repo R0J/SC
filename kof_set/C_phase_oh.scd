@@ -325,6 +325,12 @@ p.makeTempoClock;
 );
 ~lark.clear(10);
 
+(
+//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+{
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+}.fork;  
+)
 
 // one synth ///////////////////////////////////////
 

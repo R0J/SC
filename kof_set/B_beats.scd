@@ -168,7 +168,7 @@ p.moveNodeToTail(\master);
 //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
 (
     p.clock.sched(p.clock.timeToNextBeat(32),{
-        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(0.2);};});
+        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(8);};});
     });  
 );
 
@@ -214,7 +214,7 @@ p.clock.queue.postln
 
 
 (
-    /// 8 KICK start //////////////////////////////////////////////////////// *****
+    /// 127 KICK ROZSLAPAVAK //////////////////////////////////////////////////////// *****
 
     (
         ~kick_one.ar(2);
@@ -231,7 +231,7 @@ p.clock.queue.postln
             ];
             var mod2 = LFNoise2.kr(~tempo/160!4).range(2,80);
             var mod = LFDNoise1.kr(~tempo/160!4).range(2,80);
-            var imp = PulseDivider.kr(~tick.kr,[1,4],~counter.kr%pat.size);
+            var imp = PulseDivider.kr(~tick.kr,4,~counter.kr%pat.size);
             var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
             var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2/[1,1.01,1.011,1.0111]],[2,-3.3]), imp * hit);
             var hum = LFDNoise1.kr(~tempo).range(0.0,0.01);
@@ -250,8 +250,8 @@ p.clock.queue.postln
     (
         ~onea.ar(2);
         ~onea.clock = p.clock;
-        ~onea.quant=[4,1/2];
-        ~onea.fadeTime=16.02;
+        ~onea.quant=[32,1];
+        ~onea.fadeTime=0.02;
         ~onea={
             //         |       |       |       |       |  
             var pat = [
@@ -261,11 +261,11 @@ p.clock.queue.postln
                 1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
             ];
             //////////////////////////////// 1,2,4 ici
-            var imp = PulseDivider.kr(~tick.kr,[1,4],~counter.kr);
+            var imp = PulseDivider.kr(~tick.kr,2,~counter.kr);
             var imp2 = PulseDivider.kr(~tick.kr,[4,2,1]*4,~counter.kr);
             var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
             var hit2 = Select.kr(PulseCount.kr(imp2)%pat.size,pat);
-            var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,1.5],[10,-3],curve:'exp'),imp * hit);
+            var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2.5],[10,-3],curve:'exp'),imp * hit);
             var env2 = EnvGen.ar(Env([0.001,1,0.0001],[0.002,1.5]/~tempo,[20,-3],curve:'exp'),imp2 * hit2);
             var sig = SinOsc.ar(55 + (env**50*550));
 
@@ -289,8 +289,8 @@ p.clock.queue.postln
 )
 
 (
-~kick_one.clear(16);
-~onea.clear(16);
+~kick_one.clear(8);
+~onea.clear(8);
 )
 //////// FADE-OUT KICKS /////////////////////////////
 (
@@ -609,7 +609,7 @@ p.restartClock;
     }.fork;  
 );
 
-// hh synth ///////////////////////////////////////
+// hh synth /////////////////////////////////////// ***
 
 (
     ~hh3.ar(2);
@@ -799,7 +799,7 @@ p.restartClock;
 
 
 (
-    // one synth ///////////////////////////////////////
+    // one synth /////////////////////////////////////// ***
 
     (
         ~tam.ar(2);
@@ -812,7 +812,7 @@ p.restartClock;
                 1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
                 1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
             ];
-            var imp = PulseDivider.kr(~tick.kr,4,~counter.kr%pat.size);
+            var imp = PulseDivider.kr(~tick.kr,2,~counter.kr%pat.size);
             var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
             var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2.75],[20,-3],curve:'exp'),imp * hit);
             var sig = Mix.fill(10,{|i| SinOsc.ar(55+i+(env**20*500),env**40*8pi)});
@@ -839,7 +839,7 @@ p.restartClock;
                 0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,
                 1,1,1,0,0,0,1,0,0,0,1,0,0,0,1,0,
             ];
-            var imp = PulseDivider.kr(~tick.kr,4,~counter.kr%pat.size);
+            var imp = PulseDivider.kr(~tick.kr,2,~counter.kr%pat.size);
             var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
             var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2.25],[3,-3],curve:'exp'),imp * hit);
             var sig = Mix.fill(10,{|i|SinOsc.ar(55+i,env**(40-i)*8pi)}) + Resonz.ar(WhiteNoise.ar(env**40),env**2*14000+40);
