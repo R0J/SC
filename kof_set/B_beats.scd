@@ -132,7 +132,7 @@ s.latency = 0.2;
 
 // EASY MASTER /////////////////////////////////////////////////////////////// ***
 (
-    ~master.quant=32;
+    ~master.quant=4;
     ~master.clock = p.clock;
     ~master.play;
     ~master.fadeTime = 0.01;
@@ -155,7 +155,7 @@ s.latency = 0.2;
         ReplaceOut.ar(0,sig);
     };
     ~master_wet.quant = 4;
-    ~master_wet = {LFDNoise1.kr(~tempo/2!2).exprange(0.15,0.45);};
+    ~master_wet = {LFDNoise1.kr(~tempo/2!2).exprange(0.15,0.25);};
     ~master.map(\wet,~master_wet);
 );
 
@@ -219,7 +219,7 @@ p.clock.queue.postln
     (
         ~kick_one.ar(2);
         ~kick_one.clock = p.clock;
-        ~kick_one.quant = [32,0];
+        ~kick_one.quant = [16,0];
         ~kick_one.fadeTime=0.02;
         ~kick_one={
             //         |       |       |       |       |  
@@ -231,7 +231,7 @@ p.clock.queue.postln
             ];
             var mod2 = LFNoise2.kr(~tempo/160!4).range(2,80);
             var mod = LFDNoise1.kr(~tempo/160!4).range(2,80);
-            var imp = PulseDivider.kr(~tick.kr,4,~counter.kr%pat.size);
+            var imp = PulseDivider.kr(~tick.kr,2,~counter.kr%pat.size);
             var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
             var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2/[1,1.01,1.011,1.0111]],[2,-3.3]), imp * hit);
             var hum = LFDNoise1.kr(~tempo).range(0.0,0.01);
@@ -250,7 +250,7 @@ p.clock.queue.postln
     (
         ~onea.ar(2);
         ~onea.clock = p.clock;
-        ~onea.quant=[32,1];
+        ~onea.quant=[16,1];
         ~onea.fadeTime=0.02;
         ~onea={
             //         |       |       |       |       |  
@@ -262,10 +262,10 @@ p.clock.queue.postln
             ];
             //////////////////////////////// 1,2,4 ici
             var imp = PulseDivider.kr(~tick.kr,2,~counter.kr);
-            var imp2 = PulseDivider.kr(~tick.kr,[4,2,1]*4,~counter.kr);
+            var imp2 = PulseDivider.kr(~tick.kr,2,~counter.kr);
             var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
             var hit2 = Select.kr(PulseCount.kr(imp2)%pat.size,pat);
-            var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2.5],[10,-3],curve:'exp'),imp * hit);
+            var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,1.5],[10,-3],curve:'exp'),imp * hit);
             var env2 = EnvGen.ar(Env([0.001,1,0.0001],[0.002,1.5]/~tempo,[20,-3],curve:'exp'),imp2 * hit2);
             var sig = SinOsc.ar(55 + (env**50*550));
 
@@ -280,7 +280,7 @@ p.clock.queue.postln
             sig = LPF.ar(sig,LFSaw.kr([1,2,3,4]/4*~tempo).range(190,9000));
 
             sig = CompanderD.ar(sig,3/4,1/2,1);
-            Splay.ar(sig,0.005,0.65);
+            Splay.ar(sig,0.005,0.75);
         };
         //~onea[1] = \filter -> {|sig| DWGReverb.ar(HPF.ar(LPF.ar(sig,5000),50),[5000,5050],1/2)+sig};
         ~onea.play;
@@ -541,11 +541,11 @@ NodeProxy.help;
         ~late_kick.ar(2);
         ~late_kick.clock = p.clock;
         ~late_kick.quant=[16,0];
-        ~late_kick.fadeTime=1.04;
+        ~late_kick.fadeTime=16.04;
         ~late_kick={
-            var speed = 1/[1,2,4,3]/4;//TWChoose.kr(Impulse.ar(~tempo/8),[1,2,1/2,1/4,1/8],[8,3,2,1,0.2],1).lag(1);
+            var speed = 2/[1,2,4,3]/4;//TWChoose.kr(Impulse.ar(~tempo/8),[1,2,1/2,1/4,1/8],[8,3,2,1,0.2],1).lag(1);
             var sig = SinOsc.ar(50!2+Pulse.ar(~tempo*speed*4,mul:10),Pulse.ar(~tempo*speed*2)) * LFPulse.ar(~tempo/32*speed,3/4);
-            Splay.ar(sig,0.5,0.75);
+            Splay.ar(sig,0.5,0.95);
         };
         ~late_kick.play;
     );
