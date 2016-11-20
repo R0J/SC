@@ -423,7 +423,7 @@ p.clock.queue.postln
 )
 //////// FADE-OUT KICKS /////////////////////////////
 (
-    p.clock.sched(p.clock.timeToNextBeat(32),{ 
+    p.clock.sched(p.clock.timeToNextBeat(4),{ 
         ~kick.stop(8);
         ~onea.stop(11);
         ~scanner.stop(12);
@@ -590,6 +590,34 @@ NodeProxy.help;
 ~switch.stop(10);
 ~switch.clear;
 
+// hh synth /////////////////////////////////////// ***
+
+(
+    ~hh3.ar(2);
+    ~hh3.clock = p.clock;
+    ~hh3.quant=[16,1/8];
+    ~hh3.fadeTime=0.2;
+    ~hh3={
+        //         |       |       |       |       |
+        var pat = [
+            1,1,1,1,1,0,1,0,1,0,1,0,1,1,1,1,
+            1,1,1,0,1,0,1,0,1,1,0,0,1,0,1,0,
+        ];
+        var imp = PulseDivider.kr(~tick.kr,[2,2,1,1],~counter.kr);
+        var hit = Select.kr(PulseCount.kr(imp)/[1,2,3,4]%pat.size,pat);
+        var env = EnvGen.ar(Env([0.01,1,0.0001],[0.005,1/8*~tempo],[60,-5]),imp * hit);
+        var sig = LFNoise1.ar(16000/[1,4,8,16]) * Crackle.ar([0.1,0.7,0.4,0.6]+env);
+        sig = sig * env;
+        Splay.ar(sig,0.75,0.15);
+    };
+    ~hh3.play;
+);
+~hh3.stop(4);
+~hh3.clear(40);
+~hh3.pause;
+~hh3.resume;
+
+
 
 // SWITCH WHISPERING /////////////////////////////////////// ***
 
@@ -685,62 +713,6 @@ NodeProxy.help;
 ~late_kick.clear;
 
 p.restartClock;
-
-(
-    //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
-    {
-        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(60);};});
-    }.fork;  
-)
-
-(
-    //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
-    {
-        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(2);};});
-    }.fork;  
-)
-
-(
-    //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
-    {
-        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-    }.fork;  
-)
-
-(
-    //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
-    {
-        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-    }.fork;  
-);
-
-// hh synth /////////////////////////////////////// ***
-
-(
-    ~hh3.ar(2);
-    ~hh3.clock = p.clock;
-    ~hh3.quant=[16,1/8];
-    ~hh3.fadeTime=0.2;
-    ~hh3={
-        //         |       |       |       |       |
-        var pat = [
-            1,1,1,1,1,0,1,0,1,0,1,0,1,1,1,1,
-            1,1,1,0,1,0,1,0,1,1,0,0,1,0,1,0,
-        ];
-        var imp = PulseDivider.kr(~tick.kr,[2,2,1,1],~counter.kr);
-        var hit = Select.kr(PulseCount.kr(imp)/[1,2,3,4]%pat.size,pat);
-        var env = EnvGen.ar(Env([0.01,1,0.0001],[0.005,1/8*~tempo],[60,-5]),imp * hit);
-        var sig = LFNoise1.ar(16000/[1,4,8,16]) * Crackle.ar([0.1,0.7,0.4,0.6]+env);
-        sig = sig * env;
-        Splay.ar(sig,0.75,0.15);
-    };
-    ~hh3.play;
-);
-~hh3.stop(4);
-~hh3.clear(40);
-~hh3.pause;
-~hh3.resume;
-
 (
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
     {
