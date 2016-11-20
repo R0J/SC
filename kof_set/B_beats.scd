@@ -216,6 +216,56 @@ p.clock.queue.postln
 ~karplus.resume;
 
 
+// hiss synth ///////////////////////////////////////
+
+(
+    ~hiss.ar(2);
+    ~hiss.clock = p.clock;
+    ~hiss.quant=[32,1];
+    ~hiss.fadeTime=2.2;
+    ~hiss={
+        //         |       |       |       |       |  
+        var pat = [1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1];
+        var imp = PulseDivider.kr(~tick.kr,[1,2,3],~counter.kr);
+        var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
+        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.5],[3,-3],curve:'exp'),imp * hit);
+        var sig = Crackle.ar([0.1,0.2,0.6]+env);
+        sig = sig * env;
+        Splay.ar(sig,0.25,0.195);
+    };
+    ~hiss.play;
+);
+~hiss.stop(4);
+~hiss.clear(10);
+~hiss.clear;
+(
+    p.clock.sched(p.clock.timeToNextBeat(16),{ ~hiss.clear; });
+);
+
+
+(
+    ~chaos.clock = p.clock;
+    ~chaos.quant = [16,1];
+    ~chaos.fadeTime = 1;
+    ~chaos={
+        var sig;
+        var all = [];
+        var mod = TWChoose.kr(Impulse.kr(1/32*(1..16)*~tempo),[1,2,4,8,16,1.5,1.33333,1.25,1.125],[7,6,5,4,3,2,1],1).lag(1/10);
+        sig = {ChaosGen.allSubclasses.choose.ar}!16 * (Decay.ar(Impulse.ar(2/(1..16) * ~tempo),0.2 * LFNoise2.kr(1/16*~tempo*16).range(0.7,1.2)) ** 2);
+        sig = LeakDC.ar(sig) * LFPulse.ar(8*~tempo*mod);
+        sig = CompanderD.ar(sig,3/4,1/2,1/2);
+        sig = PitchShift.ar(sig,0.05,1/mod/[1,2,1,4,1,8,1,16]);
+        //sig = TChoose.ar(Impulse.ar(~tempo*4),all);
+        Splay.ar(sig,0.92,0.05,SinOsc.ar(1*~tempo));
+    };
+    ~chaos.play;
+);
+~chaos.clear;
+(
+    p.clock.sched(p.clock.timeToNextBeat(16),{ ~chaos.clear; });
+);
+
+
 (
     /// 127 KICK ROZSLAPAVAK //////////////////////////////////////////////////////// *****
 
@@ -243,7 +293,7 @@ p.clock.queue.postln
 
             // env = DelayN.ar(env,hum,hum);
 
-            sig = Mix.fill(4,{|i|SinOsc.ar(55+(env**mod2*55),env**(mod2+i)*8pi)})/3.9;
+            sig = Mix.fill(4,{|i|SinOsc.ar(50+(env**mod2*50),env**(mod2+i)*8pi)})/3.9;
             sig = sig * env;
             Splay.ar(sig,0.005,0.5);
         };
@@ -270,7 +320,7 @@ p.clock.queue.postln
             var hit2 = Select.kr(PulseCount.kr(imp2)%pat.size,pat);
             var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,1.5],[10,-3],curve:'exp'),imp * hit);
             var env2 = EnvGen.ar(Env([0.001,1,0.0001],[0.002,1.5]/~tempo,[20,-3],curve:'exp'),imp2 * hit2);
-            var sig = SinOsc.ar(55 + (env**50*550));
+            var sig = SinOsc.ar(50 + (env**50*550));
 
             var sig2 = VarSaw.ar([60,69,64].midicps*10,0,(env2**4),mul:0.87)**LFNoise2.kr(1/16!3 * ~tempo).range(0.4,4);
 
@@ -386,12 +436,68 @@ p.clock.queue.postln
 ~k_two.resume;
 
 
+// hh synth /////////////////////////////////////// ***
+
+(
+    ~hh3.ar(2);
+    ~hh3.clock = p.clock;
+    ~hh3.quant=[16,0];
+    ~hh3.fadeTime=0.2;
+    ~hh3={
+        //         |       |       |       |       |
+        var pat = [
+            1,1,1,1,1,0,1,0,1,0,1,0,1,1,1,1,
+            1,1,1,0,1,0,1,0,1,1,0,0,1,0,1,0,
+        ];
+        var imp = PulseDivider.kr(~tick.kr,[2,2,1,1],~counter.kr);
+        var hit = Select.kr(PulseCount.kr(imp)/[1,2,3,4]%pat.size,pat);
+        var env = EnvGen.ar(Env([0.01,1,0.0001],[0.005,1/8*~tempo],[60,-5]),imp * hit);
+        var sig = LFNoise1.ar(16000/[1,4,8,16]) * Crackle.ar([0.1,0.7,0.4,0.6]+env);
+        sig = sig * env;
+        Splay.ar(sig,0.75,0.15);
+    };
+    ~hh3.play;
+);
+~hh3.stop(4);
+~hh3.clear(40);
+~hh3.pause;
+~hh3.resume;
+
+
+
+// SWITCH WHISPERING /////////////////////////////////////// ***
+
+(
+    ~switch.ar(2);
+    ~switch.clock = p.clock;
+    ~switch.quant=[16,0];
+    ~switch.fadeTime=0.2;
+    ~switch={
+        var pat = [1,0,1,0,1,0,1,0,1,0,1,0,1,1,0,0];
+        //         |       |       |       |       |
+        var imp = PulseDivider.kr(~tick.kr,[1,2,4,8],~counter.kr%pat.size);
+        var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
+        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.1*[1,2,3,4]],[3,30]),imp * hit);
+        var sig = WhiteNoise.ar(0.4!4) * Pulse.ar(1000);
+        sig = RHPF.ar(sig,[1000,2500,12500,15000,1000,500,12500],LFNoise2.kr(1/4!4 * ~tempo/2).range(0.1,0.9));
+        sig = sig * env * LFPulse.ar(1/4/(1..6)*~tempo,0,1/4);
+        sig = CompanderD.ar(sig,3/4,1,1/3,0.0002);
+        Splay.ar(sig,0.5,0.25);
+    };
+    ~switch.play;
+    //~switch[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),5000),[4001,4011]),12000)+sig;};
+);
+~switch.play;
+~switch.stop(4);
+~switch.clear;
+
+
 
 // perl synth ///////////////////////////////////////
 
 (
     ~perl.ar(2);
-    ~perl.quant=4;
+    ~perl.quant=16;
     ~perl.fadeTime=8.001;
     ~perl={
         var mod = Duty.kr(4/~tempo,0,Dseq([1,2,1.5,1.33333,1,2,1.5,1.666666],inf))  ;
@@ -589,62 +695,6 @@ NodeProxy.help;
 ~switch.clear(10);
 ~switch.stop(10);
 ~switch.clear;
-
-// hh synth /////////////////////////////////////// ***
-
-(
-    ~hh3.ar(2);
-    ~hh3.clock = p.clock;
-    ~hh3.quant=[16,1/8];
-    ~hh3.fadeTime=0.2;
-    ~hh3={
-        //         |       |       |       |       |
-        var pat = [
-            1,1,1,1,1,0,1,0,1,0,1,0,1,1,1,1,
-            1,1,1,0,1,0,1,0,1,1,0,0,1,0,1,0,
-        ];
-        var imp = PulseDivider.kr(~tick.kr,[2,2,1,1],~counter.kr);
-        var hit = Select.kr(PulseCount.kr(imp)/[1,2,3,4]%pat.size,pat);
-        var env = EnvGen.ar(Env([0.01,1,0.0001],[0.005,1/8*~tempo],[60,-5]),imp * hit);
-        var sig = LFNoise1.ar(16000/[1,4,8,16]) * Crackle.ar([0.1,0.7,0.4,0.6]+env);
-        sig = sig * env;
-        Splay.ar(sig,0.75,0.15);
-    };
-    ~hh3.play;
-);
-~hh3.stop(4);
-~hh3.clear(40);
-~hh3.pause;
-~hh3.resume;
-
-
-
-// SWITCH WHISPERING /////////////////////////////////////// ***
-
-(
-    ~switch.ar(2);
-    ~switch.clock = p.clock;
-    ~switch.quant=[16,0];
-    ~switch.fadeTime=0.2;
-    ~switch={
-        var pat = [1,0,1,0,1,0,1,0,1,0,1,0,1,1,0,0];
-        //         |       |       |       |       |
-        var imp = PulseDivider.kr(~tick.kr,[1,2,4,8],~counter.kr%pat.size);
-        var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.1*[1,2,3,4]],[3,30]),imp * hit);
-        var sig = WhiteNoise.ar(0.4!4) * Pulse.ar(1000);
-        sig = RHPF.ar(sig,[1000,2500,12500,15000,1000,500,12500],LFNoise2.kr(1/4!4 * ~tempo/2).range(0.1,0.9));
-        sig = sig * env * LFPulse.ar(1/4/(1..6)*~tempo,0,1/4);
-        sig = CompanderD.ar(sig,3/4,1,1/3,0.0002);
-        Splay.ar(sig,0.5,0.25);
-    };
-    ~switch.play;
-    //~switch[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),5000),[4001,4011]),12000)+sig;};
-);
-~switch.play;
-~switch.stop(4);
-~switch.clear;
-
 (
     p.clock.sched(p.clock.timeToNextBeat(32),{ 
         ~switch.clear;

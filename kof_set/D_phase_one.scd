@@ -423,7 +423,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
         var sig = Mix.fill(10,{|n| SinOsc.ar(33.midicps+(n/100),env**(10+(n*5))*8pi) + WhiteNoise.ar(env**4)})/2;
 
         sig = sig * env;
-        Splay.ar(sig,0.05,0.25);
+        Splay.ar(sig,0.05,0.15);
     };
     ~sup.play;
     //~sup[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),30),[4004,4014]),LFNoise2.kr(1/4!2).range(10000,17000))+sig;};
@@ -440,7 +440,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 
 (
     ~high_glitch.clock = p.clock;
-    ~high_glitch.quant=[4,1/4];
+    ~high_glitch.quant=[4,1];
     ~high_glitch.fadeTime=0.02;
     ~high_glitch={
         var imp = PulseDivider.kr(~tick.kr,[1,2],~counter.kr);
@@ -596,7 +596,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
     (
         ~tam.ar(2);
         ~tam.clock = p.clock;
-        ~tam.quant=32;
+        ~tam.quant=[16];
         ~tam.fadeTime=0.2;
         ~tam={
             var pat = [
@@ -606,8 +606,8 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
             ];
             var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
             var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-            var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2.75],[20,-3],curve:'exp'),imp * hit);
-            var sig = Mix.fill(10,{|i| SinOsc.ar(55+i+(env**20*500),env**40*8pi)});
+            var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,1.75],[20,-3],curve:'exp'),imp * hit);
+            var sig = Mix.fill(4,{|i| SinOsc.ar(50+i+(env**20*500),env**40*8pi)});
             sig = sig + (env**20*PinkNoise.ar(1!2));
             sig = sig + (env**40.5*SinOsc.ar([500,500.001]));
             sig = sig * env;
@@ -621,20 +621,18 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
     (
         ~zpet.ar(2);
         ~zpet.clock = p.clock;
-        ~zpet.quant=32;
+        ~zpet.quant=[16];
         ~zpet.fadeTime=0.2;
         ~zpet={
-            //      |       |       |       |       |
             var pat = [
+                //      |       |       |       |       |
                 0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,
                 0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,
-                0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,
-                1,1,1,0,0,0,1,0,0,0,1,0,0,0,1,0,
             ];
             var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
             var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-            var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2.25],[3,-3],curve:'exp'),imp * hit);
-            var sig = Mix.fill(10,{|i|SinOsc.ar(55+i,env**(40-i)*8pi)}) + Resonz.ar(WhiteNoise.ar(env**40),env**2*14000+40);
+            var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,1.25],[3,-3],curve:'exp'),imp * hit);
+            var sig = Mix.fill(4,{|i|SinOsc.ar(50+i,env**(40-i)*8pi)}) + Resonz.ar(WhiteNoise.ar(env**40),env**2*14000+40);
             sig = sig * env;
             sig = CompanderD.ar(sig,3/4,1,1/4);
             Splay.ar(sig,0.05,0.25);
@@ -666,7 +664,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 (
     ~switch.ar(2);
     ~switch.clock = p.clock;
-    ~switch.quant=[4,1/2];
+    ~switch.quant=[4,1];
     ~switch.fadeTime=8.2;
     ~switch={
         var pat = [1,0,1,0,1,0,1,0,1,0,1,0,1,1,0,0].pyramid;

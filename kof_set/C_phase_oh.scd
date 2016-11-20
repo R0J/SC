@@ -239,7 +239,7 @@ p.makeTempoClock;
 
 (
     ~chaos.clock = p.clock;
-    ~chaos.quant = [32,1/8];
+    ~chaos.quant = [16,1];
     ~chaos.fadeTime = 1;
     ~chaos={
         var sig;
