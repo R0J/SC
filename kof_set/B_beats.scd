@@ -785,7 +785,7 @@ p.restartClock;
 (
     ~mel_tick.ar(2);
     ~mel_tick.clock = p.clock;
-    ~mel_tick.quant=[16,1/4];
+    ~mel_tick.quant=[16,0];
     ~mel_tick.fadeTime=4.2;
     ~mel_tick={
         var f,sig,slo;
@@ -834,7 +834,7 @@ p.restartClock;
 (
     ~hiss.ar(2);
     ~hiss.clock = p.clock;
-    ~hiss.quant=[4,1/4];
+    ~hiss.quant=[16,1];
     ~hiss.fadeTime=2.2;
     ~hiss={
         //         |       |       |       |       |  
@@ -949,12 +949,12 @@ p.restartClock;
                 1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
                 1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
             ];
-            var imp = PulseDivider.kr(~tick.kr,2,~counter.kr%pat.size);
+            var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
             var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-            var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2.75],[20,-3],curve:'exp'),imp * hit);
-            var sig = Mix.fill(10,{|i| SinOsc.ar(55+i+(env**20*500),env**40*8pi)});
+            var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2],[20,-3],curve:'exp'),imp * hit);
+            var sig = Mix.fill(4,{|i| SinOsc.ar(50+i+(env**20*500),env**40*8pi)});
             sig = sig + (env**20*PinkNoise.ar(1!2));
-            sig = sig + (env**40.5*SinOsc.ar([500,500.001]));
+            sig = sig + (env**10.5*SinOsc.ar([50,500.001]));
             sig = sig * env;
             sig = CompanderD.ar(sig,3/4,1,1/4);
             Splay.ar(sig,0.05,0.25);
@@ -974,12 +974,12 @@ p.restartClock;
                 0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,
                 0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,
                 0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,
-                1,1,1,0,0,0,1,0,0,0,1,0,0,0,1,0,
+                0,0,1,0,0,0,1,0,0,0,1,0,0,1,1,1,
             ];
-            var imp = PulseDivider.kr(~tick.kr,2,~counter.kr%pat.size);
+            var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
             var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-            var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2.25],[3,-3],curve:'exp'),imp * hit);
-            var sig = Mix.fill(10,{|i|SinOsc.ar(55+i,env**(40-i)*8pi)}) + Resonz.ar(WhiteNoise.ar(env**40),env**2*14000+40);
+            var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,4],[3,-3],curve:'exp'),imp * hit);
+            var sig = Resonz.ar(WhiteNoise.ar(env**40),env**2*14000+40);
             sig = sig * env;
             sig = CompanderD.ar(sig,3/4,1,1/4);
             Splay.ar(sig,0.05,0.25);
@@ -994,6 +994,12 @@ p.restartClock;
     ~zpet.clear(5);
 )
 
+(
+//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+{
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+}.fork;  
+)
 
 
 

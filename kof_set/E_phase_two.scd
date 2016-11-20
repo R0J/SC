@@ -227,7 +227,7 @@ p.clock.sched(p.clock.timeToNextBeat(16),{
     ~menavka_deep={
         var mal = TWChoose.kr(Impulse.kr(~tempo/8/[1,2,3,4]),[4,2,8,1],[4,0.5,0.3,0.1],1);
         var basemod = TWChoose.kr(Impulse.kr(~tempo/2/[1,1.3333,1.5,2]),[1,2,4,8],[4,0.5,0.3,0.1],1);
-        var base = [33].midicps + LFDNoise1.kr(1/4!4,mul:1/2);
+        var base = 50 + LFDNoise1.kr(1/4!4,mul:1/2);
         var tmod = 1/4;//TWChoose.kr(Impulse.kr(~tempo/[1,2,3,4]!4),[1,2,1/4,1/8],[0.6,0.4,0.2,0.1],1);
         var cmod = LFDNoise1.ar(1/8!4 * ~tempo/2).range(0.25,0.95);
         var mod = LFDNoise1.ar(1/32!4 * ~tempo/2).range(0.1,8);
