@@ -407,7 +407,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 (
     ~sup.ar(2);
     ~sup.clock = p.clock;
-    ~sup.quant=[16];
+    ~sup.quant=[16,1];
     ~sup.fadeTime=0.02;
     ~sup={
         //         |       |       |       |       |
@@ -419,7 +419,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
         ];
         var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.000001,1,0.0001],[1.00002,0.005],[3,-3]),imp * hit);
+        var env = EnvGen.ar(Env([0.000001,1,0.0001],[0.95,0.05],[3,-3]),imp * hit);
         var sig = Mix.fill(10,{|n| SinOsc.ar(33.midicps+(n/100),env**(10+(n*5))*8pi) + WhiteNoise.ar(env**4)})/2;
 
         sig = sig * env;
@@ -462,7 +462,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 
 (
     ~perl.ar(2);
-    ~perl.quant=4;
+    ~perl.quant=[16];
     ~perl.fadeTime=0.001;
     ~perl={
         var mod = Duty.kr(4/~tempo,0,Dseq([1,2,1.5,1.33333],inf))  ;
@@ -495,9 +495,9 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
             1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
         ];
         var mod = LFNoise2.kr(1/4*~tempo).range(20,80);
-        var imp = PulseDivider.kr(~tick.kr,8,~counter.kr%pat.size);
+        var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,3.75],[40,-10]),imp * hit);
+        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,3],[40,-10]),imp * hit);
         var sig = Mix.fill(8,{|n| SinOsc.ar(33.midicps+(env**1.95*2),env**(mod+(n/2000))*8pi) + BrownNoise.ar(env**mod)});
         //sig= Limiter.ar(sig,0.9);
         sig = sig * env/3.9;
@@ -505,7 +505,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
         SendTrig.kr(Impulse.kr(~tempo/8),1,1);
         //sig = Clip.ar(sig,-0.95,0.95);
 
-        Splay.ar(sig,0.05,0.25);
+        Splay.ar(sig,0.05,0.95);
     };
     ~kick.play;
 );
@@ -531,10 +531,10 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
         //         |       |       |       |       |
         var mod = LFNoise2.kr(1/4*~tempo).range(20,80);
         var pat = [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,1,1,1];
-        var imp = PulseDivider.kr(~tick.kr,[2,2,1,4],~counter.kr);
+        var imp = PulseDivider.kr(~tick.kr,1,~counter.kr);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.00001],[0.002,1],[10,-3]),imp * hit);
-        var sig = SinOsc.ar(33.midicps+(env**(mod*2)*LFNoise1.kr(1/32!4).range(50,350)),env**mod*8pi);
+        var sig = SinOsc.ar(50+(env**(mod*2)*LFNoise1.kr(1/32!4).range(50,350)),env**mod*8pi);
         sig = sig * env;
         Splay.ar(sig,0.25,0.67);
     };
