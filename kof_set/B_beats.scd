@@ -81,7 +81,7 @@ s.latency = 0.2;
         var sig = In.ar([0,1]);
         var orig = sig;
         var fx,low,high,mid;
-        
+
         low = CompanderD.ar(LPF.ar(sig,LFNoise2.kr(1/4!2*~tempo).range(100,800)),9/10,1,1/2);
         mid = CompanderD.ar(BPF.ar(sig,LFNoise2.kr(1/8!2*~tempo).range(500,4500),1/2),9/10,1,1/2);
         high = CompanderD.ar(HPF.ar(sig,LFNoise2.kr(1/16!2*~tempo).range(3000,10000)),9/10,1,1/2);
@@ -102,7 +102,7 @@ s.latency = 0.2;
     ~master_wet.quant = 4;
     ~master_wet = {LFDNoise1.kr(~tempo/160!2).exprange(0.15,0.35);};
     ~master.map(\wet,~master_wet);
-//    p.moveNodeToTail(\master);
+    //    p.moveNodeToTail(\master);
 );
 
 // DEEP MASTER //////////////////////////////////////////////////////////// ***
@@ -162,7 +162,7 @@ s.latency = 0.2;
         sig = NumChannels.ar(sig,2);
         ReplaceOut.ar(0,sig);
     };
-p.moveNodeToTail(\master);
+    p.moveNodeToTail(\master);
 );
 
 
@@ -194,7 +194,7 @@ p.moveNodeToTail(\master);
     ~master_wet.quant = 4;
     ~master_wet = {LFDNoise1.kr(~tempo/2!2).exprange(0.15,0.25);};
     ~master.map(\wet,~master_wet);
-p.moveNodeToTail(\master);
+    p.moveNodeToTail(\master);
 );
 
 
@@ -300,10 +300,10 @@ p.clock.queue.postln
 );
 
 (
-//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
-{
-  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-}.fork;  
+    //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+    {
+        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+    }.fork;  
 )
 // MAIN KICK /////////////////////////////////////// *****
 
@@ -316,10 +316,10 @@ p.clock.queue.postln
         //         |       |       |       |       |
         var mod = LFNoise2.kr(1/16*~tempo).range(30,80);
         var pat = [
-            1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
-            1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
-            1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
-            1,0,0,0,1,0,0,0,1,0,0,0,1,1,1,1,
+            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
+            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
+            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
+            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,1,1,1,
         ];
         var imp = PulseDivider.kr(~tick.kr,1,~counter.kr);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
@@ -338,36 +338,36 @@ p.clock.queue.postln
 ~kick_one.resume;
 
 (
-~kick_one.clear(8);
-~onea.clear(8);
-~high_kick.clear(16);
-~saw_kick.clear(8);
+    ~kick_one.clear(8);
+    ~onea.clear(8);
+    ~high_kick.clear(16);
+    ~saw_kick.clear(8);
 )
 
 // high_kick synth /////////////////////////////////////// ***
 
 (
-~high_kick.ar(2);
-~high_kick.clock = p.clock;
-~high_kick.quant=[16,0];
-~high_kick.fadeTime=0.2;
-~high_kick={
-  //        |       |       |       |       |  
-  var pat = [
-      0,0,0,1,0,0,0,0,0,0,0,0,1,0,1,0,
-      0,0,0,1,0,0,0,0,0,0,0,0,1,0,1,0,
-      0,0,0,1,0,0,0,0,0,0,0,0,1,0,1,0,
-      0,0,0,1,0,0,0,0,0,0,0,0,1,1,1,1,
-  ];
-  var mod = Duty.kr(16/~tempo,0,Dseq([1,2,1.5,1.33333],inf));
-  var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
-  var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-  var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.25],[8,-3]),imp * hit);
-  var sig = BrownNoise.ar(0.4**4*env) + SinOsc.ar(40*mod+(env**20*1400),env**20*8pi);
-  sig = sig * env;
-  Splay.ar(sig,0.75,0.25);
-};
-~high_kick.play;
+    ~high_kick.ar(2);
+    ~high_kick.clock = p.clock;
+    ~high_kick.quant=[16,0];
+    ~high_kick.fadeTime=0.2;
+    ~high_kick={
+        //        |       |       |       |       |  
+        var pat = [
+            0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0,
+            0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0,
+            0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0,
+            0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0,
+        ];
+        var mod = Duty.kr(16/~tempo,0,Dseq([1,2,1.5,1.33333],inf));
+        var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
+        var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
+        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.25],[8,-3]),imp * hit);
+        var sig = BrownNoise.ar(0.4**4*env) + SinOsc.ar(400*mod+(env**20*1400),env**20*8pi);
+        sig = sig * env;
+        Splay.ar(sig,0.75,0.25);
+    };
+    ~high_kick.play;
 );
 ~high_kick.stop(4);
 ~high_kick.pause;
@@ -377,40 +377,40 @@ p.clock.queue.postln
 // high_kick synth /////////////////////////////////////// ***
 
 (
-~saw_kick.ar(2);
-~saw_kick.clock = p.clock;
-~saw_kick.quant=[16,0];
-~saw_kick.fadeTime=0.2;
-~saw_kick={
-  //        |       |       |       |       |  
-  var pat = [
-      0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
-      0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
-      0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
-      0,0,0,0, 0,0,0,0, 0,0,0,0, 1,1,1,1,
-  ];
+    ~saw_kick.ar(2);
+    ~saw_kick.clock = p.clock;
+    ~saw_kick.quant=[16,0];
+    ~saw_kick.fadeTime=0.2;
+    ~saw_kick={
+        //        |       |       |       |       |  
+        var pat = [
+            0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+            0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+            0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+            0,0,0,0, 0,0,0,0, 0,0,0,0, 1,1,1,1,
+        ];
 
-  //var mod2 = Duty.kr(4/~tempo,0,Dseq([1,2,1.5,1.33333],inf));
-  var mod = Duty.kr(16/~tempo,0,Dseq([1,2,1.5,1.33333],inf));
-  var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
-  var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-  var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.25],[8,-3]),imp * hit);
-  var sig = WhiteNoise.ar(0.2**7*env) + VarSaw.ar(50+(env**20*1400),0,env**2) ** LFNoise2.kr(1/400!2*~tempo).range(0.7,2);
-  sig = LPF.ar(sig,env**0.2*5800+800);
-  sig = sig * env;
-  Splay.ar(sig,0.75,0.15);
-};
-~saw_kick.play;
+        //var mod2 = Duty.kr(4/~tempo,0,Dseq([1,2,1.5,1.33333],inf));
+        var mod = Duty.kr(16/~tempo,0,Dseq([1,2,1.5,1.33333],inf));
+        var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
+        var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
+        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.25],[8,-3]),imp * hit);
+        var sig = WhiteNoise.ar(0.2**7*env) + VarSaw.ar(50+(env**20*1400),0,env**2) ** LFNoise2.kr(1/400!2*~tempo).range(0.7,2);
+        sig = LPF.ar(sig,env**0.2*5800+800);
+        sig = sig * env;
+        Splay.ar(sig,0.75,0.15);
+    };
+    ~saw_kick.play;
 );
 ~saw_kick.stop(4);
 ~saw_kick.pause;
 ~saw_kick.resume;
 
 (
-//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
-{
-  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-}.fork;  
+    //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+    {
+        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+    }.fork;  
 )
 
 // hh synth /////////////////////////////////////// ***
@@ -423,13 +423,16 @@ p.clock.queue.postln
     ~hh3={
         //         |       |       |       |       |
         var pat = [
-            1,1,1,1,1,0,1,0,1,0,1,0,1,1,1,1,
-            1,1,1,0,1,0,1,0,1,1,0,0,1,0,1,0,
+            1,0,1,0, 1,0,1,0, 1,0,1,0, 0,0,0,0,
+            1,0,1,0, 1,0,1,0, 1,0,1,0, 0,1,0,1,
+            1,0,1,0, 1,0,1,0, 1,0,1,0, 0,0,0,0,
+            1,0,1,0, 1,0,1,0, 1,0,1,0, 1,1,1,1,
+
         ];
-        var imp = PulseDivider.kr(~tick.kr,[2,2,1,1],~counter.kr);
+        var imp = PulseDivider.kr(~tick.kr,1,~counter.kr);
         var hit = Select.kr(PulseCount.kr(imp)/[1,2,3,4]%pat.size,pat);
-        var env = EnvGen.ar(Env([0.01,1,0.0001],[0.005,1/8*~tempo],[60,-5]),imp * hit);
-        var sig = LFNoise1.ar(16000/[1,4,8,16]) * Crackle.ar([0.1,0.7,0.4,0.6]+env);
+        var env = EnvGen.ar(Env([0.01,1,0.0001],[0.005,1/8/[1,2,3,4]],[80,-5]),imp * hit);
+        var sig = LFNoise1.ar(22000*LFNoise0.kr(1/4*~tempo/2!4).range(0.5,1)) * Crackle.ar([0.1,0.7,0.4,0.6]+env);
         sig = sig * env;
         Splay.ar(sig,0.75,0.15);
     };
@@ -450,8 +453,13 @@ p.clock.queue.postln
     ~switch.quant=[16,0];
     ~switch.fadeTime=0.2;
     ~switch={
-        var pat = [1,0,1,0,1,0,1,0,1,0,1,0,1,1,0,0];
-        //         |       |       |       |       |
+    //         |       |       |       |       |
+    var pat = [
+        0,0,1,0, 0,0,0,0, 0,0,1,0, 0,0,0,0,
+        0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+        0,0,1,0, 0,0,0,0, 0,0,1,0, 0,0,0,0,
+        0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+    ];
         var imp = PulseDivider.kr(~tick.kr,[1,2,4,8],~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.1*[1,2,3,4]],[3,30]),imp * hit);
@@ -477,11 +485,11 @@ p.clock.queue.postln
     ~perl.quant=16;
     ~perl.fadeTime=8.001;
     ~perl={
-        var mod = Duty.kr(4/~tempo,0,Dseq([1,2,1.5,1.33333,1,2,1.5,1.666666],inf))  ;
+        var mod = Duty.kr(4/~tempo*2,0,Dseq([1,2,1.5,1.33333,1,2,1.5,1.666666],inf))  ;
         var sig = LFSaw.ar([1/16,1/4,500/mod]*~tempo) ** LFNoise2.kr(1/400).range(0.9,4) * 40 + LFSaw.ar(1/5000,mul:4);
         var pan = LeakDC.ar(sig);
         sig = Perlin3.ar(sig[0],sig[1],sig[2]) * (LFSaw.ar(1/4/[1,2,3,4] * ~tempo)**2);
-        sig = LPF.ar(sig,LFDNoise1.kr(1/4!2 * ~tempo).range(500,15000));
+        sig = LPF.ar(sig,LFDNoise1.kr(1/16!2 * ~tempo/2).range(500,15000));
         Splay.ar(sig,0.75,0.05,pan);
     };
     ~perl.play;
@@ -493,16 +501,16 @@ p.clock.queue.postln
 
 
 (
-//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
-{
-  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-}.fork;  
+    //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+    {
+        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+    }.fork;  
 )
 
 (
-~kick_one.clear(8);
-~onea.clear(8);
-~high_kick.clear(16);
+    ~kick_one.clear(8);
+    ~onea.clear(8);
+    ~high_kick.clear(16);
 )
 //////// FADE-OUT KICKS /////////////////////////////
 (
@@ -512,7 +520,7 @@ p.clock.queue.postln
         ~scanner.stop(12);
         ~kick_one.stop(13);
         ~k_two.stop(6);
-      ~high_kick.stop(16);
+        ~high_kick.stop(16);
     });
 );
 
@@ -718,10 +726,10 @@ NodeProxy.help;
 
 
 (
-//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
-{
-  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-}.fork;  
+    //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+    {
+        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+    }.fork;  
 )
 
 ~modem.clear(16);
@@ -972,10 +980,10 @@ p.restartClock;
 )
 
 (
-//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
-{
-  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-}.fork;  
+    //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+    {
+        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+    }.fork;  
 )
 
 
