@@ -215,7 +215,7 @@ p.makeTempoClock;
 (
     ~hiss.ar(2);
     ~hiss.clock = p.clock;
-    ~hiss.quant=[32,1/2];
+    ~hiss.quant=[32,1];
     ~hiss.fadeTime=2.2;
     ~hiss={
         //         |       |       |       |       |  

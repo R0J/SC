@@ -308,10 +308,10 @@ p.clock.queue.postln
 ~high_kick={
   //        |       |       |       |       |  
   var pat = [
-      0,0,0,1,0,0,0,0,0,0,0,0,1,1,1,1,
+      0,0,0,1,0,0,0,0,0,0,0,0,1,0,1,0,
+      0,0,0,1,0,0,0,0,0,0,0,0,1,0,1,0,
       0,0,0,1,0,0,0,0,0,0,0,0,1,0,1,0,
       0,0,0,1,0,0,0,0,0,0,0,0,1,1,1,1,
-      0,0,0,1,0,0,0,0,0,0,0,0,1,0,1,0,
   ];
   var mod = Duty.kr(16/~tempo,0,Dseq([1,2,1.5,1.33333],inf));
   var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
@@ -352,7 +352,7 @@ p.clock.queue.postln
   var sig = WhiteNoise.ar(0.2**7*env) + VarSaw.ar(50+(env**20*1400),0,env**2) ** LFNoise2.kr(1/400!2*~tempo).range(0.7,2);
   sig = LPF.ar(sig,env**0.2*5800+800);
   sig = sig * env;
-  Splay.ar(sig,0.75,0.75);
+  Splay.ar(sig,0.75,0.15);
 };
 ~saw_kick.play;
 );
@@ -658,11 +658,13 @@ NodeProxy.help;
     }.fork;  
 )
 
+
+//////////////// DSL 14K MODEM EMULATOR x) /////////////////////////////////
 (
     (
         ~modem.ar(2);
         ~modem.clock = p.clock;
-        ~modem.quant=[16,0];
+        ~modem.quant=[16,1];
         ~modem.fadeTime=8;
         ~modem={
             var mod = Duty.kr(128/~tempo*(1..16),0,Dseq([1,2,1.5,1.33333,4,8,1,1,1,1,1,1],inf));

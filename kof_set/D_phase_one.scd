@@ -164,7 +164,7 @@ p.clock.tempo_(127/60);
         var pat = [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
         var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.0001],[16/~tempo*2,0.05],[30,-10]),imp * hit);
+        var env = EnvGen.ar(Env([0.001,1,0.0001],[16,0.05],[30,-10]),imp * hit);
         var sig = [] ++ LFSaw.ar([60.midicps/4,72.midicps*8/mod],mul:[1,0.1,0.05]) ++ (SinOsc.ar(84.midicps*16,mul:0.1) * Pulse.ar(8*~tempo.kr));
         sig = sig.flat;
         sig = sig * env;
@@ -252,7 +252,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
     ~smp.ar(2);
     ~smp.clock = p.clock;
 
-    ~smp.quant=[4,1/4];
+    ~smp.quant=[16,1];
     ~smp.fadeTime=2.02;
     ~smp={
         var mod = 1/4/[1,1.5,1.3333,2];
@@ -279,7 +279,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 // first perlin noisy synth ///////////////////////////////////////
 (
     ~one_weird.ar(2);
-    ~one_weird.quant=[32];
+    ~one_weird.quant=[16];
     ~one_weird.clock = p.clock;
     ~one_weird.fadeTime=8;
     ~one_weird={
@@ -294,7 +294,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 
     ~one_weird_env.ar(2);
     ~one_weird_env.clock = p.clock;
-    ~one_weird_env.quant=[4,1/2];
+    ~one_weird_env.quant=[16];
     ~one_weird_env.fadeTime=0.2;
     ~one_weird_env={
         //         |       |       |       |       |
@@ -314,7 +314,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 
 );
 ~one_weird_env.stop(4);
-~one_weird_env.clear(10);
+~one_weird_env.clear;
 ~one_weird_env.pause;
 ~one_weird_env.resume;
 
@@ -423,7 +423,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
         var sig = Mix.fill(10,{|n| SinOsc.ar(33.midicps+(n/100),env**(10+(n*5))*8pi) + WhiteNoise.ar(env**4)})/2;
 
         sig = sig * env;
-        Splay.ar(sig,0.05,0.5);
+        Splay.ar(sig,0.05,0.25);
     };
     ~sup.play;
     //~sup[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),30),[4004,4014]),LFNoise2.kr(1/4!2).range(10000,17000))+sig;};
@@ -525,7 +525,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 (
     ~k_two.ar(2);
     ~k_two.clock = p.clock;
-    ~k_two.quant=[32];
+    ~k_two.quant=[16,0];
     ~k_two.fadeTime=0.2;
     ~k_two={
         //         |       |       |       |       |
@@ -559,7 +559,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 (
     ~hh3.ar(2);
     ~hh3.clock = p.clock;
-    ~hh3.quant=[4,0];
+    ~hh3.quant=[4,1];
     ~hh3.fadeTime=0.2;
     ~hh3={
         //         |       |       |       |       |
@@ -577,20 +577,6 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 ~hh3.clear(40);
 ~hh3.pause;
 ~hh3.resume;
-
-(
-    s.latency=0;
-    //p.clock.tempo_(120/60);
-    p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
-    ~tick.kr(1);
-    ~tick.clock = p.clock;
-    ~tick.quant=4;
-    ~counter.clock = p.clock;
-    ~counter.quant = 4;
-    ~counter = {PulseCount.kr(~tick.kr);};
-    ~tick = { Impulse.kr(~tempo*2); };
-);
-
 
 (
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
@@ -618,7 +604,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
                 1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
                 1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
             ];
-            var imp = PulseDivider.kr(~tick.kr,4,~counter.kr%pat.size);
+            var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
             var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
             var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2.75],[20,-3],curve:'exp'),imp * hit);
             var sig = Mix.fill(10,{|i| SinOsc.ar(55+i+(env**20*500),env**40*8pi)});
@@ -645,7 +631,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
                 0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,
                 1,1,1,0,0,0,1,0,0,0,1,0,0,0,1,0,
             ];
-            var imp = PulseDivider.kr(~tick.kr,4,~counter.kr%pat.size);
+            var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
             var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
             var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2.25],[3,-3],curve:'exp'),imp * hit);
             var sig = Mix.fill(10,{|i|SinOsc.ar(55+i,env**(40-i)*8pi)}) + Resonz.ar(WhiteNoise.ar(env**40),env**2*14000+40);
