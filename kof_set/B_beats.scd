@@ -44,7 +44,7 @@ s.latency = 0.2;
 
 // BRIGHT MASTER ////////////////////////////////////////////////////////// ****
 (
-    ~master.quant=32;
+    ~master.quant=16;
     ~master.clock = p.clock;
     ~master.play;
     ~master.fadeTime = 0.01;
@@ -75,7 +75,7 @@ s.latency = 0.2;
 (
 
     (
-        ~master.quant=32;
+        ~master.quant=16;
         ~master.play;
         ~master.fadeTime = 0.01;
         ~master = {|wet=0.35,lp=7500,hp=250,len=2,rev = 8|
@@ -134,7 +134,7 @@ p.moveNodeToTail(\master);
 
 // EASY MASTER /////////////////////////////////////////////////////////////// ***
 (
-    ~master.quant=4;
+    ~master.quant=16;
     ~master.clock = p.clock;
     ~master.play;
     ~master.fadeTime = 0.01;
@@ -189,7 +189,7 @@ p.clock.queue.postln
 (
     ~karplus.ar(2);
     ~karplus.clock = p.clock;
-    ~karplus.quant=[32];
+    ~karplus.quant=[16];
     ~karplus.fadeTime=4;
     ~karplus={
         var pat = 1/4/[1,2,3,4] * ~tempo.kr;
@@ -221,7 +221,7 @@ p.clock.queue.postln
 (
     ~hiss.ar(2);
     ~hiss.clock = p.clock;
-    ~hiss.quant=[32,1];
+    ~hiss.quant=[16,1];
     ~hiss.fadeTime=2.2;
     ~hiss={
         //         |       |       |       |       |  
@@ -367,7 +367,7 @@ p.clock.queue.postln
   var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
   var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
   var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.25],[8,-3]),imp * hit);
-  var sig = BrownNoise.ar(0.4**4*env) + SinOsc.ar(100/mod+(env**20*1400),env**20*8pi);
+  var sig = BrownNoise.ar(0.4**4*env) + VarSaw.ar(100/mod+(env**20*1400),0.1,env**20*8pi);
   sig = sig * env;
   Splay.ar(sig,0.75,0.25);
 };
@@ -541,7 +541,7 @@ p.clock.queue.postln
 
 //////// KICK-IN GROSS /////////////////////////////
 (
-    p.clock.sched(p.clock.timeToNextBeat(32),{ 
+    p.clock.sched(p.clock.timeToNextBeat(16),{ 
         ~kick.quant=0;
         ~onea.quant=0;
         ~scanner.quant=0;
@@ -714,7 +714,7 @@ NodeProxy.help;
     (
         ~modem.ar(2);
         ~modem.clock = p.clock;
-        ~modem.quant=[16,1];
+        ~modem.quant=[16,0];
         ~modem.fadeTime=8;
         ~modem={
             var mod = Duty.kr(128/~tempo*(1..16),0,Dseq([1,2,1.5,1.33333,4,8,1,1,1,1,1,1],inf));
@@ -732,12 +732,20 @@ NodeProxy.help;
             sig = (sig * LFSaw.ar(~tempo/[1,2,3,4,5,6,7,8]*2,0,1/2));
             sig = (sig * Pulse.ar(~tempo/[1,2,3,4,5,6,7,8])) + sig;
             sig = (sig * LFPulse.ar(~tempo/[1,2,3,4,5,6,7,8]/2)/3) + sig;
-            sig = OnePole.ar(sig,LFSaw.ar(4*~tempo)**2);
+            sig = OnePole.ar(sig,LFTri.ar([4,3,2,1]*~tempo/2)**0.9);
             Splay.ar(sig,0.75,0.15,SinOsc.kr(1/4/[1,2,3,4]*~tempo));
         };
         ~modem.play;
     );
 );
+
+
+(
+//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+{
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+}.fork;  
+)
 
 ~modem.clear(16);
 
@@ -768,11 +776,11 @@ p.restartClock;
 (
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
     {
-        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(40);};});
     }.fork;  
 )
 
-// one synth ///////////////////////////////////////
+// DEEP SOUNDS ///////////////////////////////////////
 
 (
     ~mel_tick.ar(2);
@@ -807,7 +815,7 @@ p.restartClock;
 (
     ~crack.ar(2);
     ~crack.clock = p.clock;
-    ~crack.quant=[4,1/2];
+    ~crack.quant=[16,1/2];
     ~crack.fadeTime=4;
     ~crack={
         var sig = Crackle.ar(1+LFNoise2.kr(1/4).range(0.01,0.7),LFPulse.ar(5000*[1,2,1.3333,1.5])/LFSaw.ar(1/4*~tempo/2).range(1,50)) * Pulse.ar(8*~tempo/2) * LFPulse.ar(1*~tempo/2) * LFPulse.ar(7/[1,2,3,4]*~tempo/2);
@@ -871,7 +879,7 @@ p.restartClock;
 (
     ~shuttles.ar(2);
     ~shuttles.clock = p.clock;
-    ~shuttles.quant=[4];
+    ~shuttles.quant=[16];
     ~shuttles.fadeTime=4;
     ~shuttles={
         var mod = Duty.kr(4/~tempo,0,Dseq([1,2,1,4,1,1.5],inf));
@@ -898,7 +906,7 @@ p.restartClock;
 
 (
     ~perlin.ar(2);
-    ~perlin.quant=32;
+    ~perlin.quant=[16];
     ~perlin.fadeTime=2;
     ~perlin={
         var speed = ~tempo/2;
@@ -933,7 +941,7 @@ p.restartClock;
     (
         ~tam.ar(2);
         ~tam.clock = p.clock;
-        ~tam.quant=32;
+        ~tam.quant=[16];
         ~tam.fadeTime=0.2;
         ~tam={
             var pat = [
@@ -958,7 +966,7 @@ p.restartClock;
     (
         ~zpet.ar(2);
         ~zpet.clock = p.clock;
-        ~zpet.quant=32;
+        ~zpet.quant=[16];
         ~zpet.fadeTime=0.2;
         ~zpet={
             //     |       |       |       |       |
