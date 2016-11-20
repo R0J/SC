@@ -1,6 +1,8 @@
 NodeComposition {
 	classvar <library;
 	classvar currentStage;
+	classvar compositionClock;
+	classvar stageChangeTask = nil;
 
 	*initLibrary {
 		if(library.isNil) {
@@ -15,7 +17,7 @@ NodeComposition {
 		if(library.atPath(path).isNil)
 		{
 			library.putAtPath(path, node);
-			("Node" +  node.envirKey + "added to library").postln;
+			("NodeProxy ~" ++  node.envirKey + "added to library").postln;
 		}
 	}
 
@@ -33,7 +35,7 @@ NodeComposition {
 		if(library.atPath(path).isNil)
 		{
 			library.putAtPath(path, Bus.control(Server.default, 1));
-			("Control bus" + nodeEnv.controlName + " maped to node" + nodeEnv.nodeName).postln;
+			("Control bus" + nodeEnv.controlName + "mapped to NodeProxy ~" ++ nodeEnv.nodeName).postln;
 		};
 	}
 
@@ -112,7 +114,6 @@ NodeComposition {
 			if(cyclesFolder.notNil) {
 				cyclesFolder.sortedKeysValuesDo({|oneCycleName|
 					var oneCycle = this.getCycle(nodeName, oneCycleName);
-					// ("NodeComposition.updateTimes:" + oneCycle.envelopePattern.at(controlName.asSymbol)).postln;
 					oneCycle.set(controlName, oneCycle.envelopePattern.at(controlName.asSymbol), 0)
 				});
 			};
@@ -126,23 +127,19 @@ NodeComposition {
 		}
 	}
 
-	*stage {|stageName, fadeTime = 0, quantOfChange = 1|
+	*stage {|stageName, fadeTime = 0, quantOfChange = 16|
 		if(stageName.asSymbol != currentStage.asSymbol)
 		{
 			this.initLibrary;
 			currentStage = stageName;
+			if(stageChangeTask.notNil) { stageChangeTask.stop; };
 
-			Task({
+			stageChangeTask = Task({
 				currentEnvironment.clock.timeToNextBeat(quantOfChange).wait;
 
 				library.dictionary.keysValuesDo({|nodeName, dict|
 					var path = [nodeName.asSymbol, \stages];
-					/*
-					(
-					"nodeName:" + nodeName +
-					"\ndict:" + dict
-					).postln;
-					*/
+
 					library.atPath(path).keysValuesDo({|oneStageName, nStage|
 						if((nStage.stageName.asSymbol == stageName.asSymbol),
 							{
@@ -154,6 +151,7 @@ NodeComposition {
 						});
 					});
 				});
+				stageChangeTask = nil;
 			}).play;
 		};
 	}
@@ -190,7 +188,7 @@ NodeComposition {
 					"\tcycles:".postln;
 					cyclesFolder.sortedKeysValuesDo({|oneCycleNames|
 						var oneCycle = library.atPath([nodeName.asSymbol,\cycles] ++ oneCycleNames.asSymbol);
-						("\t\t\\" ++ oneCycleNames ++ " -> NodeCycle [ dur:" + oneCycle.timeline.duration + "]").postln;
+						("\t\t\\" ++ oneCycleNames ++ " -> NodeCycle [ qnt:" + oneCycle.cycleQuant + "; dur:" + oneCycle.duration + "]").postln;
 						oneCycle.timeline.print(3);
 					});
 				};

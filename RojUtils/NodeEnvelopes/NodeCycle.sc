@@ -22,55 +22,22 @@ NodeCycle {
 
 	quant {|quant| cycleQuant = quant; }
 
-	set {|controlName, envPattern, time = 0|
-
-		var stream = envPattern.asStream;
-		var currentTrigTime = time;
-
-		case
-		{ stream.isKindOf(Routine) } { envelopePattern.put(controlName.asSymbol, stream.all); } // Pseq([\aaa, \bbb], 3) ++ \ccc
-		{ stream.isKindOf(Symbol) }	{ envelopePattern.put(controlName.asSymbol, stream.asArray); }
-		{ stream.isKindOf(Integer) } { envelopePattern.put(controlName.asSymbol, stream.asSymbol.asArray); }
-		{ stream.isKindOf(String) }	{ envelopePattern.put(controlName.asSymbol, stream.asSymbol.asArray); }
-		;
-
-		// ("controlName:" + controlName + "; stream:" + stream).postln;
-
-		// remove old keys
-		envelopePattern.at(controlName.asSymbol).do({|oneEnvelopeName|
-			timeline.removeKeys(oneEnvelopeName);
-		});
-
-		// add new keys
-		envelopePattern.at(controlName.asSymbol).do({|oneEnvelopeName|
-			var oneEnv = NodeComposition.getEnvelope(nodeName, controlName, oneEnvelopeName);
-			if(oneEnv.isNil,
-				{ ("NodeEnv [\\" ++ controlName ++ "\\" ++ envPattern ++ "] not found in map").warn;  ^nil; },
-				{
-					timeline.put(currentTrigTime, oneEnv, oneEnv.duration, oneEnv.envelopeName);
-					currentTrigTime = currentTrigTime + oneEnv.duration;
-				};
-			);
-		});
-	}
-
-	trigTimes {|controlName, envelopeName, trigTimes|
+	set {|controlName, envelopeName, trigTimes|
 		var eNode = NodeComposition.getEnvelope(nodeName, controlName, envelopeName);
-		trigTimes.asArray.do({|oneTime|
-			timeline.put(oneTime, eNode, eNode.duration, eNode.envelopeName);
-		});
+		if(eNode.isNil,
+			{ ("NodeEnv [\\" ++ controlName ++ "\\" ++ envelopeName ++ "] not found in map").warn;  ^this; },
+			{
+				timeline.removeKeys(envelopeName);
+				trigTimes.asArray.do({|oneTime|
+					timeline.put(oneTime, eNode, eNode.duration, eNode.envelopeName);
+				});
+			}
+		);
 	}
 
 	duration { ^timeline.duration; }
 
-	trig {|targetGroup, targetBus|
-		// var timeToQuant = 0;
-		// if(cycleQuant.notNil) { timeToQuant = currentEnvironment.clock.timeToNextBeat(cycleQuant); };
-		// ("NodeCycle.trig.timeToQuant:" + timeToQuant).postln;
-		// ("NodeCycle.trig.currentEnvironment.clock.beats:" + currentEnvironment.clock.beats).postln;
-
-		timeline.play({|item| item.trig(targetGroup, targetBus); }, cycleQuant)
-	}
+	trig {|targetGroup, targetBus| timeline.play({|item| item.trig(targetGroup, targetBus); });	}
 
 	printOn { |stream|
 		stream << this.class.name << " [\\" << cycleName << ", qnt:" << this.cycleQuant << ", dur:" << this.duration << "]";

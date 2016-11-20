@@ -20,6 +20,7 @@
 
 ~bumwoosh[30]=\filter->{arg in; FreeVerb.ar(in,room:2,damp:0.7,add:in)*LFSaw.kr([3,1]).lag(0.2)};
 ~bumwoosh[31]=\filter-> {arg in; Limiter.ar(GVerb.ar(in,120,[4,6],0.7,mul:0.7,add:in),0.6)};
+~bumwoosh[33]==\filter->{arg in; HPF.ar(in,200)};
 
 )
 
@@ -28,13 +29,13 @@
 ~sweepnoise.clear;
 ~sweepnoise.stop(fadeTime:20);
 (
-~sweepnoise.play(vol:0.06, fadeTime:4, numChannels:2);
+~sweepnoise.play(vol:0.4, fadeTime:4, numChannels:2);
 ~sweepnoise.quant_(4);)
 (
 ~sweepnoise[0]=Pbind(
 	\instrument, \noisek,
-	\dur,Prand([8,16,32],inf),
-	\sustain, 8,
+	\dur,Prand([16,32],inf),
+	\sustain, 6,
 	\octave,9,
 	\degree, [2,6],
 	\panpos, Pseq([-1,1],inf),
@@ -46,10 +47,11 @@
 
 
 ~sweepnoise[30]=\filter->{arg in; GVerb.ar(in,[80,60],[10,20],maxroomsize:120,add:in,mul:0.8)+in};
+~sweepnoise[35]=\filter->{arg in; HPF.ar(in,200)};
 ~sweepnoise[32]=nil;
 )
 
-
+p.gui;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// ONION 16/32 rand sustain 2
 
@@ -59,17 +61,20 @@
 ~onion.play(vol:0.06, fadeTime:4, numChannels:2);
 ~onion.quant_(4);)
 (
-~onion[0]=Pbind(\instrument, \onion,
-	\dur, Prand([16,32],inf)/2,
-	\sustain,2,
+~onion[0]=Pbind(
+	\instrument, \onion,
+	\dur, Prand([16,32],inf),
+	\sustain,1.5,
 	\freq, 65,
 	\amp, 0.2,
 	\fsaw, Prand([2,4,10,80,60],inf),
 );
-~onion[30]=\filter->{arg in; GVerb.ar(in,[80,60],[4,3],maxroomsize:120,add:in)};)
+~onion[30]=\filter->{arg in; GVerb.ar(in,[80,60],[4,3],maxroomsize:120,add:in)};
+~onion[33]==\filter->{arg in; HPF.ar(in,200)};
+)
 
 
-
+p.gui;
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// IMP SHORT  16sec/ 0.4 legato
@@ -78,8 +83,8 @@
 ~imps.stop(freeTime:60);
 
 (
-x=Group.new;
-~imps.play(vol:6, fadeTime:4, numChannels:2, group:x);
+
+~imps.play(vol:1, fadeTime:4, numChannels:2);
 ~imps.quant_(4););
 (~imps[0]=Pbind(
 	\instrument, \imp,
@@ -93,6 +98,7 @@ x=Group.new;
 ~imps[3]=\filter->{arg in; Limiter.ar(LPF.ar(in,\lpf3.kr(2000,2)),0.7)};
 ~imps[4]=\set->Pbind(\args, [\lpf3], \dur,4,\lpf3, Pseq([820,600,400,1200,400,600,820]+200,inf));
 ~imps[5]=\filter->{arg in; GVerb.ar(in,[180,120],[4,6],mul:0.8,maxroomsize:200)+in};
+~imps[8]=\filter->{arg in; HPF.ar(in, 200)};
 )
 ~imps[5]=nil;
 
