@@ -31,23 +31,25 @@ p.makeTempoClock;
 );
 
 (
-    ~master.quant=32;
+    ~master.quant=16;
     ~master.play;
     ~master.fadeTime = 0.01;
-    ~master = {|wet=0.35,lp=4500,hp=150,len=10,rev = 1.5|
+    ~master = {|wet=0.35,lp=4500,hp=250,len=10,rev = 1.5|
         var sig = In.ar([0,1]);
         var orig = sig;
         var fx,low,high,mid;
         //fx = Limiter.ar(sig,0.95);
         
         //sig = CombN.ar(sig,1/50,1/50,1);
-        low = CompanderD.ar(LPF.ar(sig,LFNoise2.kr(1/4!2*~tempo).range(100,800)),3/4,1,1/2);
-        mid = CompanderD.ar(BPF.ar(sig,LFNoise2.kr(1/8!2*~tempo).range(500,4500),1/2),3/4,1,1/2);
-        high = CompanderD.ar(HPF.ar(sig,LFNoise2.kr(1/16!2*~tempo).range(3000,10000)),3/4,1,1/2);
-        sig = CompanderD.ar((high+mid+low).flat,3/4,1/1.4,1/1.2); 
+        low = CompanderD.ar(LPF.ar(sig,LFNoise2.kr(1/4!2*~tempo).range(100,800)),9/10,1,1/2);
+        mid = CompanderD.ar(BPF.ar(sig,LFNoise2.kr(1/8!2*~tempo).range(500,4500),1/2),9/10,1,1/2);
+        high = CompanderD.ar(HPF.ar(sig,LFNoise2.kr(1/16!2*~tempo).range(3000,10000)),9/10,1,1/2);
+        sig = CompanderD.ar((high+mid+low).flat,9/10,1,1/1.2); 
         //sig = Compander.ar(sig,3/4,1/2,1/3);
         orig = sig;
-        fx = LPF.ar(sig,lp);
+        fx = LPF.ar(sig,lp).distort;
+        fx = LPF.ar(fx,lp);
+        fx = HPF.ar(fx,hp);
         fx = HPF.ar(fx,hp);
         fx = DWGReverb.ar(NumChannels.ar(fx,2),[5000,5010],1/len)/rev;
         sig = SelectX.ar(wet,[orig,fx]);
@@ -57,7 +59,7 @@ p.makeTempoClock;
     };
 
     ~master_wet.quant = 4;
-    ~master_wet = {LFDNoise1.kr(~tempo/4!2).exprange(0.05,0.35);};
+    ~master_wet = {LFDNoise1.kr(~tempo/16!2).exprange(0.05,0.35);};
     ~master.map(\wet,~master_wet);
 //    p.moveNodeToTail(\master);
 );
@@ -260,8 +262,8 @@ p.clock.sched(p.clock.timeToNextBeat(16),{
 (
     ~menavka_deep_mod.ar(2);
     ~menavka_deep_mod.clock = p.clock;
-    ~menavka_deep_mod.quant=[32];
-    ~menavka_deep_mod.fadeTime=8;
+    ~menavka_deep_mod.quant=[16];
+    ~menavka_deep_mod.fadeTime=16;
     ~menavka_deep_mod={
         var mal = TWChoose.kr(Impulse.kr(~tempo/8/[1,2,3,4]),[4,2,8,1],[4,0.5,0.3,0.1],1);
         var basemod = TWChoose.kr(Impulse.kr(~tempo/2/[1,1.3333,1.5,2]),[1,2,4,8],[4,0.5,0.3,0.1],1);
@@ -290,7 +292,7 @@ p.clock.sched(p.clock.timeToNextBeat(16),{
 (
     ~menavka.ar(2);
     ~menavka.clock = p.clock;
-    ~menavka.quant=[32,1/2];
+    ~menavka.quant=[16,0];
     ~menavka.fadeTime=16;
     ~menavka={
         var tmod = 1/16;//TWChoose.kr(Impulse.kr(~tempo/[1,2,3,4]!4),[1,2,1/4,1/8],[0.6,0.4,0.2,0.1],1);
@@ -332,7 +334,7 @@ p.clock.sched(p.clock.timeToNextBeat(16),{
 (
     ~flute3.ar(2);
     ~flute3.clock = p.clock;
-    ~flute3.quant=[32,1/2];
+    ~flute3.quant=[16];
     ~flute3.fadeTime=10;
     ~flute3={
         var speed = 1/8/[1,2,4] * ~tempo;
@@ -373,7 +375,7 @@ p.clock.sched(p.clock.timeToNextBeat(16),{
 
 (
     ~flute2.ar(2);
-    ~flute2.quant=32;
+    ~flute2.quant=16;
     ~flute2.fadeTime=8;
     ~flute2={
         var speed = 1/8/[1,2,4] * ~tempo;
@@ -404,7 +406,7 @@ p.clock.sched(p.clock.timeToNextBeat(16),{
 
 (
     ~flute1.ar(2);
-    ~flute1.quant=32;
+    ~flute1.quant=16;
     ~flute1.fadeTime=8;
     ~flute1={
         var speed = 1/8/[1,2,4] * ~tempo;
