@@ -435,7 +435,7 @@ p.clock.queue.postln
 
 //////// KICK-IN GROSS /////////////////////////////
 (
-    p.clock.sched(p.clock.timeToNextBeat(64),{ 
+    p.clock.sched(p.clock.timeToNextBeat(32),{ 
         ~kick.quant=0;
         ~onea.quant=0;
         ~scanner.quant=0;

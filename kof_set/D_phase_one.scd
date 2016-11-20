@@ -159,12 +159,12 @@ p.clock.tempo_(127/60);
     ~saw.quant=[32];
     ~saw.fadeTime=8.2;
     ~saw={
-        var mod = Duty.kr([4,16,64]*8/~tempo.kr,0,Dseq([1,2,1.5,1.33333],inf));
+        var mod = Duty.kr(16/~tempo.kr*2,0,Dseq([1,2,1.5,1.33333],inf));
         //         |       |       |       |       |
-        var pat = [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0];
-        var imp = PulseDivider.kr(~tick.kr,[4,16,64]*8,~counter.kr%pat.size);
+        var pat = [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+        var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.0001],[[4,16,64]/~tempo*4,0.05],[30,-10]),imp * hit);
+        var env = EnvGen.ar(Env([0.001,1,0.0001],[16/~tempo*2,0.05],[30,-10]),imp * hit);
         var sig = [] ++ LFSaw.ar([60.midicps/4,72.midicps*8/mod],mul:[1,0.1,0.05]) ++ (SinOsc.ar(84.midicps*16,mul:0.1) * Pulse.ar(8*~tempo.kr));
         sig = sig.flat;
         sig = sig * env;
