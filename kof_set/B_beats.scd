@@ -279,7 +279,7 @@ p.clock.queue.postln
 
 (
     ~chaos.clock = p.clock;
-    ~chaos.quant = [16,1];
+    ~chaos.quant = [16,0];
     ~chaos.fadeTime = 1;
     ~chaos={
         var sig;
@@ -305,81 +305,37 @@ p.clock.queue.postln
   p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
 }.fork;  
 )
+// MAIN KICK /////////////////////////////////////// *****
 
 (
-    /// 127 KICK ROZSLAPAVAK //////////////////////////////////////////////////////// *****
-
-    (
-        ~kick_one.ar(2);
-        ~kick_one.clock = p.clock;
-        ~kick_one.quant = [16,0];
-        ~kick_one.fadeTime=0.02;
-        ~kick_one={
-            //         |       |       |       |       |  
-            var pat = [
-                1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
-                1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
-                1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
-                1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,
-            ];
-            var mod2 = LFNoise2.kr(~tempo/160!4).range(2,80);
-            var mod = LFDNoise1.kr(~tempo/160!4).range(2,80);
-            var imp = PulseDivider.kr(~tick.kr,2,~counter.kr%pat.size);
-            var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-            var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2/[1,1.01,1.011,1.0111]],[2,-3.3]), imp * hit);
-            var hum = LFDNoise1.kr(~tempo).range(0.0,0.01);
-            var sig;
-            env = env ** LFNoise1.kr(1/64!4).range(0.07,1.6);
-
-            // env = DelayN.ar(env,hum,hum);
-
-            sig = Mix.fill(4,{|i|SinOsc.ar(50+(env**mod2*50),env**(mod2+i)*8pi)})/3.9;
-            sig = sig * env;
-            Splay.ar(sig,0.005,0.5);
-        };
-        ~kick_one.play;
-    );
-
-    (
-        ~onea.ar(2);
-        ~onea.clock = p.clock;
-        ~onea.quant=[16,1];
-        ~onea.fadeTime=0.02;
-        ~onea={
-            //         |       |       |       |       |  
-            var pat = [
-                1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
-                1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
-                1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
-                1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
-            ];
-            //////////////////////////////// 1,2,4 ici
-            var imp = PulseDivider.kr(~tick.kr,2,~counter.kr);
-            var imp2 = PulseDivider.kr(~tick.kr,2,~counter.kr);
-            var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-            var hit2 = Select.kr(PulseCount.kr(imp2)%pat.size,pat);
-            var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,1.5],[10,-3],curve:'exp'),imp * hit);
-            var env2 = EnvGen.ar(Env([0.001,1,0.0001],[0.002,1.5]/~tempo,[20,-3],curve:'exp'),imp2 * hit2);
-            var sig = SinOsc.ar(50 + (env**50*550));
-
-            var sig2 = VarSaw.ar([60,69,64].midicps*10,0,(env2**4),mul:0.87)**LFNoise2.kr(1/16!3 * ~tempo).range(0.4,4);
-
-            sig = sig * env;
-
-            // kvileni //////////////////
-            //sig = sig + (sig2 * env2);
-
-            sig =  HPF.ar(sig,20);
-            sig = LPF.ar(sig,LFSaw.kr([1,2,3,4]/4*~tempo).range(190,9000));
-
-            sig = CompanderD.ar(sig,3/4,1/2,1);
-            Splay.ar(sig,0.005,0.25);
-        };
-        //~onea[1] = \filter -> {|sig| DWGReverb.ar(HPF.ar(LPF.ar(sig,5000),50),[5000,5050],1/2)+sig};
-        ~onea.play;
-    );
-
-)
+    ~kick_one.ar(2);
+    ~kick_one.clock = p.clock;
+    ~kick_one.quant=[16];
+    ~kick_one.fadeTime=0.2;
+    ~kick_one={
+        //         |       |       |       |       |
+        var mod = LFNoise2.kr(1/16*~tempo).range(30,80);
+        var pat = [
+            1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
+            1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
+            1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
+            1,0,0,0,1,0,0,0,1,0,0,0,1,1,1,1,
+        ];
+        var imp = PulseDivider.kr(~tick.kr,1,~counter.kr);
+        var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
+        var env = EnvGen.ar(Env([0.001,1,0.00001],[0.002,1.0],[20,-3]),imp * hit);
+        var sig = SinOsc.ar(40+(env**8*20),env**mod*8pi);
+        sig = sig + (LPF.ar(BrownNoise.ar(1!2),1500) * (env**mod));
+        sig = sig * env;
+        sig = sig.distort;
+        Splay.ar(sig,0.01,0.95);
+    };
+    ~kick_one.play;
+);
+~kick_one.stop(4);
+~kick_one.clear(8);
+~kick_one.pause;
+~kick_one.resume;
 
 (
 ~kick_one.clear(8);
@@ -407,7 +363,7 @@ p.clock.queue.postln
   var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
   var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
   var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.25],[8,-3]),imp * hit);
-  var sig = BrownNoise.ar(0.4**4*env) + VarSaw.ar(100/mod+(env**20*1400),0.1,env**20*8pi);
+  var sig = BrownNoise.ar(0.4**4*env) + SinOsc.ar(40*mod+(env**20*1400),env**20*8pi);
   sig = sig * env;
   Splay.ar(sig,0.75,0.25);
 };
@@ -438,7 +394,7 @@ p.clock.queue.postln
   var mod = Duty.kr(16/~tempo,0,Dseq([1,2,1.5,1.33333],inf));
   var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
   var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-  var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,1.25],[8,-3]),imp * hit);
+  var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.25],[8,-3]),imp * hit);
   var sig = WhiteNoise.ar(0.2**7*env) + VarSaw.ar(50+(env**20*1400),0,env**2) ** LFNoise2.kr(1/400!2*~tempo).range(0.7,2);
   sig = LPF.ar(sig,env**0.2*5800+800);
   sig = sig * env;
@@ -449,38 +405,6 @@ p.clock.queue.postln
 ~saw_kick.stop(4);
 ~saw_kick.pause;
 ~saw_kick.resume;
-
-// MAIN KICK /////////////////////////////////////// *****
-
-(
-    ~k_two.ar(2);
-    ~k_two.clock = p.clock;
-    ~k_two.quant=[16];
-    ~k_two.fadeTime=0.2;
-    ~k_two={
-        //         |       |       |       |       |
-        var mod = LFNoise2.kr(1/16*~tempo).range(30,80);
-        var pat = [
-            1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
-            1,0,0,0,1,0,0,0,1,0,0,0,1,0,1,0,
-            1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
-            1,0,0,0,1,0,0,0,1,0,0,0,1,1,1,1,
-        ];
-        var imp = PulseDivider.kr(~tick.kr,1,~counter.kr);
-        var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.00001],[0.002,1.0],[20,-3]),imp * hit);
-        var sig = SinOsc.ar(40+(env**8*20),env**mod*8pi);
-        sig = sig + (LPF.ar(BrownNoise.ar(1!2),1500) * (env**mod));
-        sig = sig * env;
-        sig = sig.distort;
-        Splay.ar(sig,0.01,0.95);
-    };
-    ~k_two.play;
-);
-~k_two.stop(4);
-~k_two.clear(8);
-~k_two.pause;
-~k_two.resume;
 
 (
 //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
