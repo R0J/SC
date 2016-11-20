@@ -360,6 +360,32 @@ p.clock.queue.postln
 ~saw_kick.pause;
 ~saw_kick.resume;
 
+// two synth ///////////////////////////////////////
+
+(
+    ~k_two.ar(2);
+    ~k_two.clock = p.clock;
+    ~k_two.quant=[16];
+    ~k_two.fadeTime=0.2;
+    ~k_two={
+        //         |       |       |       |       |
+        var mod = LFNoise2.kr(1/4*~tempo).range(20,80);
+        var pat = [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,1,1,1];
+        var imp = PulseDivider.kr(~tick.kr,[2,2,1,4],~counter.kr);
+        var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
+        var env = EnvGen.ar(Env([0.001,1,0.00001],[0.002,4],[10,-3]),imp * hit);
+        var sig = SinOsc.ar(33.midicps+(env**(mod*2)*LFNoise1.kr(1/32!4).range(50,350)),env**mod*8pi);
+        sig = sig * env;
+        Splay.ar(sig,0.25,0.67);
+    };
+    ~k_two.play;
+);
+~k_two.stop(4);
+~k_two.clear(8);
+~k_two.pause;
+~k_two.resume;
+
+
 
 // perl synth ///////////////////////////////////////
 
@@ -673,32 +699,6 @@ p.restartClock;
         p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(2);};});
     }.fork;  
 )
-
-
-// two synth ///////////////////////////////////////
-
-(
-    ~k_two.ar(2);
-    ~k_two.clock = p.clock;
-    ~k_two.quant=[16];
-    ~k_two.fadeTime=0.2;
-    ~k_two={
-        //         |       |       |       |       |
-        var mod = LFNoise2.kr(1/4*~tempo).range(20,80);
-        var pat = [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,1,1,1];
-        var imp = PulseDivider.kr(~tick.kr,[2,2,1,4],~counter.kr);
-        var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.00001],[0.002,4],[10,-3]),imp * hit);
-        var sig = SinOsc.ar(33.midicps+(env**(mod*2)*LFNoise1.kr(1/32!4).range(50,350)),env**mod*8pi);
-        sig = sig * env;
-        Splay.ar(sig,0.25,0.67);
-    };
-    ~k_two.play;
-);
-~k_two.stop(4);
-~k_two.clear(8);
-~k_two.pause;
-~k_two.resume;
 
 (
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
