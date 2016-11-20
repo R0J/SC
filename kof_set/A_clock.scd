@@ -1,14 +1,14 @@
+p.disconnect;
 p = NetProxy.connect();
 
 p.bpm;
-p.metro(1,1500);
+p.metro(4,1500);
 p.bpm(127);
 
 p.players;
 p.time;
 p.makeTempoClock;
 
-p.disconnect;
 
 
 
@@ -25,11 +25,16 @@ p.disconnect;
 
     ~tick = { var imp = Impulse.kr(~tempo.kr * 4); SendTrig.kr(PulseDivider.kr(imp,16), 0, ~tempo.kr ); imp;  };
     ~counter = {PulseCount.kr(~tick.kr);};
+            p.moveNodeToTail(\master);
+);
+
+
+(
+    
     p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
     (
         p.clock.sched(p.clock.timeToNextBeat(4),{ 
             p.restartClock;
-            p.moveNodeToTail(\master);
 
         });
     );

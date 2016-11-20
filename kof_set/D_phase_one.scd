@@ -386,7 +386,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
     //~a_env[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),50),[4002,4012]),1600+LFSaw.kr(1/32!2).range(0,10000))+sig;};
 );
 ~a_env.stop(4);
-~a_env.clear;
+~a_env.clear(8);
 ~a_env.pause;
 ~a_env.resume;
 
@@ -434,33 +434,6 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 ~sup.pause;
 ~sup.resume;
 
-
-(
-    s.latency=0;
-    //p.clock.tempo_(120/60);
-    p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
-    ~tick.kr(1);
-    ~tick.clock = p.clock;
-    ~tick.quant=4;
-    ~counter.clock = p.clock;
-    ~counter.quant = 4;
-    ~counter = {PulseCount.kr(~tick.kr);};
-    ~tick = { Impulse.kr(~tempo*2); };
-);
-
-(
-    s.latency=0;
-    //p.clock.tempo_(120/60);
-    p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
-    ~tick.kr(1);
-    ~tick.clock = p.clock;
-    ~tick.quant=4;
-    ~counter.clock = p.clock;
-    ~counter.quant = 4;
-    ~counter = {PulseCount.kr(~tick.kr);};
-    ~tick = { Impulse.kr(~tempo*8); };
-);
-
 //////////////////////////////////////////////////////
 //////////////////////////////////////////////////////
 // hat synth ///////////////////////////////////////
@@ -493,9 +466,10 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
     ~perl.fadeTime=0.001;
     ~perl={
         var mod = Duty.kr(4/~tempo,0,Dseq([1,2,1.5,1.33333],inf))  ;
-        var sig = LFSaw.ar([1,1/4,500/mod]*~tempo) ** 4 * 400;
+        var sig = LFSaw.ar([1/16,1/4,5000/mod]*~tempo) ** 4 * 400;
+        var pan = sig;
         sig = Perlin3.ar(sig[0],sig[1],sig[2]) * (LFSaw.ar(1/4/[1,2,3,4] * ~tempo)**2);
-        Splay.ar(sig,0.75,0.25);
+        Splay.ar(sig,0.75,0.15,LeakDC.ar(pan));
     };
     ~perl.play;
 );
