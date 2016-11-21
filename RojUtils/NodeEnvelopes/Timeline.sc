@@ -18,6 +18,8 @@ Timeline {
 		});
 	}
 
+	setEnd {|endTime| this.put(endTime, nil, 0, \timeline_end); }
+
 	atTime {|time|
 		var items = List.new();
 		timeline.indicesDo({|oneTime|
@@ -109,10 +111,13 @@ Timeline {
 			oneTime.asArray.do({|oneTimebar|
 				// ("oneTimebar" + oneTimebar).postln;
 				// ("at % -> item: %").format(oneTimebar.from, oneTimebar.item).postln;
-				clock.sched((oneTimebar.from + timeToQuant), {
-					function.value(oneTimebar.item);
-					nil;
-				});
+				if(oneTimebar.key.asSymbol != \timeline_end)
+				{
+					clock.sched((oneTimebar.from + timeToQuant), {
+						function.value(oneTimebar.item);
+						nil;
+					});
+				};
 			});
 		})
 	}

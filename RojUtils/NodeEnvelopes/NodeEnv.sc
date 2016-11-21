@@ -23,11 +23,13 @@ NodeEnv {
 		var bufferSynthDef;
 		var bufSynthName = nodeName ++ "_" ++ controlName ++ "_" ++ envelopeName;
 
-		controlRate = Server.default.sampleRate / Server.default.options.blockSize;
+		// controlRate = Server.default.sampleRate / Server.default.options.blockSize;
+		controlRate = 44100;
 
 		bufferSynthDef = {|cBus, bufnum, startTime = 0|
-			var controlRate = Server.default.sampleRate / Server.default.options.blockSize;
-			var buf = PlayBuf.kr(
+			// var controlRate = Server.default.sampleRate / Server.default.options.blockSize;
+			// var buf = PlayBuf.kr(
+				var buf = PlayBuf.ar(
 				numChannels: 1,
 				bufnum: bufnum,
 				startPos: startTime * controlRate,
@@ -45,27 +47,33 @@ NodeEnv {
 		NodeComposition.addBus(this);
 	}
 
-	set {|env, fixDuration = nil|
+	set {|env|
 
 		var node = NodeComposition.getNode(nodeName);
 
+		case
+		{ env.isKindOf(Integer) } { "Env is kind of Integer".warn; ^this; }
+		{ env.isKindOf(Number) } { "Env is kind of Number".warn; ^this; }
+		{ env.isKindOf(Pbind) } { "Env is kind of Pbind".warn; ^this; }
+		{ env.isKindOf(UGen) } { "Env is kind of UGen".warn; ^this; }
+		;
+
 		this.envelope = env;
-		if(fixDuration.notNil) { this.fixDur(fixDuration); };
 
 		buffer = Buffer.alloc(
 			server: Server.default,
 			numFrames: (controlRate * this.duration).ceil,
 			numChannels: 1,
 		);
-		buffer.loadCollection(this.envelope.asSignal((controlRate * this.duration).ceil));
+		// buffer.loadCollection(this.envelope.asSignal((controlRate * this.duration).ceil));
+		buffer.loadCollection(this.envelope.asSignal(controlRate * this.duration));
 
 		controlBusIndex = NodeComposition.getBus(nodeName, controlName);
 		node.set(controlName.asSymbol, BusPlug.for(controlBusIndex));
 
-		if(this.setPlot) { this.plot; };
-		NodeComposition.updateTimes(nodeName, controlName, envelopeName);
-		// NodeComposition.library.postTree;
-		^this;
+		// if(this.setPlot) { this.plot; };
+		// NodeComposition.updateTimes(nodeName, controlName);
+		// ^this;
 	}
 
 	remove {
@@ -143,7 +151,6 @@ NodeEnv {
 			\multiplicationBus, targetBus.asMap
 		], targetGroup);
 
-		"NodeEnv trig at time % [%_%_%]".format(currentEnvironment.clock.beats, nodeName, controlName, envelopeName).postln;
-		// ("Synth trig to controlBus_" ++ controlBusIndex + "by synth:" + synth.nodeID + "env:" + this.print(1)).postln;
+		// "NodeEnv trig at time % [%_%_%]".format(currentEnvironment.clock.beats, nodeName, controlName, envelopeName).postln;
 	}
 }
