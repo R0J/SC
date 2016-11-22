@@ -362,11 +362,14 @@ p.clock.queue.postln
     ~high_kick={
         //        |       |       |       |       |  
         var pat = [
-            1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0,
+            1,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+            1,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+            1,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+            1,0,0,0, 0,0,0,0, 1,0,0,0, 1,0,1,0,
         ];
         var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = Decay.kr(imp * hit,[0.7,0.2,1]*2);
+        var env = Decay.kr(imp * hit,[0.7,0.2,1]*1);
         var sig = BrownNoise.ar(0.4**4*env) + SinOsc.ar([30,36].midicps+(env**5*5),env**4*8pi);
         sig = sig * env;
         Splay.ar(sig,0.05,0.75);
@@ -441,10 +444,10 @@ p.clock.queue.postln
             1,0,1,0, 1,0,1,0, 1,0,1,0, 1,1,1,1,
 
         ];
-        var imp = PulseDivider.kr(~tick.kr,1,~counter.kr);
+        var imp = PulseDivider.kr(~tick.kr,[1,2,4,8,16,32],~counter.kr);
         var hit = Select.kr(PulseCount.kr(imp)/[1,2,3,4]%pat.size,pat);
-        var env = EnvGen.ar(Env([0.01,1,0.0001],[0.005,1/8/[1,2,3,4]],[80,-5]),imp * hit);
-        var sig = LFNoise1.ar(22000*LFNoise0.kr(1/4*~tempo/2!4).range(0.5,1)) * Crackle.ar([0.1,0.7,0.4,0.6]+env);
+        var env = EnvGen.ar(Env([0.01,1,0.0001],[0.005,1/16*[1,2,3]],[80,-5]),imp * hit);
+        var sig = LFNoise1.ar(22000*LFNoise0.kr(1/4*~tempo/2!4).range(0.5,1)) * Crackle.ar([0.1,0.7,0.4]+env);
         sig = sig * env;
         Splay.ar(sig,0.75,0.15);
     };
@@ -479,7 +482,7 @@ p.clock.queue.postln
         sig = RHPF.ar(sig,[1000,2500,12500,15000,1000,500,12500],LFNoise2.kr(1/4!4 * ~tempo/2).range(0.1,0.9));
         sig = sig * env * LFPulse.ar(1/4/(1..6)*~tempo,0,1/4);
         sig = CompanderD.ar(sig,3/4,1,1/3,0.0002);
-        Splay.ar(sig,0.5,0.25);
+        Splay.ar(sig,0.5,0.15);
     };
     ~switch.play;
     //~switch[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),5000),[4001,4011]),12000)+sig;};
@@ -487,7 +490,6 @@ p.clock.queue.postln
 ~switch.play;
 ~switch.stop(4);
 ~switch.clear;
-
 
 
 // perl synth ///////////////////////////////////////
@@ -498,7 +500,7 @@ p.clock.queue.postln
     ~perl.fadeTime=8.001;
     ~perl={
         var mod = Duty.kr(4/~tempo*2,0,Dseq([1,2,1.5,1.33333,1,2,1.5,1.666666],inf))  ;
-        var sig = LFSaw.ar([1/16,1/4,500/mod]*~tempo) ** LFNoise2.kr(1/400).range(0.9,4) * 40 + LFSaw.ar(1/5000,mul:4);
+        var sig = LFSaw.ar([1/16,1/4,72.midicps/mod]*~tempo) ** LFNoise2.kr(1/400).range(0.9,4) * 40 + LFSaw.ar(1/5000,mul:4);
         var pan = LeakDC.ar(sig);
         sig = Perlin3.ar(sig[0],sig[1],sig[2]) * (LFSaw.ar(1/4/[1,2,3,4] * ~tempo)**2);
         sig = LPF.ar(sig,LFDNoise1.kr(1/16!2 * ~tempo/2).range(500,15000));
