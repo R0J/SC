@@ -4,6 +4,8 @@ NodeComposition {
 	classvar compositionClock;
 	classvar stageChangeTask = nil;
 
+	classvar compositionTimeline = nil;
+
 	*initLibrary {
 		if(library.isNil) {
 			library = MultiLevelIdentityDictionary.new();
@@ -49,8 +51,8 @@ NodeComposition {
 	}
 
 	*addEnvelope { |nodeEnv|
-		var path = [nodeEnv.nodeName.asSymbol, \envelopes, nodeEnv.controlName.asSymbol, nodeEnv.envelopeName.asSymbol];
-		var envName = nodeEnv.nodeName ++ "_" ++ nodeEnv.controlName ++ "_" ++ nodeEnv.envelopeName;
+		var path = [nodeEnv.nodeName.asSymbol, \envelopes, nodeEnv.envelopeName.asSymbol];
+		var envName = nodeEnv.nodeName ++ "_" ++ nodeEnv.envelopeName;
 		this.initLibrary;
 		if(library.atPath(path).isNil)
 		{
@@ -59,9 +61,9 @@ NodeComposition {
 		}
 	}
 
-	*getEnvelope {|nodeName, controlName, envelopeName|
+	*getEnvelope {|nodeName, envelopeName|
 		if(library.notNil) {
-			var path = [nodeName.asSymbol, \envelopes, controlName.asSymbol, envelopeName.asSymbol];
+			var path = [nodeName.asSymbol, \envelopes, envelopeName.asSymbol];
 			var nEnv = library.atPath(path);
 			if(nEnv.notNil) { ^nEnv; };
 		};
@@ -105,8 +107,8 @@ NodeComposition {
 		};
 		^nil;
 	}
-
-	*updateTimes {|nodeName, controlName, envelopeName|
+/*
+	*updateTimes {|nodeName, controlName|
 		if(library.notNil) {
 			var cyclesFolder = library.atPath([nodeName.asSymbol, \cycles]);
 			var stageFolder = library.atPath([nodeName.asSymbol, \stages]);
@@ -114,20 +116,21 @@ NodeComposition {
 			if(cyclesFolder.notNil) {
 				cyclesFolder.sortedKeysValuesDo({|oneCycleName|
 					var oneCycle = this.getCycle(nodeName, oneCycleName);
-					oneCycle.set(controlName, oneCycle.envelopePattern.at(controlName.asSymbol), 0)
+					// oneCycle.set(controlName, oneCycle.envelopePattern.at(controlName.asSymbol), 0) // POZOR, uz nefunguje
 				});
 			};
 
 			if(stageFolder.notNil) {
 				stageFolder.sortedKeysValuesDo({|oneStageName|
-					var oneStage = this.getStage(nodeName, oneStageName);
+					// var oneStage = this.getStage(nodeName, oneStageName); // POZOR, uz nefunguje
 					oneStage.set(oneStage.cyclePattern, 0)
 				});
 			};
 		}
 	}
+	*/
 
-	*stage {|stageName, fadeTime = 0, quantOfChange = 16|
+	*playStage {|stageName, fadeTime = 0, quantOfChange = 16|
 		if(stageName.asSymbol != currentStage.asSymbol)
 		{
 			this.initLibrary;
@@ -157,7 +160,29 @@ NodeComposition {
 	}
 
 	*play {|from = 0, to = nil, loop = false|
+		if(stageChangeTask.notNil) { stageChangeTask.stop; };
 
+		library.dictionary.keysValuesDo({|nodeName, dict|
+			var path = [nodeName.asSymbol, \stages];
+			library.atPath(path).keysValuesDo({|oneStageName, nStage|
+				nStage.play;
+				nStage.fadeIn(4);
+			});
+		});
+	}
+
+	*stop {|fadeTime = 0|
+		if(stageChangeTask.notNil) { stageChangeTask.stop; };
+
+		library.dictionary.keysValuesDo({|nodeName, dict|
+			var path = [nodeName.asSymbol, \stages];
+			library.atPath(path).keysValuesDo({|oneStageName, nStage|
+				nStage.fadeOut(fadeTime);
+				nStage.stop(fadeTime);
+			});
+		});
+
+		currentStage = nil;
 	}
 
 	*print {

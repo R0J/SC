@@ -40,44 +40,26 @@ NodeStage {
 	cmdPeriod {
 		"cmdPeriod stage".warn;
 		("stageGroup.nodeID:" + stageGroup.nodeID).postln;
-		stageGroup = Group.new(nodeName.envirGet.group);
+		stageGroup = Group.new();//Group.new(nodeName.envirGet.group);
 	}
 
 	isCurrentStage { if((currentStage == stageName), { ^true; }, { ^false; }); }
 
-	set {|pattern, time = 0|
-		var stream = pattern.asStream;
-		var currentTrigTime = time;
+	set {|cycleName, trigTimes = 0|
+		var nCycle = NodeComposition.getCycle(nodeName, cycleName);
 
-		timeline = Timeline.new();
-		loopCount = 1;
-
-		case
-		{ stream.isKindOf(Routine) } { cyclePattern = stream.all; } // Pseq([\aaa, \bbb], 3) ++ \ccc
-		{ stream.isKindOf(Symbol) }	{ cyclePattern = stream.asArray; }
-		{ stream.isKindOf(Integer) } { cyclePattern = stream.asSymbol.asArray; }
-		{ stream.isKindOf(String) }	{ cyclePattern = stream.asSymbol.asArray; }
-		;
-		("stageName:" + stageName + "; stream:" + stream).postln;
-
-		// remove old keys
-		cyclePattern.do({|oneCycleName|
-			timeline.removeKeys(oneCycleName);
-		});
-
-		// add new keys
-		cyclePattern.do({|oneCycleName|
-			var oneCycle = NodeComposition.getCycle(nodeName, oneCycleName);
-			if(oneCycle.isNil,
-				{ ("NodeCycle [\\" ++ oneCycleName ++ "] not found in map").warn;  ^nil; },
-				{
-					// this.schedCycle(currentTrigTime, oneCycle);
-					timeline.put(time, oneCycle, oneCycle.cycleQuant, oneCycle.cycleName);
-					currentTrigTime = currentTrigTime + oneCycle.cycleQuant;
-				}
-			);
-		});
+		if(nCycle.isNil,
+			{ ("NodeCycle [\\" ++ cycleName ++ "] not found in map").warn;  ^this; },
+			{
+				timeline.removeKeys(cycleName);
+				trigTimes.asArray.do({|oneTime|
+					timeline.put(oneTime, nCycle, nCycle.duration, nCycle.cycleName);
+				});
+			}
+		);
 	}
+
+	removeCycle { |cycleName| timeline.removeKeys(cycleName); }
 
 	setFactor {|targetValue, fadeTime = 0|
 		if(stageMultSynth.isPlaying) { stageMultSynth.free;	};
@@ -93,23 +75,19 @@ NodeStage {
 	fadeIn {|time| this.setFactor(1,time); }
 	fadeOut {|time| this.setFactor(0,time); }
 
-	// schedCycle {|time, nodeCycle| timeline.put(time, nodeCycle, nodeCycle.cycleQuant, nodeCycle.cycleName); }
-
 	duration { ^timeline.duration; }
 
 	play { |loops = inf|
 
-		var node = NodeComposition.getNode(nodeName);
+		// var node = NodeComposition.getNode(nodeName);
 
 		if(loopTask.notNil) { this.stop; };
 		if(timeline.duration > 0)
 		{
 			loopTask = Task({
 				loops.do({
-
 					timeline.play({|item| item.trig(stageGroup, stageMultBus); });
 
-					("stageName:" + stageName + "; loopCount:" + loopCount).postln;
 					loopCount = loopCount + 1;
 					timeline.duration.wait;
 				});
@@ -117,9 +95,7 @@ NodeStage {
 		};
 	}
 
-	trig {
-
-	}
+	trig { timeline.play({|item| item.trig(stageGroup, stageMultBus); }); }
 
 	stop {|releaseTime = 0|
 		Task({
@@ -144,4 +120,39 @@ NodeStage {
 		envSynthDef.asSynthDef(name:fadeSynthName.asSymbol).add;
 		("SynthDef" + fadeSynthName + "added").postln;
 	}
+
+	/*
+	set {|pattern, time = 0|
+		var stream = pattern.asStream;
+		var currentTrigTime = time;
+
+		timeline = Timeline.new();
+		loopCount = 1;
+
+		case
+		{ stream.isKindOf(Routine) } { cyclePattern = stream.all; } // Pseq([\aaa, \bbb], 3) ++ \ccc
+		{ stream.isKindOf(Symbol) }	{ cyclePattern = stream.asArray; }
+		{ stream.isKindOf(Integer) } { cyclePattern = stream.asSymbol.asArray; }
+		{ stream.isKindOf(String) }	{ cyclePattern = stream.asSymbol.asArray; }
+		;
+		// ("stageName:" + stageName + "; stream:" + stream).postln;
+
+		// remove old keys
+		cyclePattern.do({|oneCycleName|
+			timeline.removeKeys(oneCycleName);
+		});
+
+		// add new keys
+		cyclePattern.do({|oneCycleName|
+			var oneCycle = NodeComposition.getCycle(nodeName, oneCycleName);
+			if(oneCycle.isNil,
+				{ ("NodeCycle [\\" ++ oneCycleName ++ "] not found in map").warn;  ^nil; },
+				{
+					timeline.put(time, oneCycle, oneCycle.cycleQuant, oneCycle.cycleName);
+					currentTrigTime = currentTrigTime + oneCycle.cycleQuant;
+				}
+			);
+		});
+	}
+	*/
 }
