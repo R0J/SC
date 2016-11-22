@@ -77,7 +77,7 @@ s.latency = 0.2;
     ~master.quant=16;
     ~master.play;
     ~master.fadeTime = 0.01;
-    ~master = {|wet=0.35,lp=4500,hp=250,len=2,rev = 2|
+    ~master = {|wet=0.35,lp=4500,hp=250,len=4,rev = 4|
         var sig = In.ar([0,1]);
         var orig = sig;
         var fx,low,high,mid;
@@ -91,8 +91,8 @@ s.latency = 0.2;
         fx = LPF.ar(fx,lp);
         fx = HPF.ar(fx,hp);
         fx = HPF.ar(fx,hp);
-        fx = AllpassL.ar(fx,1/4,1/4,len);
-        fx = DWGReverb.ar(NumChannels.ar(fx,2),[3000,3100],1/len)/rev;
+        fx = AllpassL.ar(fx,1/4*~tempo,1/4*~tempo,len);
+        fx = DWGReverb.ar(NumChannels.ar(fx,2),[5000,5100],1/len)/rev;
         sig = SelectX.ar(wet,[orig,fx]);
         sig = NumChannels.ar(sig,2);
         sig = Limiter.ar(sig.softclip);
@@ -100,7 +100,7 @@ s.latency = 0.2;
     };
 
     ~master_wet.quant = 4;
-    ~master_wet = {LFDNoise1.kr(~tempo/160!2).exprange(0.15,0.35);};
+    ~master_wet = {LFDNoise1.kr(~tempo/1600!2).exprange(0.15,0.35);};
     ~master.map(\wet,~master_wet);
     //    p.moveNodeToTail(\master);
 );
@@ -153,7 +153,7 @@ s.latency = 0.2;
         var fx;
         //fx = Limiter.ar(sig,0.95);
         var mod = Duty.kr(16/(~tempo/2),0,Dseq([1,2,1.5,1.33333],inf));
-        sig = CombN.ar(sig,1/50*mod,1/50*mod,4);
+        sig = CombN.ar(sig,1/50*mod,1/50*mod,4)/rev+sig;
         sig = Compander.ar(sig,3/4,1/1.1,1/3);
         fx = LPF.ar(sig,lp);
         fx = HPF.ar(fx,hp);
@@ -259,7 +259,12 @@ p.clock.queue.postln
     ~hiss.fadeTime=2.2;
     ~hiss={
         //         |       |       |       |       |  
-        var pat = [1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1];
+        var pat = [
+            1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
+            1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
+            1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
+            1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
+        ];
         var imp = PulseDivider.kr(~tick.kr,[1,2,3],~counter.kr);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.5],[3,-3],curve:'exp'),imp * hit);
@@ -357,21 +362,28 @@ p.clock.queue.postln
             0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0,
             0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0,
             0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0,
-            0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0,
+            0,0,1,0, 0,0,1,0, 0,0,1,0, 1,0,1,0,
         ];
-        var mod = Duty.kr(16/~tempo,0,Dseq([1,2,1.5,1.33333],inf));
         var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.25],[8,-3]),imp * hit);
-        var sig = BrownNoise.ar(0.4**4*env) + SinOsc.ar(400*mod+(env**20*1400),env**20*8pi);
+        var env = Decay.ar(K2A.ar(imp * hit),[0.7,0.2,1]*2);
+        var sig = BrownNoise.ar(0.4**4*env) + SinOsc.ar(100+(env**5*5),env**4*8pi);
         sig = sig * env;
-        Splay.ar(sig,0.75,0.25);
+        Splay.ar(sig,0.05,0.75);
     };
     ~high_kick.play;
 );
+~high_kick.clear(4);
 ~high_kick.stop(4);
 ~high_kick.pause;
 ~high_kick.resume;
+
+(
+//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+{
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+}.fork;  
+)
 
 
 // high_kick synth /////////////////////////////////////// ***
@@ -384,9 +396,9 @@ p.clock.queue.postln
     ~saw_kick={
         //        |       |       |       |       |  
         var pat = [
+            1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0,
             0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
-            0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
-            0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+            1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0,
             0,0,0,0, 0,0,0,0, 0,0,0,0, 1,1,1,1,
         ];
 
@@ -398,7 +410,7 @@ p.clock.queue.postln
         var sig = WhiteNoise.ar(0.2**7*env) + VarSaw.ar(50+(env**20*1400),0,env**2) ** LFNoise2.kr(1/400!2*~tempo).range(0.7,2);
         sig = LPF.ar(sig,env**0.2*5800+800);
         sig = sig * env;
-        Splay.ar(sig,0.75,0.15);
+        Splay.ar(sig,0.75,0.5);
     };
     ~saw_kick.play;
 );
@@ -467,7 +479,7 @@ p.clock.queue.postln
         sig = RHPF.ar(sig,[1000,2500,12500,15000,1000,500,12500],LFNoise2.kr(1/4!4 * ~tempo/2).range(0.1,0.9));
         sig = sig * env * LFPulse.ar(1/4/(1..6)*~tempo,0,1/4);
         sig = CompanderD.ar(sig,3/4,1,1/3,0.0002);
-        Splay.ar(sig,0.5,0.15);
+        Splay.ar(sig,0.5,0.25);
     };
     ~switch.play;
     //~switch[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),5000),[4001,4011]),12000)+sig;};
@@ -495,7 +507,7 @@ p.clock.queue.postln
     ~perl.play;
 );
 ~perl.stop(16);
-~perl.clear;
+~perl.clear(16);
 ~perl.pause;
 ~perl.resume;
 

@@ -156,7 +156,7 @@ p.clock.tempo_(127/60);
 (
     ~saw.ar(2);
     ~saw.clock = p.clock;
-    ~saw.quant=[32];
+    ~saw.quant=[16];
     ~saw.fadeTime=8.2;
     ~saw={
         var mod = Duty.kr(16/~tempo.kr*2,0,Dseq([1,2,1.5,1.33333],inf));
@@ -168,7 +168,7 @@ p.clock.tempo_(127/60);
         var sig = [] ++ LFSaw.ar([60.midicps/4,72.midicps*8/mod],mul:[1,0.1,0.05]) ++ (SinOsc.ar(84.midicps*16,mul:0.1) * Pulse.ar(8*~tempo.kr));
         sig = sig.flat;
         sig = sig * env;
-        Splay.ar(sig,0.05,0.75);
+        Splay.ar(sig,0.05,0.25);
     };
     ~saw.play;
     //~saw[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),50),[4000,4010]),1500+LFTri.kr(1/16!2).range(0,10000));};
@@ -189,7 +189,7 @@ p.clock.tempo_(127/60);
     ~sell.ar(4);
     ~sell.mold(4);
     ~sell.clock = p.clock;
-    ~sell.quant=[32];
+    ~sell.quant=[16];
     ~sell.fadeTime=4;
 
     ~sell={var t = LFTri.kr([1/1600,1/1600,[1/4,1/2,1/8,1/16]]*~tempo/400) * 1/2 + LFSaw.ar(1/4000,mul:2); Perlin3.ar(t[0],t[1],t[2]);};
@@ -207,7 +207,7 @@ p.clock.tempo_(127/60);
 (
     ~scanner.ar(2);
     ~scanner.clock = p.clock;
-    ~scanner.quant=[32,0];
+    ~scanner.quant=[16,0];
     ~scanner.fadeTime=4.2;
     ~scanner={
         //         |       |       |       |       |
@@ -252,7 +252,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
     ~smp.ar(2);
     ~smp.clock = p.clock;
 
-    ~smp.quant=[16,1];
+    ~smp.quant=[16,0];
     ~smp.fadeTime=2.02;
     ~smp={
         var mod = 1/4/[1,1.5,1.3333,2];
@@ -260,9 +260,9 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
         var pos = [0,0.5,0.25,0.6] + LFSaw.ar(1/128/2*~tempo.kr).round(1/128/2);
         //         |       |       |       |       |
         var pat = [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0];
-        var imp = PulseDivider.kr(~tick.kr,[8,4,2,1]*2,~counter.kr);
+        var imp = PulseDivider.kr(~tick.kr,[1,2,4,8],~counter.kr);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,6.05],[10,3],curve:'exp'),imp * hit);
+        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.5],[10,3],curve:'exp'),imp * hit);
         var sig = PlayBuf.ar(b.numChannels,b.bufnum,BufRateScale.kr(b.bufnum)*mod+(env**0.01/100),imp, (pos) * BufFrames.kr(b.bufnum),2);
 
         sig = sig * env;
@@ -407,15 +407,15 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 (
     ~sup.ar(2);
     ~sup.clock = p.clock;
-    ~sup.quant=[16,1];
+    ~sup.quant=[16,0];
     ~sup.fadeTime=0.02;
     ~sup={
         //         |       |       |       |       |
         var pat = [
             1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-            1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-            1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-            1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         ];
         var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
@@ -440,7 +440,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 
 (
     ~high_glitch.clock = p.clock;
-    ~high_glitch.quant=[4,1];
+    ~high_glitch.quant=[16,0];
     ~high_glitch.fadeTime=0.02;
     ~high_glitch={
         var imp = PulseDivider.kr(~tick.kr,[1,2],~counter.kr);
@@ -469,7 +469,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
         var sig = LFSaw.ar([1/16,1/4,5000/mod]*~tempo) ** 4 * 400;
         var pan = sig;
         sig = Perlin3.ar(sig[0],sig[1],sig[2]) * (LFSaw.ar(1/4/[1,2,3,4] * ~tempo)**2);
-        Splay.ar(sig,0.75,0.15,LeakDC.ar(pan));
+        Splay.ar(sig,0.75,0.05,LeakDC.ar(pan));
     };
     ~perl.play;
 );
@@ -536,7 +536,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
         var env = EnvGen.ar(Env([0.001,1,0.00001],[0.002,1],[10,-3]),imp * hit);
         var sig = SinOsc.ar(50+(env**(mod*2)*LFNoise1.kr(1/32!4).range(50,350)),env**mod*8pi);
         sig = sig * env;
-        Splay.ar(sig,0.25,0.67);
+        Splay.ar(sig,0.25,0.27);
     };
     ~k_two.play;
 );
@@ -664,7 +664,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 (
     ~switch.ar(2);
     ~switch.clock = p.clock;
-    ~switch.quant=[4,1];
+    ~switch.quant=[16,1];
     ~switch.fadeTime=8.2;
     ~switch={
         var pat = [1,0,1,0,1,0,1,0,1,0,1,0,1,1,0,0].pyramid;
@@ -693,7 +693,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
 (
     ~kick_even.ar(2);
     ~kick_even.clock = p.clock;
-    ~kick_even.quant=[4,0];
+    ~kick_even.quant=[16,0];
     ~kick_even.fadeTime=0.02;
     ~kick_even={
         var mod = Duty.kr(4 / ~tempo.kr,0,Dseq([1,2,1.5,1.33333,1.875,1.666666],inf));
@@ -733,20 +733,6 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/beat.wav");
     ~counter = {PulseCount.kr(~tick.kr);};
 );
 
-
-(
-    s.latency=0;
-    p.clock.tempo_(127/60);
-    p.arProxyNames.do({|synth| p[synth.asSymbol].rebuild;});
-    ~tick.kr(1);
-    ~tick.clock = p.clock;
-    ~tick.quant=4;
-    ~counter.clock = p.clock;
-    ~counter.quant = 4;
-    ~counter = {PulseCount.kr(~tick.kr);};
-    ~tick = { Impulse.kr(~tempo * 4); };
-);
-
 b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/violin.wav");
 
 // player synth ///////////////////////////////////////
@@ -754,7 +740,7 @@ b = Buffer.read(s,Platform.resourceDir ++ "/sounds/mono/violin.wav");
 (
     ~violin.ar(2);
     ~violin.clock = p.clock;
-    ~violin.quant=4;
+    ~violin.quant=16;
     ~violin.fadeTime=4.02;
     ~violin={
         var speed = 1/64/[1,2,3,4] * ~tempo.kr;
