@@ -64,7 +64,7 @@ p.moveNodeToTail(\master);
     ~intercorporator.play;
 );
 ~intercorporator.stop(4);
-~intercorporator.clear;
+~intercorporator.clear(120);
 ~intercorporator.pause;
 ~intercorporator.resume;
 

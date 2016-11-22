@@ -92,16 +92,16 @@ s.latency = 0.2;
         fx = LPF.ar(fx,lp);
         fx = HPF.ar(fx,hp);
         fx = HPF.ar(fx,hp);
-        fx = AllpassL.ar(fx,1/4*~tempo,1/4*~tempo,len);
-        fx = DWGReverb.ar(NumChannels.ar(fx,2),[5000,5100],1/len)/rev;
+        fx = AllpassN.ar(fx,1/1600*~tempo,1/4*~tempo,len);
+        fx = DWGReverb.ar(NumChannels.ar(fx,2),[5000,5100],1/len)/rev + fx;
         sig = SelectX.ar(wet,[orig,fx]);
         sig = NumChannels.ar(sig,2);
-        sig = Limiter.ar(sig.softclip);
+        //sig = Limiter.ar(sig.softclip);
         ReplaceOut.ar(0,sig);
     };
 
     ~master_wet.quant = 4;
-    ~master_wet = {LFDNoise1.kr(~tempo/1600!2).exprange(0.15,0.35);};
+    ~master_wet = {LFDNoise1.kr(~tempo/1600!2).exprange(0.015,0.15);};
     ~master.map(\wet,~master_wet);
     p.moveNodeToTail(\master);
 );
@@ -327,7 +327,7 @@ p.clock.queue.postln
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
-            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,1,1,1,
+            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
         ];
         var imp = PulseDivider.kr(~tick.kr,1,~counter.kr);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
@@ -718,10 +718,10 @@ NodeProxy.help;
         ~modem.fadeTime=8;
         ~modem={
             var mod = Duty.kr(128/~tempo*(1..16),0,Dseq([1,2,1.5,1.33333,4,8,1,1,1,1,1,1],inf));
-            var high = 2200/[1,2.0,1.333,1.5]/mod;
-            var mad = SinOsc.ar(50*~tempo/(1..16)).range(1,high);
+            var high = 60.midicps*10/[1,2.0,1.333,1.5]/mod;
+            var mad = SinOsc.ar(30.midicps*~tempo/(1..16)).range(1,high);
             var sig = SinOsc.ar(mad.range(0.1,high)) ** (LFSaw.ar(mad).exprange(0.01,2));
-            sig = VarSaw.ar(sig.exprange(50.01,high));// * Pulse.ar(~tempo).lag(0.01);
+            sig = VarSaw.ar(sig.exprange(36.midicps,high));// * Pulse.ar(~tempo).lag(0.01);
 
             sig = BBandPass.ar(sig,high/16*(((1..16)/16)**2*16),0.02 + LFNoise0.kr(~tempo/4*((1..16)/16**4)).range(0.0001,0.92)) * LFSaw.kr(~tempo*((1..16)/16**2)).exprange(0.001,4);
             sig = Resonz.ar(sig,high/16*(((1..16)/16)**2*16),0.02 + LFNoise1.kr(~tempo/16*((1..16)/16**5.14)).range(0.0001,0.92)) * LFNoise2.kr(~tempo*((1..16)/16**2)).exprange(0.001,4);

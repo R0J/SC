@@ -4,7 +4,7 @@ p.clock.tempo(127/60);
 p.makeTempoClock;
 (
     TempoClock.default = p.clock;
-//    p.clock.tempo_(127/60);
+    //    p.clock.tempo_(127/60);
     p.arProxyNames.do(p[_.asSymbol].rebuild);
 )
 
@@ -18,16 +18,16 @@ p.makeTempoClock;
 );    
 
 (
-  s.latency=0;
-  //p.clock.tempo_(120/60);
-  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
-  ~tick.kr(1);
-  ~tick.clock = p.clock;
-  ~tick.quant=4;
-  ~counter.clock = p.clock;
-  ~counter.quant = 4;
-  ~counter = {PulseCount.kr(~tick.kr);};
-  ~tick = { Impulse.kr(~tempo*2); };
+    s.latency=0;
+    //p.clock.tempo_(120/60);
+    p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
+    ~tick.kr(1);
+    ~tick.clock = p.clock;
+    ~tick.quant=4;
+    ~counter.clock = p.clock;
+    ~counter.quant = 4;
+    ~counter = {PulseCount.kr(~tick.kr);};
+    ~tick = { Impulse.kr(~tempo*2); };
 );
 
 (
@@ -39,7 +39,7 @@ p.makeTempoClock;
         var orig = sig;
         var fx,low,high,mid;
         //fx = Limiter.ar(sig,0.95);
-        
+
         //sig = CombN.ar(sig,1/50,1/50,1);
         low = CompanderD.ar(LPF.ar(sig,LFNoise2.kr(1/4!2*~tempo).range(100,800)),9/10,1,1/2);
         mid = CompanderD.ar(BPF.ar(sig,LFNoise2.kr(1/8!2*~tempo).range(500,4500),1/2),9/10,1,1/2);
@@ -61,7 +61,7 @@ p.makeTempoClock;
     ~master_wet.quant = 4;
     ~master_wet = {LFDNoise1.kr(~tempo/16!2).exprange(0.05,0.35);};
     ~master.map(\wet,~master_wet);
-//    p.moveNodeToTail(\master);
+    //    p.moveNodeToTail(\master);
 );
 p.moveNodeToTail(\master);
 
@@ -74,9 +74,9 @@ p.restartClock;
 p.arProxyNames;
 
 (
-  p.clock.sched(p.clock.timeToNextBeat(32),{ 
-  ~flute2.clear;
-  });
+    p.clock.sched(p.clock.timeToNextBeat(32),{ 
+        ~flute2.clear;
+    });
 );
 
 (
@@ -88,11 +88,11 @@ p.arProxyNames;
 
 
 (
-//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+    //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
 
-p.clock.sched(p.clock.timeToNextBeat(16),{
-  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(1);};});
-};);  
+    p.clock.sched(p.clock.timeToNextBeat(16),{
+        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(1);};});
+    };);  
 );
 
 
@@ -325,10 +325,10 @@ p.clock.sched(p.clock.timeToNextBeat(16),{
 // flute synth ///////////////////////////////////////
 
 (
-//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
-{
-  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(40);};});
-}.fork;  
+    //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+    {
+        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(40);};});
+    }.fork;  
 )
 
 (
@@ -353,7 +353,7 @@ p.clock.sched(p.clock.timeToNextBeat(16),{
         sig = CompanderD.ar(sig,3/4,1,1/2);
         sig = LPF.ar(sig,3000);
         sig = HPF.ar(sig,100);
-        sig = sig * Pulse.ar(2*~tempo);
+        //sig = sig * Pulse.ar(2*~tempo);
         Splay.ar(sig,0.65,0.25);
     };
     ~flute3.play;
@@ -365,10 +365,10 @@ p.clock.sched(p.clock.timeToNextBeat(16),{
 ~flute3.resume;
 
 (
-//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
-{
-  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-}.fork;  
+    //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+    {
+        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+    }.fork;  
 )
 
 // flute synth ///////////////////////////////////////
@@ -433,12 +433,17 @@ p.clock.sched(p.clock.timeToNextBeat(16),{
 ~flute1.pause;
 ~flute1.resume;
 
+(
+    ~flute1.rebuild;
+    ~flute2.rebuild;
+    ~flute3.rebuild;
+)
 
 (
-//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
-{
-  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(10);};});
-}.fork;  
+    //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+    {
+        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(10);};});
+    }.fork;  
 )
 
 // harm synth ///////////////////////////////////////
