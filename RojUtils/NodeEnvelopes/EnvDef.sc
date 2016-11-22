@@ -5,12 +5,9 @@ EnvDef {
 	var <duration;
 
 	var <group;
-
 	var <buffer;
-	// var bufSynthName;
 
 	classvar <>all;
-
 	classvar hasInitSynthDefs;
 	classvar bufferSynthDef, testSynthDef;
 
@@ -29,29 +26,13 @@ EnvDef {
 
 	init {
 		Server.default.waitForBoot({
-
 			bus = Bus.control(Server.default, 1);
+			group = RootNode(Server.default);
 			if(hasInitSynthDefs.not) { this.initSynthDefs; };
-
-			/*
-			SynthDef(this.synthName, { |cBus, bufnum, startTime = 0|
-			var controlRate = Server.default.sampleRate / Server.default.options.blockSize;
-			var buf = PlayBuf.kr(
-			numChannels: 1,
-			bufnum: bufnum,
-			startPos: startTime * controlRate,
-			rate: \tempoClock.kr(1),
-			loop: 0
-			);
-			FreeSelfWhenDone.kr(buf);
-			Out.kr(cBus,buf * \multiplicationBus.kr(1));
-			}).add;
-			*/
 		})
 	}
 
 	initSynthDefs{
-		"initSynthDefs".warn;
 		bufferSynthDef = { |cBus, bufnum, startTime = 0|
 			var controlRate = Server.default.sampleRate / Server.default.options.blockSize;
 			var buf = PlayBuf.kr(
@@ -76,54 +57,57 @@ EnvDef {
 		all.removeAt(key);
 	}
 
-	trig {
+	trig { |startTime = 0|
 		if(buffer.notNil)
 		{
-			/*
-			Synth(this.synthName, [
-			\cBus: bus,
-			\bufnum: buffer.bufnum,
-			\startTime, 0,
-			\tempoClock, currentEnvironment.clock.tempo,
-			// \multiplicationBus, targetBus.asMap
-			// ], targetGroup);
-			]);
-			*/
 			bufferSynthDef.name_(this.synthName);
-			bufferSynthDef.play(args:
+			bufferSynthDef.play(
+				target: group,
+				args:
 				[
 					\cBus: bus,
 					\bufnum: buffer.bufnum,
-					\startTime, 0,
+					\startTime, startTime,
 					\tempoClock, currentEnvironment.clock.tempo,
 					// \multiplicationBus, targetBus.asMap
-					// ]);
 				]
 			);
 		}
 		{ "% buffer not found".format(this).warn; }
 	}
 
-	test {|freq = 120|
-		var testSynth;
-		currentEnvironment.clock.sched(0, {
-			testSynthDef.name_("EnvDef_test_%".format(key));
-			testSynth = testSynthDef.play(args:[\cBus: bus, \freq: freq]);
-			this.trig;
-			nil;
-		});
-		currentEnvironment.clock.sched(duration, {
-			"End of test %".format(testSynth).postln;
-			testSynth.free;
-			nil;
-		});
+	test {|freq = 120, startTime = 0|
+		if(duration - startTime > 0)
+		{
+			var testSynth;
+			currentEnvironment.clock.sched(0, {
+				testSynthDef.name_("EnvDef_test_%".format(key));
+				testSynth = testSynthDef.play(
+					target: group,
+					args:[\cBus: bus, \freq: freq]
+				);
+				this.trig(startTime);
+				nil;
+			});
+			currentEnvironment.clock.sched((duration - startTime), {
+				"End of test %".format(testSynth).postln;
+				testSynth.free;
+				nil;
+			});
+		}
+		{ "% is shorter than arg startTime(%)".format(this, startTime).warn; }
+	}
+
+	plot {|size = 400|
+		if(env.notNil,
+			{ env.plotNamedEnv(this.synthName, size); },
+			{ "% envelope not found".format(this).warn; }
+		);
 	}
 
 	synthName {	^"Env_%".format(key).asSymbol; }
 
 	prStore { |itemKey, item, dur|
-
-
 		key = itemKey;
 		env = item;
 
@@ -157,8 +141,9 @@ EnvDef {
 		});
 	}
 
-	printOn { |stream|
-		stream << this.class.name << "('" << key << "' | dur: " << duration << ")";
-	}
+	printOn { |stream| stream << this.class.name << "('" << key << "' | dur: " << duration << ")"; }
 
 }
+
+
+

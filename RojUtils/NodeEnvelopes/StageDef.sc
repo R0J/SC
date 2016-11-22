@@ -17,9 +17,9 @@ StageDef {
 	}
 
 	cmdPeriod {
-		// ("CmdPeriod protection" + this).warn;
 		{
 			group = Group.new( RootNode (Server.default))
+			// ("CmdPeriod protection" + this).warn;
 		}.defer(0.01);
 	}
 
@@ -27,7 +27,7 @@ StageDef {
 		CmdPeriod.add(this);
 		bus = Bus.control(Server.default, 1);
 		group = Group.new( RootNode (Server.default));
-		group.onFree({ "Stage % end".format(key).postln; });
+		// group.onFree({ "Stage % end".format(key).postln; });
 	}
 
 	free {
