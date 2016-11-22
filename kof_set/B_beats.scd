@@ -223,21 +223,22 @@ p.clock.queue.postln
 (
     ~karplus.ar(2);
     ~karplus.clock = p.clock;
-    ~karplus.quant=[16];
+    ~karplus.quant=[4];
     ~karplus.fadeTime=4;
     ~karplus={
-        var pat = 1/4/[1,2,3,4] * ~tempo.kr;
+        var pat = 1/4/[1,2,3,4] * ~tempo.kr * 2;
         var sig = (PinkNoise.ar(0.91!2) * LFPulse.ar(1/8/[1,2,3,4]*~tempo,0,0.005)) + LocalIn.ar(4);
         var mod = TChoose.kr(Impulse.kr(pat/4),[2,4,1,1/2]).lag(1/400);
         var mod2 = TChoose.kr(Impulse.kr(pat/16),[2,1.5,4,1,1.3333333]).lag(1/400);
-        var base = [60,64,69,61].midicps * mod / mod2;
+        var base = TWChoose.kr(Impulse.kr(pat/16),[60,64,69,61].midicps,[1,1,1,0.2],1) * mod / mod2;
         sig = BPF.ar(sig,base,0.04);
         sig = DelayN.ar(sig,1/base,1/base);
         sig = Limiter.ar(sig);
-        LocalOut.ar(sig/1.051);
+        LocalOut.ar(sig/1.0051);
         //sig = CombL.ar(sig,1/base,2/base,0.7);
-        //sig = sig * (LFTri.ar(pat)**2);
         sig = CompanderD.ar(sig,3/4,1/3,1/2);
+        sig = Vibrato.ar(sig,[4,5,6,7],0.1);
+        sig = sig * (LFTri.ar(2*~tempo/[1,2,3,4])**4).range(0.001,0.9);
         sig = HPF.ar(sig,100);
         Splay.ar(sig,0.95,0.35);
     };
