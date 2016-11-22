@@ -261,13 +261,13 @@ p.clock.queue.postln
         //         |       |       |       |       |  
         var pat = [
             1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
-            1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
             1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
             1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
+            1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
         ];
-        var imp = PulseDivider.kr(~tick.kr,[1,2,3],~counter.kr);
+        var imp = PulseDivider.kr(~tick.kr,[1,2,4],~counter.kr);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.5],[3,-3],curve:'exp'),imp * hit);
+        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.25*[1,2,4]],[3,-3],curve:'exp'),imp * hit);
         var sig = Crackle.ar([0.1,0.2,0.6]+env);
         sig = sig * env;
         Splay.ar(sig,0.25,0.195);
@@ -324,7 +324,7 @@ p.clock.queue.postln
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
-            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,1,1,1,
+            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,1,0,
         ];
         var imp = PulseDivider.kr(~tick.kr,1,~counter.kr);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
