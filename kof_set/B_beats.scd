@@ -259,22 +259,22 @@ p.clock.queue.postln
 (
     ~hiss.ar(2);
     ~hiss.clock = p.clock;
-    ~hiss.quant=[16,1];
+    ~hiss.quant=[16,0];
     ~hiss.fadeTime=2.2;
     ~hiss={
         //         |       |       |       |       |  
         var pat = [
-            1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
-            1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
-            1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
-            1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
+            0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,
+            0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
+            0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,
+            0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
         ];
         var imp = PulseDivider.kr(~tick.kr,[1,2,4],~counter.kr);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.25*[1,2,4]],[3,-3],curve:'exp'),imp * hit);
         var sig = Crackle.ar([0.1,0.2,0.6]+env);
         sig = sig * env;
-        Splay.ar(sig,0.25,0.195);
+        Splay.ar(sig,0.25,0.095);
     };
     ~hiss.play;
 );
@@ -392,11 +392,11 @@ p.clock.queue.postln
 // high_kick synth /////////////////////////////////////// ***
 
 (
-    ~saw_kick.ar(2);
-    ~saw_kick.clock = p.clock;
-    ~saw_kick.quant=[16,0];
-    ~saw_kick.fadeTime=0.2;
-    ~saw_kick={
+    ~saw_high.ar(2);
+    ~saw_high.clock = p.clock;
+    ~saw_high.quant=[16,0];
+    ~saw_high.fadeTime=0.2;
+    ~saw_high={
         //        |       |       |       |       |  
         var pat = [
             1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0,
@@ -409,17 +409,20 @@ p.clock.queue.postln
         var mod = Duty.kr(16/~tempo,0,Dseq([1,2,1.5,1.33333],inf));
         var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,1.25],[8,-3]),imp * hit);
-        var sig = WhiteNoise.ar(0.2**7*env) + VarSaw.ar(24.midicps,0,env**80) ** LFNoise2.kr(1/400!2*~tempo).range(0.7,2);
+        var env = EnvGen.ar(Env.adsr(0.001,0.5,0.5,0.001),imp * hit);
+        var sig = WhiteNoise.ar(0.2**7*env) + VarSaw.ar(60.midicps*10) ** LFNoise2.kr(1/400!2*~tempo).range(0.7,2);
         sig = LPF.ar(sig,env**0.2*5800+800);
         sig = sig * env;
-        Splay.ar(sig,0.75,0.5);
+        Splay.ar(sig,0.75,0.05);
     };
-    ~saw_kick.play;
+    ~saw_high.play;
 );
-~saw_kick.stop(4);
-~saw_kick.pause;
-~saw_kick.resume;
+~saw_high.stop(4);
+~saw_high.pause;
+~saw_high.resume;
+
+Env.adsr(0.1,1,1,0.2,0.9,4).plot;
+
 
 (
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
