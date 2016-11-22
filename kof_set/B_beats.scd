@@ -500,10 +500,11 @@ p.clock.queue.postln
     ~perl.fadeTime=8.001;
     ~perl={
         var mod = Duty.kr(4/~tempo*2,0,Dseq([1,2,1.5,1.33333,1,2,1.5,1.666666],inf))  ;
-        var sig = LFSaw.ar([1/16,1/4,72.midicps/mod]*~tempo) ** LFNoise2.kr(1/400).range(0.9,4) * 40 + LFSaw.ar(1/5000,mul:4);
+        var sig = LFSaw.ar([1/16,1/4,[72,60,48].midicps/mod]*(~tempo*2)) ** LFNoise2.kr(1/400).range(0.9,4) * 24.midicps + LFSaw.ar(1/64*~tempo,mul:4);
         var pan = LeakDC.ar(sig);
+        RandSeed.kr(Impulse.kr(1/128*~tempo),2017);
         sig = Perlin3.ar(sig[0],sig[1],sig[2]) * (LFSaw.ar(1/4/[1,2,3,4] * ~tempo)**2);
-        sig = LPF.ar(sig,LFDNoise1.kr(1/16!2 * ~tempo/2).range(500,15000));
+        sig = LPF.ar(sig,LFDNoise1.kr(1/16!3 * ~tempo/2).range(500,15000));
         Splay.ar(sig,0.75,0.05,pan);
     };
     ~perl.play;

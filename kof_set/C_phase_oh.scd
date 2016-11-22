@@ -93,7 +93,7 @@ p.makeTempoClock;
 
             // env = DelayN.ar(env,hum,hum);
 
-            sig = Mix.fill(20,{|i|SinOsc.ar(55+(env**mod2*55),env**(mod2+i)*8pi)})/20.9;
+            sig = Mix.fill(20,{|i|SinOsc.ar(33.midicps+(env**mod2*55),env**(mod2+i)*8pi)})/20.9;
             sig = sig * env;
             Splay.ar(sig,0.005,0.65);
         };
@@ -104,7 +104,7 @@ p.makeTempoClock;
 (
     ~onea.ar(2);
     //    ~onea.clock = p.clock;
-    ~onea.quant=[32,1/4];
+    ~onea.quant=[16,0];
     ~onea.fadeTime=0.02;
     ~onea={
         //         |       |       |       |       |  
@@ -112,15 +112,15 @@ p.makeTempoClock;
             1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
             1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
             1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
-            1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
+            1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,
         ];
-        var imp = PulseDivider.kr(~tick.kr,2,~counter.kr);
+        var imp = PulseDivider.kr(~tick.kr,1,~counter.kr);
         var imp2 = PulseDivider.kr(~tick.kr,[4,8,16,3],~counter.kr);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var hit2 = Select.kr(PulseCount.kr(imp2)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.5],[10,-3],curve:'exp'),imp * hit);
         var env2 = EnvGen.ar(Env([0.001,1,0.0001],[0.02,1.15],[10,-3],curve:'exp'),imp2 * hit2);
-        var sig = SinOsc.ar(50 + (env**50*500));
+        var sig = SinOsc.ar(55 + (env**55*500));
 
         //sig = LFSaw.ar([60,67,64].midicps*64+(env2**20*1500),mul:0.7)**LFNoise2.kr(1/16!2 * ~tempo).range(0.4,4)/1.5+sig;
         sig = LPF.ar(sig,LFSaw.kr([1,2,3,4]/16*~tempo).range(190,9000));
@@ -182,6 +182,7 @@ p.makeTempoClock;
 
         var sig = Perlin3.ar(x,y,t*ff);
         var bck = Perlin3.kr(sx,sy,st);
+        RandSeed.kr(Impulse.kr(1/128*~tempo),2017);
         sig = BBandPass.ar(sig,filfreq2,LFTri.ar(1/16/speed).exprange(0.0005,1)**4/2);
         sig = Resonz.ar(sig,filfreq*4,0.62);
         sig = Normalizer.ar(sig) * (LFTri.kr(1/4/speed)**4) * (LFTri.kr(1/16/speed)**4);
