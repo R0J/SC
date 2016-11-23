@@ -336,7 +336,7 @@ p.clock.queue.postln
         sig = sig + (LPF.ar(GrayNoise.ar(1!2),5000) * (env**mod));
         sig = sig * env;
         sig = sig.distort;
-        Splay.ar(sig,0.01,0.5);
+        Splay.ar(sig,0.01,0.65);
     };
     ~kick_one.play;
 );
@@ -376,7 +376,7 @@ p.clock.queue.postln
     };
     ~high_kick.play;
 );
-~high_kick.clear(4);
+~high_kick.clear(16);
 ~high_kick.stop(4);
 ~high_kick.pause;
 ~high_kick.resume;
@@ -508,7 +508,7 @@ Env.adsr(0.1,1,1,0.2,0.9,4).plot;
         RandSeed.kr(Impulse.kr(1/128*~tempo),2017);
         sig = Perlin3.ar(sig[0],sig[1],sig[2]) * (LFSaw.ar(1/4/[1,2,3,4] * ~tempo)**2);
         sig = LPF.ar(sig,LFDNoise1.kr(1/16!3 * ~tempo/2).range(500,15000));
-        Splay.ar(sig,0.75,0.05,pan);
+        Splay.ar(sig,0.75,0.025,pan);
     };
     ~perl.play;
 );
@@ -741,7 +741,7 @@ NodeProxy.help;
         ~modem.play;
     );
 );
-
+~modem.stop(16)
 
 (
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
@@ -847,7 +847,7 @@ p.restartClock;
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.5],[3,-3],curve:'exp'),imp * hit);
         var sig = Crackle.ar([0.1,0.2,0.6]+env);
         sig = sig * env;
-        Splay.ar(sig,0.25,0.295);
+        Splay.ar(sig,0.25,0.095);
     };
     ~hiss.play;
 );
