@@ -6,7 +6,6 @@ EnvDef {
 	var <duration;
 	var <minValue, <maxValue;
 
-	var <group;
 	var <buffer;
 
 	classvar <>all;
@@ -26,10 +25,12 @@ EnvDef {
 		^def;
 	}
 
+	*exist { |key| if(this.all.at(key).notNil) { ^true; } { ^false; } }
+
 	init {
 		Server.default.waitForBoot({
 			bus = Bus.control(Server.default, 1);
-			group = RootNode(Server.default);
+			// group = RootNode(Server.default);
 			if(hasInitSynthDefs.not) { this.initSynthDefs; };
 		})
 	}
@@ -61,9 +62,11 @@ EnvDef {
 		all.removeAt(key);
 	}
 
-	trig { |startTime = 0|
+	trig { |startTime = 0, parentGroup = nil|
 		if(buffer.notNil)
 		{
+			var group = RootNode(Server.default);
+			if(parentGroup.notNil) { group = parentGroup; };
 			bufferSynthDef.name_(this.synthName);
 			bufferSynthDef.play(
 				target: group,
@@ -88,7 +91,7 @@ EnvDef {
 				currentEnvironment.clock.sched(0, {
 					testSynthDef.name_("EnvDef_test_%".format(key));
 					testSynth = testSynthDef.play(
-						target: group,
+						target: RootNode(Server.default),
 						args:[
 							\cBus: bus,
 							\freq: freq,
@@ -118,8 +121,6 @@ EnvDef {
 			);
 		}.defer(0.01);
 	}
-
-	setLevels { |...items| "Pouze test zadani array".postln; ^items.collect(_.asString) }
 
 	synthName {	^"Env_%".format(key).asSymbol; }
 
@@ -156,11 +157,6 @@ EnvDef {
 		});
 		// "EnvDef min: % | max: % ".format(minValue, maxValue).postln;
 
-		this.prRender;
-		all.put(itemKey, this);
-	}
-
-	prRender {
 		Server.default.waitForBoot({
 			var controlRate = Server.default.sampleRate / Server.default.options.blockSize;
 			buffer = Buffer.alloc(
@@ -171,6 +167,8 @@ EnvDef {
 			buffer.loadCollection(env.asSignal(controlRate * duration));
 			buffer.normalize;
 		});
+
+		all.put(itemKey, this);
 	}
 
 	printOn { |stream| stream << this.class.name << "('" << key << "' | dur: " << duration << ")"; }

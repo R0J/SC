@@ -18,7 +18,10 @@ Timeline {
 		});
 	}
 
-	setEnd {|endTime| this.put(endTime, nil, 0, \timeline_end); }
+	setEnd {|endTime|
+		this.removeKeys(\timeline_end);
+		this.put(endTime, nil, 0, \timeline_end);
+	}
 
 	atTime {|time|
 		var items = List.new();
