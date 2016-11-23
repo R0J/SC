@@ -2,7 +2,9 @@ EnvDef {
 	var <key;
 	var <env;
 	var <bus;
+
 	var <duration;
+	var <minValue, <maxValue;
 
 	var <group;
 	var <buffer;
@@ -46,7 +48,9 @@ EnvDef {
 			Out.kr(cBus,buf * \multiplicationBus.kr(1));
 		}.asSynthDef;
 
-		testSynthDef = { |cBus, freq = 440| SinOsc.ar(freq, 0, mul: In.kr(cBus)) }.asSynthDef;
+		testSynthDef = { |cBus, freq = 440, minRange = -1, maxRange = 1|
+			SinOsc.ar(freq!2, 0, mul: In.kr(cBus).range(minRange, maxRange));
+		}.asSynthDef;
 
 		hasInitSynthDefs = true;
 	}
@@ -77,54 +81,82 @@ EnvDef {
 	}
 
 	test {|freq = 120, startTime = 0|
-		if(duration - startTime > 0)
 		{
-			var testSynth;
-			currentEnvironment.clock.sched(0, {
-				testSynthDef.name_("EnvDef_test_%".format(key));
-				testSynth = testSynthDef.play(
-					target: group,
-					args:[\cBus: bus, \freq: freq]
-				);
-				this.trig(startTime);
-				nil;
-			});
-			currentEnvironment.clock.sched((duration - startTime), {
-				"End of test %".format(testSynth).postln;
-				testSynth.free;
-				nil;
-			});
-		}
-		{ "% is shorter than arg startTime(%)".format(this, startTime).warn; }
+			if(duration - startTime > 0)
+			{
+				var testSynth;
+				currentEnvironment.clock.sched(0, {
+					testSynthDef.name_("EnvDef_test_%".format(key));
+					testSynth = testSynthDef.play(
+						target: group,
+						args:[
+							\cBus: bus,
+							\freq: freq,
+							\minRange: minValue,
+							\maxRange: maxValue
+						]
+					);
+					this.trig(startTime);
+					nil;
+				});
+				currentEnvironment.clock.sched((duration - startTime), {
+					// "End of test %".format(testSynth).postln;
+					testSynth.free;
+					// testSynth.release(2);
+					nil;
+				});
+			}
+			{ "% is shorter than arg startTime(%)".format(this, startTime).warn; }
+		}.defer(0.01);
 	}
 
 	plot {|size = 400|
-		if(env.notNil,
-			{ env.plotNamedEnv(this.synthName, size); },
-			{ "% envelope not found".format(this).warn; }
-		);
+		{
+			if(env.notNil,
+				{ env.plotNamedEnv(this.synthName, size); },
+				{ "% envelope not found".format(this).warn; }
+			);
+		}.defer(0.01);
 	}
+
+	setLevels { |...items| "Pouze test zadani array".postln; ^items.collect(_.asString) }
 
 	synthName {	^"Env_%".format(key).asSymbol; }
 
 	prStore { |itemKey, item, dur|
 		key = itemKey;
-		env = item;
 
 		case
 		{ item.isKindOf(Env) }
 		{
+			env = item;
 			if(dur.isNil)
 			{ duration = item.duration; }
 			{ duration = dur; };
-			this.prRender;
 		}
-		{ item.isKindOf(Integer) } { "Item is kind of Integer".warn; }
-		{ item.isKindOf(Number) } { "Item is kind of Number".warn;  }
-		{ item.isKindOf(Pbind) } { "Item is kind of Pbind".warn;  }
-		{ item.isKindOf(UGen) } { "Item is kind of UGen".warn; }
+		{ item.isKindOf(Number) || item.isKindOf(Integer) }
+		{
+			if(dur.isNil) {
+				env = Env([item, item], 1, \lin);
+				duration = 1;
+			} {
+				env = Env([item, item], dur, \lin);
+				duration = dur;
+			};
+		}
+		{ item.isKindOf(Pbind) } { "Item is kind of Pbind".warn; ^this;}
+		{ item.isKindOf(UGen) } { "Item is kind of UGen".warn; ^this;}
 		;
 
+		maxValue = env.levels[0];
+		minValue = env.levels[0];
+		env.levels.do({|lev|
+			if(lev > maxValue) { maxValue = lev; };
+			if(lev < minValue) { minValue = lev; };
+		});
+		// "EnvDef min: % | max: % ".format(minValue, maxValue).postln;
+
+		this.prRender;
 		all.put(itemKey, this);
 	}
 
@@ -136,8 +168,8 @@ EnvDef {
 				numFrames: (controlRate * this.duration).ceil,
 				numChannels: 1,
 			);
-			// buffer.loadCollection(this.envelope.asSignal((controlRate * this.duration).ceil));
 			buffer.loadCollection(env.asSignal(controlRate * duration));
+			buffer.normalize;
 		});
 	}
 
