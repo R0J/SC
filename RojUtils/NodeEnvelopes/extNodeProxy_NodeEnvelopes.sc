@@ -35,4 +35,18 @@
 		^nStage;
 	}
 
-}
+	envMap {|key ...envDefKeys|
+
+		envDefKeys.do({|key|
+			if(EnvDef.exist(key))
+			{
+				buses.add(EnvDef(key).bus);
+			};
+		});
+		buses.postln;
+		// this.map(key.asSymbol, BusPlug.for(EnvDef(envDefKeys[0].asSymbol).bus));
+		// this.map(key.asSymbol, In.ar([3,4]).asControlInput();
+		this.nodeMap.set(key.asSymbol,
+		}
+
+	}

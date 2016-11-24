@@ -9,11 +9,13 @@ EnvDef {
 	var <buffer;
 
 	classvar <>all;
+	classvar <>busLibrary;
 	classvar hasInitSynthDefs;
 	classvar bufferSynthDef, testSynthDef;
 
 	*initClass {
 		all = IdentityDictionary.new;
+		busLibrary = MultiLevelIdentityDictionary.new;
 		hasInitSynthDefs = false;
 	}
 
@@ -29,10 +31,26 @@ EnvDef {
 
 	init {
 		Server.default.waitForBoot({
-			bus = Bus.control(Server.default, 1);
+			// bus = Bus.control(Server.default, 1);
+			bus = nil;
 			// group = RootNode(Server.default);
 			if(hasInitSynthDefs.not) { this.initSynthDefs; };
 		})
+	}
+
+	setBus {|nodeName, controlName|
+		Server.default.waitForBoot({
+			var targetBus = busLibrary.atPath([nodeName.asSymbol, controlName.asSymbol]);
+			if(targetBus.isNil)
+			{
+				bus = Bus.control(Server.default, 1);
+				busLibrary.putAtPath([nodeName.asSymbol, controlName.asSymbol], bus);
+				nodeName.asSymbol.envirGet.map(controlName.asSymbol, BusPlug.for(bus));
+			}
+			{
+				bus = targetBus;
+			}
+		});
 	}
 
 	initSynthDefs{
