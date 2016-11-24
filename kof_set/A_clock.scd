@@ -1,8 +1,10 @@
 p.disconnect;
 p = NetProxy.connect();
 
+
+
 p.bpm;
-p.metro(4,1500);
+p.metro(16,1500);
 p.bpm(127);
 
 p.players;
@@ -14,14 +16,15 @@ p.makeTempoClock;
 
 /////// MANUAL TICK RESET /////////////////////////////////////////////////////////////////
 (
-    ~tick.kr(1);
-    ~counter.kr(1);
+    p.restartClock();
+    ~tick.kr(16);
+    ~counter.kr(16);
 
     ~tick.clock = p.clock;
     ~counter.clock = p.clock;
 
-    ~tick.quant=4;
-    ~counter.quant=4;
+    ~tick.quant=16;
+    ~counter.quant=16;
 
     ~tick = { var imp = Impulse.kr(~tempo.kr * 4); SendTrig.kr(PulseDivider.kr(imp,16), 0, ~tempo.kr ); imp;  };
     ~counter = {PulseCount.kr(~tick.kr);};
