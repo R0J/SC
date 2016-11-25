@@ -3,6 +3,8 @@ EnvDef {
 	var <env;
 	var <bus;
 
+	var <nodeName, <controlName;
+
 	var <duration;
 	var <minValue, <maxValue;
 
@@ -15,7 +17,7 @@ EnvDef {
 
 	*initClass {
 		all = IdentityDictionary.new;
-		busLibrary = MultiLevelIdentityDictionary.new;
+		busLibrary = IdentityDictionary.new;
 		hasInitSynthDefs = false;
 	}
 
@@ -30,22 +32,24 @@ EnvDef {
 	*exist { |key| if(this.all.at(key).notNil) { ^true; } { ^false; } }
 
 	init {
-		Server.default.waitForBoot({
-			// bus = Bus.control(Server.default, 1);
-			bus = nil;
-			// group = RootNode(Server.default);
-			if(hasInitSynthDefs.not) { this.initSynthDefs; };
-		})
+		bus = nil;
+		nodeName = nil;
+		controlName = nil;
+		if(hasInitSynthDefs.not) { this.initSynthDefs; };
 	}
 
-	setBus {|nodeName, controlName|
+	map {|nodeKey, controlKey|
+
+		var busName = "%_%".format(nodeKey, controlKey).asSymbol;
 		Server.default.waitForBoot({
-			var targetBus = busLibrary.atPath([nodeName.asSymbol, controlName.asSymbol]);
+			var targetBus = busLibrary.at(busName);
+			nodeName = nodeKey;
+			controlName = controlKey;
 			if(targetBus.isNil)
 			{
 				bus = Bus.control(Server.default, 1);
-				busLibrary.putAtPath([nodeName.asSymbol, controlName.asSymbol], bus);
-				nodeName.asSymbol.envirGet.map(controlName.asSymbol, BusPlug.for(bus));
+				busLibrary.put(busName, bus);
+				nodeKey.asSymbol.envirGet.map(controlKey.asSymbol, BusPlug.for(bus));
 			}
 			{
 				bus = targetBus;
@@ -53,30 +57,37 @@ EnvDef {
 		});
 	}
 
+	unmap {
+
+	}
+
 	initSynthDefs{
-		bufferSynthDef = { |cBus, bufnum, startTime = 0|
-			var controlRate = Server.default.sampleRate / Server.default.options.blockSize;
-			var buf = PlayBuf.kr(
-				numChannels: 1,
-				bufnum: bufnum,
-				startPos: startTime * controlRate,
-				rate: \tempoClock.kr(1),
-				loop: 0
-			);
-			FreeSelfWhenDone.kr(buf);
-			Out.kr(cBus,buf * \multiplicationBus.kr(1));
-		}.asSynthDef;
+		Server.default.waitForBoot({
+			bufferSynthDef = { |cBus, bufnum, startTime = 0|
+				var controlRate = Server.default.sampleRate / Server.default.options.blockSize;
+				var buf = PlayBuf.kr(
+					numChannels: 1,
+					bufnum: bufnum,
+					startPos: startTime * controlRate,
+					rate: \tempoClock.kr(1),
+					loop: 0
+				);
+				FreeSelfWhenDone.kr(buf);
+				Out.kr(cBus,buf * \multiplicationBus.kr(1));
+			}.asSynthDef;
 
-		testSynthDef = { |cBus, freq = 440, minRange = -1, maxRange = 1|
-			SinOsc.ar(freq!2, 0, mul: In.kr(cBus).range(minRange, maxRange));
-		}.asSynthDef;
+			testSynthDef = { |cBus, freq = 440, minRange = -1, maxRange = 1|
+				SinOsc.ar(freq!2, 0, mul: In.kr(cBus).range(minRange, maxRange));
+			}.asSynthDef;
 
-		hasInitSynthDefs = true;
+			hasInitSynthDefs = true;
+		});
 	}
 
 	free {
-		bus.free;
+		// bus.free;
 		buffer.free;
+		// busLibrary.removeAt(key.asSymbol);
 		all.removeAt(key);
 	}
 
@@ -140,7 +151,7 @@ EnvDef {
 		}.defer(0.01);
 	}
 
-	synthName {	^"Env_%".format(key).asSymbol; }
+	synthName {	^"EnvDef('%')".format(key).asSymbol; }
 
 	prStore { |itemKey, item, dur|
 		key = itemKey;
@@ -183,7 +194,7 @@ EnvDef {
 				numChannels: 1,
 			);
 			buffer.loadCollection(env.asSignal(controlRate * duration));
-			buffer.normalize;
+			// buffer.normalize;
 		});
 
 		all.put(itemKey, this);
@@ -192,6 +203,7 @@ EnvDef {
 	printOn { |stream| stream << this.class.name << "('" << key << "' | dur: " << duration << ")"; }
 
 }
+
 
 
 

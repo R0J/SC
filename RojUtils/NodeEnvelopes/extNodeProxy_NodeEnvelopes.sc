@@ -1,18 +1,16 @@
 + NodeProxy {
 
-	env { |controlName, envelopeName = nil|
-		var nEnv;
-		NodeComposition.addNode(this);
-
-		if(controlName.notNil)
+	env { |controlName, envelopeName, envelope = nil, duration = nil|
+		if(controlName.notNil && envelopeName.notNil)
 		{
-			if(envelopeName.isNil,
-				{ nEnv = NodeEnv(this.envirKey, controlName.asSymbol, \default); },
-				{ nEnv = NodeEnv(this.envirKey, controlName.asSymbol, envelopeName.asSymbol); }
-			);
-			NodeComposition.addEnvelope(nEnv);
-		};
-		^nEnv;
+			var name = "%_%_%".format(this.envirKey, controlName, envelopeName).asSymbol;
+			// name.postln;
+			// EnvDef.exist(name).postln;
+			if(EnvDef.exist(name))
+			{ ^EnvDef(name); }
+			{ if(envelope.notNil) { ^EnvDef(name, envelope, duration).map(this.envirKey.asSymbol, controlName.asSymbol); }}
+		}
+		^nil;
 	}
 
 	cycle { |cycleName = nil|
@@ -33,20 +31,6 @@
 		);
 		NodeComposition.addStage(nStage);
 		^nStage;
-	}
-
-	envMap {|key ...envDefKeys|
-
-		envDefKeys.do({|key|
-			if(EnvDef.exist(key))
-			{
-				// buses.add(EnvDef(key).bus);
-			};
-		});
-		// buses.postln;
-		// this.map(key.asSymbol, BusPlug.for(EnvDef(envDefKeys[0].asSymbol).bus));
-		// this.map(key.asSymbol, In.ar([3,4]).asControlInput();
-		// this.nodeMap.set(key.asSymbol,
 	}
 
 }

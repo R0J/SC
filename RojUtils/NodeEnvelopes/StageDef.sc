@@ -4,16 +4,17 @@ StageDef {
 	var <bus;
 	var <duration;
 	var <timeline;
+	var nodeLibrary;
 
 	classvar <>all;
 
 	*initClass { all = IdentityDictionary.new; }
 
-	*new { |key, item, dur = nil|
+	*new { |key ... nodeNames|
 		var def = this.all.at(key);
 		if(def.isNil)
-		{ def = super.new.init.prStore(key, item, dur); }
-		{ if(item.notNil) {	def.prStore(key, item, dur); }};
+		{ def = super.new.init.prStore(key, nodeNames); }
+		{ def.prStore(key, nodeNames); };
 		^def;
 	}
 
@@ -30,6 +31,7 @@ StageDef {
 		group = Group.new( RootNode (Server.default));
 		// group.onFree({ "Stage % end".format(key).postln; });
 		timeline = Timeline.new();
+		nodeLibrary = List.new();
 	}
 
 	free {
@@ -57,11 +59,14 @@ StageDef {
 
 	trig { |startTime = 0|
 		// |targetGroup, targetBus|
+		nodeLibrary.postln;
 		timeline.play({|item| item.trig(0, group); });
 	}
 
-	prStore { |itemKey, item, dur|
+	prStore { |itemKey, nodeNames|
 		key = itemKey;
+		nodeLibrary = nodeNames;
+
 		all.put(itemKey, this);
 	}
 

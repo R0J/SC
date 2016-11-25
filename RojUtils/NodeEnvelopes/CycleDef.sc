@@ -1,7 +1,7 @@
 CycleDef {
 	var <key;
 	var <group;
-	var <bus;
+	// var <bus;
 	var <cycleQuant;
 	var <timeline;
 
@@ -27,17 +27,19 @@ CycleDef {
 
 	init {
 		// CmdPeriod.add(this);
-		bus = Bus.control(Server.default, 1);
+		// bus = Bus.control(Server.default, 1);
 		// group = Group.new( RootNode (Server.default));
 		timeline = Timeline.new();
 	}
 
 	free {
 		group.free;
-		bus.free;
+		// bus.free;
 		CmdPeriod.remove(this);
 		all.removeAt(key);
 	}
+
+	removeEnv {|envKey| timeline.removeKeys(envKey); }
 
 	quant {|qnt|
 		cycleQuant = qnt;
