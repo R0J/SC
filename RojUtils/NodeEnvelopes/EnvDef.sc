@@ -29,7 +29,7 @@ EnvDef {
 		^def;
 	}
 
-	*exist { |key| if(this.all.at(key).notNil) { ^true; } { ^false; } }
+	*exist { |key| if(this.all.at(key.asSymbol).notNil) { ^true; } { ^false; } }
 
 	init {
 		bus = nil;
@@ -58,7 +58,7 @@ EnvDef {
 	}
 
 	unmap {
-
+		// nodeKey.asSymbol.envirGet.unmap(controlKey.asSymbol);
 	}
 
 	initSynthDefs{
@@ -94,9 +94,11 @@ EnvDef {
 	trig { |startTime = 0, parentGroup = nil|
 		if(buffer.notNil)
 		{
+			// var synth;
 			var group = RootNode(Server.default);
 			if(parentGroup.notNil) { group = parentGroup; };
 			bufferSynthDef.name_(this.synthName);
+			// bufferSynthDef.optimizeGraph;
 			bufferSynthDef.play(
 				target: group,
 				args:
@@ -108,6 +110,7 @@ EnvDef {
 					// \multiplicationBus, targetBus.asMap
 				]
 			);
+			// synth
 		}
 		{ "% buffer not found".format(this).warn; }
 	}

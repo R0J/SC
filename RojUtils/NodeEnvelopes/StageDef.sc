@@ -18,6 +18,8 @@ StageDef {
 		^def;
 	}
 
+	*exist { |key| if(this.all.at(key.asSymbol).notNil) { ^true; } { ^false; } }
+
 	cmdPeriod {
 		{
 			group = Group.new( RootNode (Server.default))

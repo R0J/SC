@@ -1,9 +1,10 @@
 CycleDef {
 	var <key;
 	var <group;
-	// var <bus;
 	var <cycleQuant;
 	var <timeline;
+
+	var <nodeName;
 
 	classvar <>all;
 
@@ -17,7 +18,7 @@ CycleDef {
 		^def;
 	}
 
-	*exist { |key| if(this.all.at(key).notNil) { ^true; } { ^false; } }
+	*exist { |key| if(this.all.at(key.asSymbol).notNil) { ^true; } { ^false; } }
 
 	cmdPeriod {
 		{
@@ -30,6 +31,7 @@ CycleDef {
 		// bus = Bus.control(Server.default, 1);
 		// group = Group.new( RootNode (Server.default));
 		timeline = Timeline.new();
+		nodeName = nil;
 	}
 
 	free {
@@ -46,7 +48,11 @@ CycleDef {
 		timeline.setEnd(qnt);
 	}
 
+	node {|nodeKey| nodeName = nodeKey }
+
 	times {  |envDefKey ... times|
+		if(nodeName.notNil) { envDefKey = "%_%".format(nodeName, envDefKey)};
+
 		if(EnvDef.exist(envDefKey))
 		{
 			// "at % -> %".format(time, envDefsKeys).postln;
