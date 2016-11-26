@@ -107,26 +107,26 @@ NodeComposition {
 		};
 		^nil;
 	}
-/*
+	/*
 	*updateTimes {|nodeName, controlName|
-		if(library.notNil) {
-			var cyclesFolder = library.atPath([nodeName.asSymbol, \cycles]);
-			var stageFolder = library.atPath([nodeName.asSymbol, \stages]);
+	if(library.notNil) {
+	var cyclesFolder = library.atPath([nodeName.asSymbol, \cycles]);
+	var stageFolder = library.atPath([nodeName.asSymbol, \stages]);
 
-			if(cyclesFolder.notNil) {
-				cyclesFolder.sortedKeysValuesDo({|oneCycleName|
-					var oneCycle = this.getCycle(nodeName, oneCycleName);
-					// oneCycle.set(controlName, oneCycle.envelopePattern.at(controlName.asSymbol), 0) // POZOR, uz nefunguje
-				});
-			};
+	if(cyclesFolder.notNil) {
+	cyclesFolder.sortedKeysValuesDo({|oneCycleName|
+	var oneCycle = this.getCycle(nodeName, oneCycleName);
+	// oneCycle.set(controlName, oneCycle.envelopePattern.at(controlName.asSymbol), 0) // POZOR, uz nefunguje
+	});
+	};
 
-			if(stageFolder.notNil) {
-				stageFolder.sortedKeysValuesDo({|oneStageName|
-					// var oneStage = this.getStage(nodeName, oneStageName); // POZOR, uz nefunguje
-					oneStage.set(oneStage.cyclePattern, 0)
-				});
-			};
-		}
+	if(stageFolder.notNil) {
+	stageFolder.sortedKeysValuesDo({|oneStageName|
+	// var oneStage = this.getStage(nodeName, oneStageName); // POZOR, uz nefunguje
+	oneStage.set(oneStage.cyclePattern, 0)
+	});
+	};
+	}
 	}
 	*/
 
@@ -141,22 +141,61 @@ NodeComposition {
 				currentEnvironment.clock.timeToNextBeat(quantOfChange).wait;
 
 				library.dictionary.keysValuesDo({|nodeName, dict|
+					var node = this.getNode(nodeName);
 					var path = [nodeName.asSymbol, \stages];
 
 					library.atPath(path).keysValuesDo({|oneStageName, nStage|
 						if((nStage.stageName.asSymbol == stageName.asSymbol),
 							{
+								node.play(vol:1, fadeTime:fadeTime);
 								nStage.play;
 								nStage.fadeIn(fadeTime);
 							},{
 								nStage.fadeOut(fadeTime);
 								nStage.stop(fadeTime);
+								node.free(fadeTime)
 						});
 					});
 				});
 				stageChangeTask = nil;
 			}).play;
 		};
+	}
+
+	*test { |stageName, fadeTime = 0, quantOfChange = 0|
+		// if(stageName.asSymbol != currentStage.asSymbol)
+		// {
+		this.initLibrary;
+		currentStage = stageName;
+		("currentStage: \\" ++ currentStage).postln;
+		// if(stageChangeTask.notNil) { stageChangeTask.stop; };
+
+		stageChangeTask = Task({
+			currentEnvironment.clock.timeToNextBeat(quantOfChange).wait;
+
+			library.dictionary.keysValuesDo({|nodeName, dict|
+				var node = this.getNode(nodeName);
+				var path = [nodeName.asSymbol, \stages];
+				("nodeName: ~" ++ nodeName).postln;
+
+				library.atPath(path).keysValuesDo({|oneStageName, nStage|
+					if((nStage.stageName.asSymbol == stageName.asSymbol),
+						{
+							("START jsem tu:" + nodeName).warn;
+							node.play(vol:1, fadeTime:fadeTime);
+							nStage.play;
+							nStage.fadeIn(fadeTime);
+						},{
+							("FREE  jsem tu:" + nodeName).warn;
+							nStage.fadeOut(fadeTime);
+							nStage.free(fadeTime);
+							node.free(fadeTime)
+					});
+				});
+			});
+			// stageChangeTask = nil;
+		}).play(currentEnvironment.clock);
+		// };
 	}
 
 	*play {|from = 0, to = nil, loop = false|
