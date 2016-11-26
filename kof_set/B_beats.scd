@@ -3,28 +3,27 @@ p = NetProxy.push();
 s.latency = 0.2;
 )
 
-// MAIN KICK (NOPLAY) /////////////////////////////////////// *****
+// Compander DUCK (NOPLAY) /////////////////////////////////////// *****
 (
-    ~kick_one.ar(2);
-    ~kick_one.clock = p.clock;
-    ~kick_one.quant=[4];
-    ~kick_one.fadeTime=0.02;
-    ~kick_one={
+    ~duck.ar(2);
+    ~duck.clock = p.clock;
+    ~duck.quant=[16];
+    ~duck.fadeTime=0.02;
+    ~duck={
         //         |       |       |       |       |
         var mod = LFNoise2.kr(1/16*~tempo).range(30,80);
         var pat = [
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
-            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
-            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
-            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
+//            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
+ //           1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
+  //          1,0,0,0, 1,0,0,0, 1,0,0,0, 1,1,1,1,
         ];
         var imp = PulseDivider.kr(~tick.kr,1,~counter.kr);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.00001],[0.002,1.0],[30,-3]),imp * hit);
-        var sig = SinOsc.ar(30.midicps+(env**8*2),env**mod*8pi);
-        sig = sig + (LPF.ar(GrayNoise.ar(1!2),5000) * (env**mod));
+        var env = EnvGen.ar(Env([0.001,1,0.00001],[0.002,0.40],[2,-3]),imp * hit);
+        var sig = SinOsc.ar(0,env**mod*8pi);
+        //sig = sig + (LPF.ar(GrayNoise.ar(1!2),5000) * (env**mod));
         sig = sig * env;
-        sig = sig.distort;
         Splay.ar(sig,0.01,0.95);
     };
 );
@@ -131,7 +130,7 @@ s.latency = 0.2;
         fx = DWGReverb.ar(NumChannels.ar(fx,2),[5000,5100],1/len)/rev + fx;
         
         sig = SelectX.ar(wet,[orig,fx]);
-        sig = Compander.ar(sig,~kick_one.ar,8/10,1/2,1/20,0.002,1/4*~tempo);
+        sig = Compander.ar(sig,~duck.ar,8/10,1/2,1,0.0002,1/4*~tempo);
         sig = NumChannels.ar(sig,2) ;
         sig = Limiter.ar(sig.softclip);
         ReplaceOut.ar(0,sig);
@@ -358,7 +357,7 @@ p.clock.queue.postln
 (
     ~kick_one.ar(2);
     ~kick_one.clock = p.clock;
-    ~kick_one.quant=[4];
+    ~kick_one.quant=[16];
     ~kick_one.fadeTime=0.02;
     ~kick_one={
         //         |       |       |       |       |
