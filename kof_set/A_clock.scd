@@ -4,7 +4,7 @@ p = NetProxy.connect();
 
 
 p.bpm;
-p.metro(16,1500);
+p.metro(4,1800);
 p.bpm(127);
 
 p.players;
@@ -14,11 +14,15 @@ p.makeTempoClock;
 
 
 
+
+
 /////// MANUAL TICK RESET /////////////////////////////////////////////////////////////////
 (
+  s.latency = 0.2;
     p.restartClock();
-    ~tick.kr(16);
-    ~counter.kr(16);
+  p.clock.sched(p.clock.timeToNextBeat(16,[-1]),{ 
+    ~tick.kr(1);
+    ~counter.kr(1);
 
     ~tick.clock = p.clock;
     ~counter.clock = p.clock;
@@ -29,6 +33,7 @@ p.makeTempoClock;
     ~tick = { var imp = Impulse.kr(~tempo.kr * 4); SendTrig.kr(PulseDivider.kr(imp,16), 0, ~tempo.kr ); imp;  };
     ~counter = {PulseCount.kr(~tick.kr);};
             p.moveNodeToTail(\master);
+  });
 );
 
 
