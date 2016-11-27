@@ -4,6 +4,8 @@ CycleDef {
 	var <cycleQuant;
 	var <timeline;
 
+	var <env;
+
 	var <nodeName;
 
 	classvar <>all;
@@ -32,6 +34,7 @@ CycleDef {
 		// group = Group.new( RootNode (Server.default));
 		timeline = Timeline.new();
 		nodeName = nil;
+		env = nil;
 	}
 
 	free {
@@ -74,6 +77,8 @@ CycleDef {
 		{ group = Group.new( RootNode (Server.default) ); }
 		{ group = Group.new( targetGroup ); };
 
+		// "% trig time: %".format(this, currentEnvironment.clock.beats).postln;
+		// timeline.array.postln;
 		// |targetGroup, targetBus|
 		timeline.play({|item|
 			// "% from: %".format(item, item.from).postln;
@@ -88,6 +93,8 @@ CycleDef {
 			nil;
 		});
 	}
+
+
 
 	plot {|size = 400|
 		var plotName = "CycleDef_" ++ key;

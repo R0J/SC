@@ -72,7 +72,7 @@ Timeline {
 		this.times.do({|oneTime|
 			var arrTimebar = timeline[oneTime];
 			arrTimebar.asArray.do({|oneTimebar|
-				items.add([oneTimebar.from, oneTimebar.item]);
+				items.add([oneTimebar.from, oneTimebar.item, oneTimebar.duration, oneTimebar.key]);
 			});
 		});
 		^items.asArray;
@@ -127,6 +127,24 @@ Timeline {
 			});
 		})
 	}
+
+	schedToClock { |clock, function = nil| // -> example of function -> timline.schedToClock( clock, {|time, duration, item, key| ... });
+
+		if(function.isNil) {
+			function = {|time, duration, item, key|
+				"\t- Timeline function call -> time: % || dur: % || key: % || item: %".format(time, duration, key, item).postln;
+			}
+		};
+
+		this.array.do({|bar|
+			var time = bar[0];
+			var item = bar[1];
+			var duration = bar[2];
+			var key = bar[3];
+			clock.sched(time, { function.value(time, duration, item, key); nil; });
+		});
+	}
+
 }
 
 Timebar {
