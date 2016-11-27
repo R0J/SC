@@ -10,25 +10,12 @@ s.latency = 0.2;
     ~duck.quant=[16];
     ~duck.fadeTime=0.02;
     ~duck={
-        //         |       |       |       |       |
-        var mod = LFNoise2.kr(1/16*~tempo).range(30,80);
-        var pat = [
-            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
-//            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
- //           1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
-  //          1,0,0,0, 1,0,0,0, 1,0,0,0, 1,1,1,1,
-        ];
-        var imp = PulseDivider.kr(~tick.kr,1,~counter.kr);
-        var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.00001],[0.002,0.40],[2,-3]),imp * hit);
-        var sig = SinOsc.ar(0,env**mod*8pi);
-        //sig = sig + (LPF.ar(GrayNoise.ar(1!2),5000) * (env**mod));
-        sig = sig * env;
+        var sig = ~kick_one.ar;
         Splay.ar(sig,0.01,0.95);
     };
 );
 
-
+p.bpm(115)
 
 
 (
@@ -76,7 +63,7 @@ s.latency = 0.2;
 
 // BRIGHT MASTER ////////////////////////////////////////////////////////// ****
 (
-    ~master.quant=4;
+    ~master.quant=16;
     ~master.clock = p.clock;
     ~master.play;
     ~master.fadeTime = 0.01;
@@ -108,14 +95,16 @@ s.latency = 0.2;
 // CLASSIC MASTER /w KICK_ONE DUCKING //////////////////////////////////////////////////////////// ***
 
 (
-    ~master.quant=4;
+    ~master.quant=16;
     ~master.play;
     ~master.fadeTime = 0.01;
-    ~master = {|wet=0.35,lp=4500,hp=250,len=4,rev = 2|
+    ~master = {|wet=0.35,lp=4500,hp=250,len=4,rev = 2,duckLo = 150|
         var sig = In.ar([0,1]);
         var orig = sig;
         var fx,low,high,mid;
+        var duck;
 
+        duck = LPF.ar(LPF.ar(sig,duckLo),duckLo);
         low = CompanderD.ar(LPF.ar(sig,LFNoise2.kr(1/4!2*~tempo).range(100,800)),9/10,1,1/2);
         mid = CompanderD.ar(BPF.ar(sig,LFNoise2.kr(1/8!2*~tempo).range(500,4500),1/2),9/10,1,1/2);
         high = CompanderD.ar(HPF.ar(sig,LFNoise2.kr(1/16!2*~tempo).range(3000,10000)),9/10,1,1/2);
@@ -130,7 +119,7 @@ s.latency = 0.2;
         fx = DWGReverb.ar(NumChannels.ar(fx,2),[5000,5100],1/len)/rev + fx;
         
         sig = SelectX.ar(wet,[orig,fx]);
-        sig = Compander.ar(sig,~duck.ar,8/10,1/2,1,0.0002,1/4*~tempo);
+        sig = Compander.ar(sig,duck,8/10,1/2,1,0.0002,1/4*~tempo);
         sig = NumChannels.ar(sig,2) ;
         sig = Limiter.ar(sig.softclip);
         ReplaceOut.ar(0,sig);
@@ -368,19 +357,21 @@ p.clock.queue.postln
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
         ];
-        var imp = PulseDivider.kr(~tick.kr,1,~counter.kr);
+        var len = LFNoise2.kr(~tempo/32!2).range(0.2,2.5);
+        var imp = PulseDivider.kr(~tick.kr,1);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.00001],[0.002,1.0],[30,-3]),imp * hit);
+
+        var env = {EnvGen.ar( Env.adsr(0.002,0.1,len,len,curve: -1 * mod) ,imp * hit)};
         var sig = SinOsc.ar(30.midicps+(env**8*2),env**mod*8pi);
-        sig = sig + (LPF.ar(GrayNoise.ar(0.5!2),500) * (env**(2*mod)));
+        sig = sig + (LPF.ar(GrayNoise.ar(0.5!2),500) * (env**(0.2*mod)));
+        sig = Normalizer.ar(sig);
         sig = sig * env;
         sig = sig.distort;
-        //Splay.ar(sig,0.01,0.95);
-        sig;
+        Splay.ar(sig,0.01,0.95);
+        
     };
     ~kick_one.play;
 );
-
 
 
 

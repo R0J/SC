@@ -2,6 +2,8 @@ p.disconnect;
 p = NetProxy.connect();
 
 
+Post <<< "\\n";
+
 
 p.bpm;
 p.metro(4,1800);

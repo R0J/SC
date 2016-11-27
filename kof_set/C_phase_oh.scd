@@ -136,6 +136,15 @@ p.makeTempoClock;
     ~onea.play;
 );
 
+~onea.clear()
+
+
+(
+//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+{
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(60);};});
+}.fork;  
+)
 
 (
     ~kick.clear(1);
