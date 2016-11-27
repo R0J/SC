@@ -74,9 +74,12 @@ CycleDef {
 		{ group = Group.new( RootNode (Server.default) ); }
 		{ group = Group.new( targetGroup ); };
 
-
 		// |targetGroup, targetBus|
-		timeline.play({|item| item.trig(0, group); });
+		timeline.play({|item|
+			// "% from: %".format(item, item.from).postln;
+			item.trig(0, group);
+
+		}, startTime);
 
 		currentEnvironment.clock.sched(timeline.duration + 5, {
 			group.free;

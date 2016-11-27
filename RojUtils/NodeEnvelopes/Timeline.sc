@@ -103,12 +103,12 @@ Timeline {
 		txt.postln;
 	}
 
-	play {|function = nil, startQuant = 0|  // -> example of function -> {|item| item.postln; };
+	play {|function = nil, startTime = 0|  // -> example of function -> {|item| item.postln; };
+		// var timeToQuant = 0;
 		var clock = TempoClock.default;
-		var timeToQuant = 0;
 		if(currentEnvironment[\tempo].notNil) { clock = currentEnvironment.clock };
 		if(function.isNil) { function = {|item| item.postln }};
-		if(startQuant > 0) { timeToQuant = clock.timeToNextBeat(startQuant) };
+		// if(startQuant > 0) { timeToQuant = clock.timeToNextBeat(startQuant) };
 
 		timeline.array.do({|oneTime, no|
 			oneTime.asArray.do({|oneTimebar|
@@ -116,10 +116,13 @@ Timeline {
 				// ("at % -> item: %").format(oneTimebar.from, oneTimebar.item).postln;
 				if(oneTimebar.key.asSymbol != \timeline_end)
 				{
-					clock.sched((oneTimebar.from + timeToQuant), {
-						function.value(oneTimebar.item);
-						nil;
-					});
+					if((oneTimebar.from >= startTime))
+					{
+						clock.sched((oneTimebar.from - startTime), {
+							function.value(oneTimebar.item);
+							nil;
+						});
+					};
 				};
 			});
 		})

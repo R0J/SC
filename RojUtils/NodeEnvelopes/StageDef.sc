@@ -43,6 +43,8 @@ StageDef {
 		all.removeAt(key);
 	}
 
+	removeCycle {|cycleKey| timeline.removeKeys(cycleKey); }
+
 	times {  |cycleDefKey ... times|
 		if(CycleDef.exist(cycleDefKey))
 		{
@@ -61,8 +63,8 @@ StageDef {
 
 	trig { |startTime = 0|
 		// |targetGroup, targetBus|
-		nodeLibrary.postln;
-		timeline.play({|item| item.trig(0, group); });
+		// nodeLibrary.postln;
+		timeline.play({|item| item.trig(0, group); }, startTime);
 	}
 
 	prStore { |itemKey, nodeNames|
