@@ -71,13 +71,14 @@ CycleDef {
 		{ "EnvDef ('%') not found".format(envDefKey).warn; }
 	}
 
-	trig { |startTime = 0, targetGroup = nil|
+	trig { |startTime = 0, targetGroup = nil, clock = nil|
+		if(clock.isNil) { clock = currentEnvironment.clock; };
 		if(group.notNil) { group.free; };
 		if(targetGroup.isNil)
 		{ group = Group.new( RootNode (Server.default) ); }
 		{ group = Group.new( targetGroup ); };
 
-		// "% trig time: %".format(this, currentEnvironment.clock.beats).postln;
+		"% trig time: %".format(this, clock.beats).postln;
 		// timeline.array.postln;
 		// |targetGroup, targetBus|
 		timeline.play({|item|
