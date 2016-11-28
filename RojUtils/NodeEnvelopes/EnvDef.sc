@@ -31,6 +31,8 @@ EnvDef {
 
 	*exist { |key| if(this.all.at(key.asSymbol).notNil) { ^true; } { ^false; } }
 
+	*print { this.all.sortedKeysValuesDo({|envName, oneEnv| oneEnv.postln; }) }
+
 	init {
 		bus = nil;
 		nodeName = nil;
@@ -91,7 +93,11 @@ EnvDef {
 		all.removeAt(key);
 	}
 
-	trig { |startTime = 0, parentGroup = nil|
+	trig { |startTime = 0, parentGroup = nil, clock = nil|
+		if(clock.isNil) { clock = currentEnvironment.clock; };
+
+		// "% trig time: %".format(this, clock.beats).postln;
+
 		if(buffer.notNil)
 		{
 			// var synth;

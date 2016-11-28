@@ -22,6 +22,8 @@ CycleDef {
 
 	*exist { |key| if(this.all.at(key.asSymbol).notNil) { ^true; } { ^false; } }
 
+	*print { this.all.sortedKeysValuesDo({|cycleName, oneCycle| oneCycle.postln; }) }
+
 	cmdPeriod {
 		{
 			group = Group.new( RootNode (Server.default))
@@ -48,8 +50,10 @@ CycleDef {
 
 	quant {|qnt|
 		cycleQuant = qnt;
-		timeline.setEnd(qnt);
+		// timeline.setEnd(qnt);
 	}
+
+	duration { ^timeline.duration; }
 
 	node {|nodeKey| nodeName = nodeKey }
 
@@ -81,12 +85,28 @@ CycleDef {
 		"% trig time: %".format(this, clock.beats).postln;
 		// timeline.array.postln;
 		// |targetGroup, targetBus|
+
+		timeline.items({|time, duration, item, key|
+			if(item.isKindOf(EnvDef))
+			{
+				// "\nCycle % :".format(item).postln;
+				// "at % to % -> key: % || %".format(time, (time + duration), key, item).postln;
+				// if(clock.beats >= time)
+				// {
+					clock.sched(time, { item.trig(0, group, clock); nil;});
+			// };
+				// clock.schedAbs(time, { item.postln; nil;});
+			};
+		});
+
+
+		/*
 		timeline.play({|item|
-			// "% from: %".format(item, item.from).postln;
-			item.trig(0, group);
+		// "% from: %".format(item, item.from).postln;
+		item.trig(0, group);
 
 		}, startTime);
-
+		*/
 		currentEnvironment.clock.sched(timeline.duration + 5, {
 			group.free;
 			// bus.free;
@@ -94,8 +114,6 @@ CycleDef {
 			nil;
 		});
 	}
-
-
 
 	plot {|size = 400|
 		var plotName = "CycleDef_" ++ key;
@@ -129,7 +147,7 @@ CycleDef {
 	}
 
 	printOn { |stream|
-		stream << this.class.name << "('" << key << "' | qnt: " << cycleQuant << ")";
+		stream << this.class.name << "('" << key << "' | qnt: " << cycleQuant << " | dur: " << this.duration << ")";
 	}
 
 }

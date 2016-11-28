@@ -2,7 +2,6 @@ StageDef {
 	var <key;
 	var <group;
 	var <bus;
-	var <duration;
 	var <timeline;
 	var nodeLibrary;
 
@@ -19,6 +18,8 @@ StageDef {
 	}
 
 	*exist { |key| if(this.all.at(key.asSymbol).notNil) { ^true; } { ^false; } }
+
+	*print { this.all.sortedKeysValuesDo({|stageName, oneStage| oneStage.postln; }) }
 
 	cmdPeriod {
 		{
@@ -45,7 +46,9 @@ StageDef {
 
 	removeCycle {|cycleKey| timeline.removeKeys(cycleKey); }
 
-	times {  |cycleDefKey ... times|
+	duration { ^timeline.duration; }
+
+	times { |cycleDefKey ... times|
 		if(CycleDef.exist(cycleDefKey))
 		{
 			timeline.removeKeys(cycleDefKey);
@@ -55,16 +58,31 @@ StageDef {
 				// if(oneTime + CycleDef(cycleDefKey.asSymbol).cycleQuant > duration)
 				// {
 				// "% at % is longer than % quant".format(CycleDef(cycleDefKey.asSymbol), oneTime, this).warn;
-			// };
+				// };
 			});
 		}
 		{ "EnvDef ('%') not found".format(cycleDefKey).warn; }
 	}
 
-	trig { |startTime = 0|
-		// |targetGroup, targetBus|
+	trig { |startTime = 0, clock = nil|
+		if(clock.isNil) { clock = currentEnvironment.clock; };
 		// nodeLibrary.postln;
-		timeline.play({|item| item.trig(0, group); }, startTime);
+		"% trig time: %".format(this, clock.beats).postln;
+
+		timeline.items({|time, duration, item, key|
+			if(item.isKindOf(CycleDef))
+			{
+				// "\nCycle % :".format(item).postln;
+				// "at % to % -> key: % || %".format(time, (time + duration), key, item).postln;
+
+				clock.sched(time, { item.trig(0, group, clock); nil;});
+				// clock.schedAbs(time, { item.postln; nil;});
+			};
+		});
+
+
+		// |targetGroup, targetBus|
+		// timeline.play({|item| item.trig(0, group); }, startTime);
 	}
 
 	prStore { |itemKey, nodeNames|
@@ -75,7 +93,7 @@ StageDef {
 	}
 
 	printOn { |stream|
-		stream << this.class.name << "('" << key << " | id:" << group.nodeID << "')";
+		stream << this.class.name << "('" << key << "' | dur:" << this.duration << " | id:" << group.nodeID << ")";
 	}
 
 }

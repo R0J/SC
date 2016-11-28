@@ -48,6 +48,7 @@ Composition {
 			{
 				"\nStage % :".format(item).postln;
 				"at % to % -> key: % || %".format(time, (time + duration), key, item).postln;
+				clock.schedAbs(time, { item.trig(0, clock); nil});
 			};
 
 			if(item.isKindOf(CycleDef))
