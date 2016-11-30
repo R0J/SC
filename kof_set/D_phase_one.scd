@@ -27,7 +27,7 @@ p.bpm(127)
 
 (
 
-            s.latency = 0.3;
+    s.latency = 0.3;
     (
         p.clock.sched(p.clock.timeToNextBeat(16),{ 
             p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});

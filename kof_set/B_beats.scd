@@ -1,6 +1,6 @@
 (
-p = NetProxy.push();
-s.latency = 0.2;
+    p = NetProxy.push();
+    s.latency = 0.2;
 )
 
 // Compander DUCK (NOPLAY) /////////////////////////////////////// *****
@@ -117,7 +117,7 @@ p.bpm(115)
         fx = AllpassN.ar(fx,1/1600*~tempo,1/4*~tempo,len);
 
         fx = DWGReverb.ar(NumChannels.ar(fx,2),[5000,5100],1/len)/rev + fx;
-        
+
         sig = SelectX.ar(wet,[orig,fx]);
         sig = Compander.ar(sig,duck,8/10,1/2,1,0.0002,1/4*~tempo);
         sig = NumChannels.ar(sig,2) ;
@@ -127,7 +127,7 @@ p.bpm(115)
 
     ~master_wet.quant = 4;
     ~master_wet = {LFDNoise1.kr(~tempo/1600!2).exprange(0.15,0.35);};
-   // ~master_wet = {|sig| sig-(1-LFSaw.ar(~tempo*1)).range(0,1)**4};
+    // ~master_wet = {|sig| sig-(1-LFSaw.ar(~tempo*1)).range(0,1)**4};
     ~master.map(\wet,~master_wet);
     p.moveNodeToTail(\master);
 );
@@ -350,7 +350,7 @@ p.clock.queue.postln
     ~kick_one.fadeTime=0.02;
     ~kick_one={
         //         |       |       |       |       |
-        var mod = LFNoise2.kr(1/16*~tempo).range(30,80);
+        var mod = LFNoise2.kr(1/16*~tempo).range(4,8);
         var pat = [
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
@@ -361,14 +361,14 @@ p.clock.queue.postln
         var imp = PulseDivider.kr(~tick.kr,1);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
 
-        var env = {EnvGen.ar( Env.adsr(0.002,0.1,len,len,curve: -1 * mod) ,imp * hit)};
+        var env = {EnvGen.ar( Env.adsr(0.002,len/10,len,len,curve: -1 * mod) ,imp * hit)};
         var sig = SinOsc.ar(30.midicps+(env**8*2),env**mod*8pi);
         sig = sig + (LPF.ar(GrayNoise.ar(0.5!2),500) * (env**(0.2*mod)));
         sig = Normalizer.ar(sig);
         sig = sig * env;
         sig = sig.distort;
         Splay.ar(sig,0.01,0.95);
-        
+
     };
     ~kick_one.play;
 );
@@ -378,24 +378,24 @@ p.clock.queue.postln
 // lalal synth ///////////////////////////////////////
 
 (
-~lalal.ar(2);
-~lalal.clock = p.clock;
-~lalal.quant=[4];
-~lalal.fadeTime=0.02;
-~lalal={
-  //  |       |       |       |       |  
-  var pat = [
-    1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
-  ];
-  var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
-  var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-  var env = EnvGen.ar(Env([0.001,1,0.0001],[0.0002,4.65],[3,-3]),imp * hit);
-  var sig = WhiteNoise.ar(0.7);
-  
-  sig = LPF.ar(sig,)
-  Splay.ar(sig,0.75,0.25);
-};
-~lalal.play;
+    ~lalal.ar(2);
+    ~lalal.clock = p.clock;
+    ~lalal.quant=[4];
+    ~lalal.fadeTime=0.02;
+    ~lalal={
+        //  |       |       |       |       |  
+        var pat = [
+            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
+        ];
+        var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
+        var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
+        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.0002,4.65],[3,-3]),imp * hit);
+        var sig = WhiteNoise.ar(0.7);
+
+        sig = LPF.ar(sig,)
+        Splay.ar(sig,0.75,0.25);
+    };
+    ~lalal.play;
 );
 
 ~lalal.stop(4);
@@ -443,10 +443,10 @@ p.clock.queue.postln
 ~high_kick.resume;
 
 (
-//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
-{
-  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-}.fork;  
+    //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+    {
+        p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+    }.fork;  
 )
 
 
@@ -532,13 +532,13 @@ Env.adsr(0.1,1,1,0.2,0.9,4).plot;
     ~switch.quant=[16,0];
     ~switch.fadeTime=0.2;
     ~switch={
-    //         |       |       |       |       |
-    var pat = [
-        0,0,1,0, 0,0,0,0, 0,0,1,0, 0,0,0,0,
-        0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
-        0,0,1,0, 0,0,0,0, 0,0,1,0, 0,0,0,0,
-        0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
-    ];
+        //         |       |       |       |       |
+        var pat = [
+            0,0,1,0, 0,0,0,0, 0,0,1,0, 0,0,0,0,
+            0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+            0,0,1,0, 0,0,0,0, 0,0,1,0, 0,0,0,0,
+            0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+        ];
         var imp = PulseDivider.kr(~tick.kr,[1,2,4,8],~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.1*[1,2,3,4]],[3,30]),imp * hit);

@@ -1,2 +1,6 @@
 #!/bin/bash
-scvim *.scd
+# DEBUG
+# scvim startup/startup.scd
+
+screen scvim *.scd
+
