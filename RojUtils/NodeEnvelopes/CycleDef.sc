@@ -12,19 +12,15 @@ CycleDef {
 
 	*initClass { all = IdentityDictionary.new; }
 
-	*new { |key, quant ... args|
-		var def = this.all.at(key.asSymbol);
-		if(def.isNil)
-		{ def = super.new.init.prStore(key, quant).prArgsRead(args); }
-		{ if(quant.notNil) { def.prStore(key, quant).prArgsRead(args); } } ;
-		^def;
-	}
+	*new { |key, quant ... args| ^this.newForNode(nil, key, quant, args); }
 
 	*newForNode { |node, key, quant ... args|
 		var def = this.all.at(key.asSymbol);
 		if(def.isNil)
-		{ def = super.new.init(node).prStore(key, quant).prArgsRead(args); }
-		{ if(quant.notNil) { def.init(node).prStore(key, quant).prArgsRead(args); } } ;
+		// { def = super.new.init(node).prStore(key, quant).prArgsRead(args); }
+		{ def = super.new.init(node, key, quant, args); }
+		// { if(quant.notNil) { def.init(node).prStore(key, quant).prArgsRead(args); } } ;
+		{ if(quant.notNil) { def.init(node, key, quant, args); } } ;
 		^def;
 	}
 
@@ -38,13 +34,40 @@ CycleDef {
 		}.defer(0.01);
 	}
 
-	init { |node = nil|
+	init { |node, itemKey, itemQuant, args|
 		// CmdPeriod.add(this);
 		// bus = Bus.control(Server.default, 1);
 		// group = Group.new( RootNode (Server.default));
+		var currentEnvDef = nil;
+		var isValidSymbol = false;
+
 		parentNode = node;
 		timeline = Timeline.new();
 		env = nil;
+
+		key = itemKey;
+		if(itemQuant.notNil) { this.quant(itemQuant); };
+		all.put(itemKey, this);
+
+		args.flatten.do({|oneArg|
+			if(oneArg.isKindOf(Symbol))
+			{
+				if(parentNode.notNil) { oneArg = "%_%".format(parentNode.envirKey, oneArg).asSymbol; };
+
+				if(EnvDef.exist(oneArg))
+				{
+					currentEnvDef = oneArg;
+					isValidSymbol = true;
+				}
+				{
+					isValidSymbol = false;
+					"EnvDef ('%') not found".format(oneArg).warn;
+				}
+			}
+			{
+				if(isValidSymbol) { timeline.put(oneArg, EnvDef(currentEnvDef), EnvDef(currentEnvDef).duration, currentEnvDef); }
+			}
+		});
 	}
 
 	prArgsRead { |args|
@@ -52,28 +75,23 @@ CycleDef {
 		var isValidSymbol = false;
 		timeline = Timeline.new();
 
-
-		"prArgsRead args: %".format(args.flatten).warn;
-
 		args.flatten.do({|oneArg|
 			if(oneArg.isKindOf(Symbol))
 			{
+				if(parentNode.notNil) { oneArg = "%_%".format(parentNode.envirKey, oneArg).asSymbol; };
+
 				if(EnvDef.exist(oneArg))
 				{
-					"\t- symbol: %".format(oneArg).postln;
 					currentEnvDef = oneArg;
 					isValidSymbol = true;
 				}
-				{ "EnvDef ('%') not found".format(oneArg).warn;
+				{
 					isValidSymbol = false;
+					"EnvDef ('%') not found".format(oneArg).warn;
 				}
 			}
 			{
-				if(isValidSymbol)
-				{
-					"\t- value: %".format(oneArg).postln;
-					timeline.put(oneArg, EnvDef(currentEnvDef), EnvDef(currentEnvDef).duration, currentEnvDef);
-				}
+				if(isValidSymbol) { timeline.put(oneArg, EnvDef(currentEnvDef), EnvDef(currentEnvDef).duration, currentEnvDef); }
 			}
 		});
 	}
@@ -93,26 +111,6 @@ CycleDef {
 	}
 
 	duration { ^timeline.duration; }
-
-	node {|nodeKey| nodeName = nodeKey }
-
-	times {  |envDefKey ... times|
-		if(nodeName.notNil) { envDefKey = "%_%".format(nodeName, envDefKey)};
-
-		if(EnvDef.exist(envDefKey))
-		{
-			// "at % -> %".format(time, envDefsKeys).postln;
-			timeline.removeKeys(envDefKey);
-			times.do({|oneTime|
-				timeline.put(oneTime, EnvDef(envDefKey.asSymbol), EnvDef(envDefKey.asSymbol).duration, envDefKey);
-				if(oneTime + EnvDef(envDefKey.asSymbol).duration > cycleQuant)
-				{
-					"% at % is longer than % quant".format(EnvDef(envDefKey.asSymbol), oneTime, this).warn;
-				};
-			});
-		}
-		{ "EnvDef ('%') not found".format(envDefKey).warn; }
-	}
 
 	trig { |startTime = 0, targetGroup = nil, clock = nil|
 		if(clock.isNil) { clock = currentEnvironment.clock; };
