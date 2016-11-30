@@ -19,14 +19,15 @@ p.bpm(115)
 
 
 (
+p.restartClock;
     ~tick.kr(1);
     ~counter.kr(1);
 
     ~tick.clock = p.clock;
     ~counter.clock = p.clock;
 
-    ~tick.quant=4;
-    ~counter.quant=4;
+    ~tick.quant=16;
+    ~counter.quant=16;
 
     ~tick = { var imp = Impulse.kr(~tempo.kr * 4); SendTrig.kr(PulseDivider.kr(imp,16), 0, ~tempo.kr ); imp;  };
     ~counter = {PulseCount.kr(~tick.kr);};
@@ -37,7 +38,7 @@ p.bpm(115)
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
     {
         p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-    }.fork;  
+    }.fork;
 )
 
 
@@ -45,7 +46,7 @@ p.bpm(115)
 (
 
     (
-        p.clock.sched(p.clock.timeToNextBeat(16),{ 
+        p.clock.sched(p.clock.timeToNextBeat(16),{
             p.restartClock;
             //p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){~tick.quantize(p[synth.asSymbol]);};});
             p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){
@@ -108,7 +109,7 @@ p.bpm(115)
         low = CompanderD.ar(LPF.ar(sig,LFNoise2.kr(1/4!2*~tempo).range(100,800)),9/10,1,1/2);
         mid = CompanderD.ar(BPF.ar(sig,LFNoise2.kr(1/8!2*~tempo).range(500,4500),1/2),9/10,1,1/2);
         high = CompanderD.ar(HPF.ar(sig,LFNoise2.kr(1/16!2*~tempo).range(3000,10000)),9/10,1,1/2);
-        sig = CompanderD.ar((high+mid+low).flat,9/10,1,1/1.2); 
+        sig = CompanderD.ar((high+mid+low).flat,9/10,1,1/1.2);
         orig = sig;
         fx = LPF.ar(sig,lp).distort;
         fx = LPF.ar(fx,lp);
@@ -149,7 +150,7 @@ p.bpm(115)
             low = CompanderD.ar(LPF.ar(sig,LFNoise2.kr(1/32!2*~tempo).range(250,800)),3/4,1/1.12,1/1.35,0.1,0.3);
             mid = CompanderD.ar(BPF.ar(sig,LFNoise2.kr(1/32!2*~tempo).range(800,7500),0.1),3/4,1/1.25,1/2,0.02,0.1);
             high = CompanderD.ar(HPF.ar(sig,LFNoise2.kr(1/32!2*~tempo).range(7000,10000)),3/4,1.12,1,0.02,0.05);
-            sig = CompanderD.ar((high+mid+low).flat,3/4,1/1.14,1/1.2); 
+            sig = CompanderD.ar((high+mid+low).flat,3/4,1/1.14,1/1.2);
             //sig = Compander.ar(sig,sig,3/4,1/2,1/3);
             orig = sig;
             fx = LPF.ar(sig,lp);
@@ -236,14 +237,14 @@ p.bpm(115)
 (
     p.clock.sched(p.clock.timeToNextBeat(32),{
         p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(8);};});
-    });  
+    });
 );
 
 (
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
     {
         p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(60);};});
-    }.fork;  
+    }.fork;
 )
 
 p.clock.queue.postln
@@ -289,7 +290,7 @@ p.clock.queue.postln
     ~hiss.quant=[16,0];
     ~hiss.fadeTime=2.2;
     ~hiss={
-        //         |       |       |       |       |  
+        //         |       |       |       |       |
         var pat = [
             0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,
             0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
@@ -339,7 +340,7 @@ p.clock.queue.postln
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
     {
         p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-    }.fork;  
+    }.fork;
 )
 
 // MAIN KICK /////////////////////////////////////// *****
@@ -383,7 +384,7 @@ p.clock.queue.postln
     ~lalal.quant=[4];
     ~lalal.fadeTime=0.02;
     ~lalal={
-        //  |       |       |       |       |  
+        //  |       |       |       |       |
         var pat = [
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
         ];
@@ -421,7 +422,7 @@ p.clock.queue.postln
     ~high_kick.quant=[16,0];
     ~high_kick.fadeTime=0.2;
     ~high_kick={
-        //        |       |       |       |       |  
+        //        |       |       |       |       |
         var pat = [
             1,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
             1,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
@@ -446,7 +447,7 @@ p.clock.queue.postln
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
     {
         p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-    }.fork;  
+    }.fork;
 )
 
 
@@ -458,7 +459,7 @@ p.clock.queue.postln
     ~saw_high.quant=[16,0];
     ~saw_high.fadeTime=0.2;
     ~saw_high={
-        //        |       |       |       |       |  
+        //        |       |       |       |       |
         var pat = [
             1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0,
             0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
@@ -489,7 +490,7 @@ Env.adsr(0.1,1,1,0.2,0.9,4).plot;
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
     {
         p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-    }.fork;  
+    }.fork;
 )
 
 // hh synth /////////////////////////////////////// ***
@@ -583,7 +584,7 @@ Env.adsr(0.1,1,1,0.2,0.9,4).plot;
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
     {
         p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-    }.fork;  
+    }.fork;
 )
 
 (
@@ -593,7 +594,7 @@ Env.adsr(0.1,1,1,0.2,0.9,4).plot;
 )
 //////// FADE-OUT KICKS /////////////////////////////
 (
-    p.clock.sched(p.clock.timeToNextBeat(4),{ 
+    p.clock.sched(p.clock.timeToNextBeat(4),{
         ~kick.stop(8);
         ~onea.stop(11);
         ~scanner.stop(12);
@@ -605,7 +606,7 @@ Env.adsr(0.1,1,1,0.2,0.9,4).plot;
 
 //////// KICK-IN GROSS /////////////////////////////
 (
-    p.clock.sched(p.clock.timeToNextBeat(16),{ 
+    p.clock.sched(p.clock.timeToNextBeat(16),{
         ~kick.quant=0;
         ~onea.quant=0;
         ~scanner.quant=0;
@@ -622,7 +623,7 @@ Env.adsr(0.1,1,1,0.2,0.9,4).plot;
 
 //////// SUPRESS KICKS /////////////////////////////
 (
-    p.clock.sched(p.clock.timeToNextBeat(4),{ 
+    p.clock.sched(p.clock.timeToNextBeat(4),{
         ~kick.pause;
         ~onea.pause;
         ~scanner.pause;
@@ -633,7 +634,7 @@ Env.adsr(0.1,1,1,0.2,0.9,4).plot;
 
 //////// RESUME KICKS /////////////////////////////
 (
-    p.clock.sched(p.clock.timeToNextBeat(4),{ 
+    p.clock.sched(p.clock.timeToNextBeat(4),{
         ~kick.resume;
         ~onea.resume;
         ~scanner.resume;
@@ -647,7 +648,7 @@ Env.adsr(0.1,1,1,0.2,0.9,4).plot;
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
     {
         p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(60);};});
-    }.fork;  
+    }.fork;
 )
 
 (
@@ -659,10 +660,10 @@ Env.adsr(0.1,1,1,0.2,0.9,4).plot;
 (
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
     {
-        p.clock.sched(p.clock.timeToNextBeat(16),{ 
+        p.clock.sched(p.clock.timeToNextBeat(16),{
             p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(8);};});
         });
-    }.fork;  
+    }.fork;
 )
 
 (
@@ -725,7 +726,7 @@ NodeProxy.help;
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
     {
         p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-    }.fork;  
+    }.fork;
 )
 ~scanner.resume;
 
@@ -757,7 +758,7 @@ NodeProxy.help;
 ~switch.stop(10);
 ~switch.clear;
 (
-    p.clock.sched(p.clock.timeToNextBeat(32),{ 
+    p.clock.sched(p.clock.timeToNextBeat(32),{
         ~switch.clear;
     });
 );
@@ -766,7 +767,7 @@ NodeProxy.help;
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
     {
         p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-    }.fork;  
+    }.fork;
 )
 
 
@@ -805,7 +806,7 @@ NodeProxy.help;
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
     {
         p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-    }.fork;  
+    }.fork;
 )
 
 ~modem.clear(16);
@@ -838,7 +839,7 @@ p.restartClock;
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
     {
         p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(40);};});
-    }.fork;  
+    }.fork;
 )
 
 // DEEP SOUNDS ///////////////////////////////////////
@@ -898,7 +899,7 @@ p.restartClock;
     ~hiss.quant=[16,1];
     ~hiss.fadeTime=2.2;
     ~hiss={
-        //         |       |       |       |       |  
+        //         |       |       |       |       |
         var pat = [1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1];
         var imp = PulseDivider.kr(~tick.kr,[1,2,3],~counter.kr);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
@@ -1059,7 +1060,7 @@ p.restartClock;
     //////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
     {
         p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
-    }.fork;  
+    }.fork;
 )
 
 
