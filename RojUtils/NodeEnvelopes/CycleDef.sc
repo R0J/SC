@@ -6,17 +6,25 @@ CycleDef {
 
 	var <env;
 
-	var <nodeName;
+	var parentNode;
 
 	classvar <>all;
 
 	*initClass { all = IdentityDictionary.new; }
 
-	*new { |key, quant = nil|
-		var def = this.all.at(key);
+	*new { |key, quant ... args|
+		var def = this.all.at(key.asSymbol);
 		if(def.isNil)
-		{ def = super.new.init.prStore(key, quant); }
-		{ def.prStore(key, quant); };
+		{ def = super.new.init.prStore(key, quant).prArgsRead(args); }
+		{ if(quant.notNil) { def.prStore(key, quant).prArgsRead(args); } } ;
+		^def;
+	}
+
+	*newForNode { |node, key, quant ... args|
+		var def = this.all.at(key.asSymbol);
+		if(def.isNil)
+		{ def = super.new.init(node).prStore(key, quant).prArgsRead(args); }
+		{ if(quant.notNil) { def.init(node).prStore(key, quant).prArgsRead(args); } } ;
 		^def;
 	}
 
@@ -30,13 +38,44 @@ CycleDef {
 		}.defer(0.01);
 	}
 
-	init {
+	init { |node = nil|
 		// CmdPeriod.add(this);
 		// bus = Bus.control(Server.default, 1);
 		// group = Group.new( RootNode (Server.default));
+		parentNode = node;
 		timeline = Timeline.new();
-		nodeName = nil;
 		env = nil;
+	}
+
+	prArgsRead { |args|
+		var currentEnvDef = nil;
+		var isValidSymbol = false;
+		timeline = Timeline.new();
+
+
+		"prArgsRead args: %".format(args.flatten).warn;
+
+		args.flatten.do({|oneArg|
+			if(oneArg.isKindOf(Symbol))
+			{
+				if(EnvDef.exist(oneArg))
+				{
+					"\t- symbol: %".format(oneArg).postln;
+					currentEnvDef = oneArg;
+					isValidSymbol = true;
+				}
+				{ "EnvDef ('%') not found".format(oneArg).warn;
+					isValidSymbol = false;
+				}
+			}
+			{
+				if(isValidSymbol)
+				{
+					"\t- value: %".format(oneArg).postln;
+					timeline.put(oneArg, EnvDef(currentEnvDef), EnvDef(currentEnvDef).duration, currentEnvDef);
+				}
+			}
+		});
 	}
 
 	free {
@@ -93,8 +132,8 @@ CycleDef {
 				// "at % to % -> key: % || %".format(time, (time + duration), key, item).postln;
 				// if(clock.beats >= time)
 				// {
-					clock.sched(time, { item.trig(0, group, clock); nil;});
-			// };
+				clock.sched(time, { item.trig(0, group, clock); nil;});
+				// };
 				// clock.schedAbs(time, { item.postln; nil;});
 			};
 		});

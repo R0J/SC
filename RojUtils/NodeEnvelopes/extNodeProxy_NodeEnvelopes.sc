@@ -19,16 +19,17 @@
 		^nil;
 	}
 
-	cycle { |cycleName = nil, quant = nil|
+	cycle { |cycleName, quant ... args|
 
-		if(cycleName.notNil)
+		var name = "%_%".format(this.envirKey, cycleName).asSymbol;
+
+		if(CycleDef.exist(name))
 		{
-			// var name = "%_%".format(this.envirKey, cycleName).asSymbol;
-			// ("cycleExist:" + CycleDef.exist(name)).postln;
-			if(CycleDef.exist(cycleName))
-			{ ^CycleDef(cycleName); }
-			{ ^CycleDef(cycleName, quant).node(this.envirKey); }
+			if(quant.notNil)
+			{ CycleDef.newForNode(this, cycleName, quant, args); };
+			{ ^CycleDef(name); }
 		}
+		{ ^CycleDef.newForNode(this, cycleName, quant, args); }
 	}
 
 	stage { |stageName = nil|

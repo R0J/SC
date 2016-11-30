@@ -167,7 +167,7 @@ Timebar {
 	var <key;
 	var <item;
 
-	*new {|from, duration, key, item| ^super.newCopyArgs(from, duration, key, item); }
+	*new {|from, duration, key, item| ^super.newCopyArgs(from, duration, key.asSymbol, item); }
 
 	isAtTime {|time|
 		case

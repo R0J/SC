@@ -22,7 +22,7 @@ EnvDef {
 	}
 
 	*new { |key, item, dur = nil|
-		var def = this.all.at(key);
+		var def = this.all.at(key.asSymbol);
 		if(def.isNil)
 		{ def = super.new.init.prStore(key, item, dur); }
 		{ if(item.notNil) {	def.prStore(key, item, dur); }};
@@ -163,7 +163,7 @@ EnvDef {
 	synthName {	^"EnvDef('%')".format(key).asSymbol; }
 
 	prStore { |itemKey, item, dur|
-		key = itemKey;
+		key = itemKey.asSymbol;
 
 		case
 		{ item.isKindOf(Env) }
