@@ -17,9 +17,7 @@ CycleDef {
 	*newForNode { |node, key, quant ... args|
 		var def = this.all.at(key.asSymbol);
 		if(def.isNil)
-		// { def = super.new.init(node).prStore(key, quant).prArgsRead(args); }
 		{ def = super.new.init(node, key, quant, args); }
-		// { if(quant.notNil) { def.init(node).prStore(key, quant).prArgsRead(args); } } ;
 		{ if(quant.notNil) { def.init(node, key, quant, args); } } ;
 		^def;
 	}
@@ -48,32 +46,6 @@ CycleDef {
 		key = itemKey;
 		if(itemQuant.notNil) { this.quant(itemQuant); };
 		all.put(itemKey, this);
-
-		args.flatten.do({|oneArg|
-			if(oneArg.isKindOf(Symbol))
-			{
-				if(parentNode.notNil) { oneArg = "%_%".format(parentNode.envirKey, oneArg).asSymbol; };
-
-				if(EnvDef.exist(oneArg))
-				{
-					currentEnvDef = oneArg;
-					isValidSymbol = true;
-				}
-				{
-					isValidSymbol = false;
-					"EnvDef ('%') not found".format(oneArg).warn;
-				}
-			}
-			{
-				if(isValidSymbol) { timeline.put(oneArg, EnvDef(currentEnvDef), EnvDef(currentEnvDef).duration, currentEnvDef); }
-			}
-		});
-	}
-
-	prArgsRead { |args|
-		var currentEnvDef = nil;
-		var isValidSymbol = false;
-		timeline = Timeline.new();
 
 		args.flatten.do({|oneArg|
 			if(oneArg.isKindOf(Symbol))
@@ -175,12 +147,6 @@ CycleDef {
 		// plotter.domainSpecs = [[0, cycleQuant, 0, 0, "", " s"]];
 		// plotter.refresh;
 		"neni dopsano".warn;
-	}
-
-	prStore { |itemKey, itemQuant|
-		key = itemKey;
-		if(itemQuant.notNil) { this.quant(itemQuant); };
-		all.put(itemKey, this);
 	}
 
 	printOn { |stream|

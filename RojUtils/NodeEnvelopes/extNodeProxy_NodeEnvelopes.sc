@@ -1,22 +1,27 @@
 + NodeProxy {
 
-	env { |controlName, envelopeName, envelope = nil, duration = nil|
-
-		if(controlName.notNil && envelopeName.notNil)
+	env { |envelopeName, envelope = nil, duration = nil|
+		var def;
+		if(envelope.notNil)
+		{ def = EnvDef.newForNode(this, envelopeName, envelope, duration); }
 		{
-			// var name = "%_%_%".format(this.envirKey, controlName, envelopeName).asSymbol;
-			var name = "%_%".format(this.envirKey, envelopeName).asSymbol;
-			// name.postln;
-			// EnvDef.exist(name).postln;
-			if(EnvDef.exist(name))
-			{
-				if(envelope.notNil)
-				{ ^EnvDef(name, envelope, duration).map(this.envirKey.asSymbol, controlName.asSymbol); }
-				{ ^EnvDef(name); }
-			}
-			{ if(envelope.notNil) { ^EnvDef(name, envelope, duration).map(this.envirKey.asSymbol, controlName.asSymbol); }}
+			if(EnvDef.exist(envelopeName, this))
+			{ def = EnvDef.newForNode(this, envelopeName); }
+			{ def = nil; }
 		}
-		^nil;
+		^def;
+	}
+
+	mapEnv { |controlName ... envDefKeys|
+
+		envDefKeys.do({|oneArg|
+			"%_%".format(this.envirKey, oneArg).postln;
+			if(EnvDef.exist(oneArg, this))
+			{
+				EnvDef.get(oneArg, this).map(this.envirKey, oneArg);
+			}
+			{ "EnvDef ('%') not found".format(oneArg).warn; }
+		});
 	}
 
 	cycle { |cycleName, quant ... args|
