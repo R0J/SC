@@ -26,11 +26,7 @@ EnvDef {
 	*newForNode { |node, key, item, dur ... args|
 		var def;
 		if(this.exist(key, node))
-		{
-			if(node.isNil)
-			{ def = this.all.atPath([\default, key.asSymbol]); }
-			{ def = this.all.atPath([node.envirKey, key.asSymbol]); };
-		}
+		{ def = this.get(key, node); }
 		{ def = nil; };
 
 		if(def.isNil)
@@ -43,27 +39,22 @@ EnvDef {
 		^def;
 	}
 
-	*exist { |key, node = nil|
+	*get { |key, node = nil|
 		var path;
 		if(node.isNil)
 		{ path = [\default, key.asSymbol]; }
 		{ path = [node.envirKey.asSymbol, key.asSymbol] };
-		if(this.all.atPath(path).notNil) { ^true; }	{ ^false; }
+		^this.all.atPath(path);
 	}
+
+	*exist { |key, node = nil| if(this.get(key, node).notNil) { ^true; } { ^false; } }
 
 	*print {
 		this.all.dictionary.sortedKeysValuesDo({ |key, oneNode|
-
-			if(oneNode.isKindOf(IdentityDictionary))
-			{
-				"key: %".format(key).postln;
-				oneNode.sortedKeysValuesDo({ |controlName, envDef|
-					"\t- controlName: %, one: %".format(controlName, envDef).postln;
-				});
-			}
-			{
-				"key: %, one: %".format(key, oneNode).postln;
-			}
+			"key: %".format(key).postln;
+			oneNode.sortedKeysValuesDo({ |controlName, envDef|
+				"\t- controlName: %, one: %".format(controlName, envDef).postln;
+			});
 		});
 	}
 

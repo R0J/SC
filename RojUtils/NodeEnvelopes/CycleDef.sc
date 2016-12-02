@@ -10,24 +10,40 @@ CycleDef {
 
 	classvar <>all;
 
-	*initClass {
-		all = IdentityDictionary.new;
-		// all = MultiLevelIdentityDictionary.new;
-	}
+	*initClass { all = MultiLevelIdentityDictionary.new; }
 
 	*new { |key, quant ... args| ^this.newForNode(nil, key, quant, args); }
 
 	*newForNode { |node, key, quant ... args|
-		var def = this.all.at(key.asSymbol);
+		var def;
+		if(this.exist(key, node))
+		{ def = this.get(key, node); }
+		{ def = nil; };
+
 		if(def.isNil)
 		{ def = super.new.init(node, key, quant, args); }
 		{ if(quant.notNil) { def.init(node, key, quant, args); } } ;
 		^def;
 	}
 
-	*exist { |key| if(this.all.at(key.asSymbol).notNil) { ^true; } { ^false; } }
+	*get { |key, node = nil|
+		var path;
+		if(node.isNil)
+		{ path = [\default, key.asSymbol]; }
+		{ path = [node.envirKey.asSymbol, key.asSymbol] };
+		^this.all.atPath(path);
+	}
 
-	*print { this.all.sortedKeysValuesDo({|cycleName, oneCycle| oneCycle.postln; }) }
+	*exist { |key, node = nil| if(this.get(key, node).notNil) { ^true; } { ^false; } }
+
+	*print {
+		this.all.dictionary.sortedKeysValuesDo({ |key, oneNode|
+			"key: %".format(key).postln;
+			oneNode.sortedKeysValuesDo({ |controlName, envDef|
+				"\t- controlName: %, one: %".format(controlName, envDef).postln;
+			});
+		});
+	}
 
 	cmdPeriod {
 		{
@@ -48,14 +64,17 @@ CycleDef {
 
 		key = itemKey;
 		if(itemQuant.notNil) { this.quant(itemQuant); };
-		all.put(itemKey, this);
+
+		if(node.isNil)
+		{ all.putAtPath([\default, itemKey.asSymbol], this); }
+		{ all.putAtPath([node.envirKey.asSymbol, itemKey.asSymbol], this); };
 
 		args.flatten.do({|oneArg|
 			if(oneArg.isKindOf(Symbol))
 			{
-				if(parentNode.notNil) { oneArg = "%_%".format(parentNode.envirKey, oneArg).asSymbol; };
+				// if(parentNode.notNil) { oneArg = "%_%".format(parentNode.envirKey, oneArg).asSymbol; };
 
-				if(EnvDef.exist(oneArg))
+				if(EnvDef.exist(oneArg, node))
 				{
 					currentEnvDef = oneArg;
 					isValidSymbol = true;
@@ -66,7 +85,14 @@ CycleDef {
 				}
 			}
 			{
-				if(isValidSymbol) { timeline.put(oneArg, EnvDef(currentEnvDef), EnvDef(currentEnvDef).duration, currentEnvDef); }
+				if(isValidSymbol) {
+					timeline.put(oneArg, EnvDef.get(currentEnvDef, node), EnvDef.get(currentEnvDef,node).duration, currentEnvDef);
+					/*
+					if(node.isNil)
+					{ timeline.put(oneArg, EnvDef(currentEnvDef), EnvDef(currentEnvDef).duration, currentEnvDef); }
+					{ timeline.put(oneArg, EnvDef.get(currentEnvDef, node), EnvDef.get(currentEnvDef,node).duration, currentEnvDef); }
+					*/
+				}
 			}
 		});
 	}

@@ -13,7 +13,8 @@
 	}
 
 	cycle { |cycleName, quant ... args|
-
+		^CycleDef.newForNode(this, cycleName, quant, args);
+		/*
 		var name = "%_%".format(this.envirKey, cycleName).asSymbol;
 
 		if(CycleDef.exist(name))
@@ -23,6 +24,7 @@
 			{ ^CycleDef(name); }
 		}
 		{ ^CycleDef.newForNode(this, cycleName, quant, args); }
+		*/
 	}
 
 	stage { |stageName = nil|
