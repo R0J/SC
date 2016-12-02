@@ -131,7 +131,7 @@ CycleDef {
 				// "at % to % -> key: % || %".format(time, (time + duration), key, item).postln;
 				// if(clock.beats >= time)
 				// {
-				clock.sched(time, { item.trig(0, group, clock); nil;});
+				clock.sched(time, { item.trig(0, nil, group, clock); nil;});
 				// };
 				// clock.schedAbs(time, { item.postln; nil;});
 			};

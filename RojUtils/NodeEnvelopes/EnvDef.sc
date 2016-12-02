@@ -133,6 +133,16 @@ EnvDef {
 		// nodeKey.asSymbol.envirGet.unmap(controlKey.asSymbol);
 	}
 
+	free {
+		var path;
+		if(parentNode.isNil)
+		{ path = [\default, key.asSymbol]; }
+		{ path = [parentNode.envirKey.asSymbol, key.asSymbol] };
+		this.all.removeEmptyAtPath(path);
+
+		buffer.free;
+	}
+
 	initSynthDefs{
 		Server.default.waitForBoot({
 			bufferSynthDef = { |cBus, bufnum, startTime = 0|
@@ -156,26 +166,18 @@ EnvDef {
 		});
 	}
 
-	free {
-		// bus.free;
-		buffer.free;
-		// busLibrary.removeAt(key.asSymbol);
-		all.removeAt(key);
-	}
-
-	trig { |startTime = 0, parentGroup = nil, clock = nil|
+	trig { |startTime = 0, endTime = nil, parentGroup = nil, clock = nil|
 		if(clock.isNil) { clock = currentEnvironment.clock; };
 
 		// "% trig time: %".format(this, clock.beats).postln;
 
 		if(buffer.notNil)
 		{
-			// var synth;
+			var synth;
 			var group = RootNode(Server.default);
 			if(parentGroup.notNil) { group = parentGroup; };
 			bufferSynthDef.name_(this.synthName);
-			// bufferSynthDef.optimizeGraph;
-			bufferSynthDef.play(
+			synth =	bufferSynthDef.play(
 				target: group,
 				args:
 				[
@@ -186,7 +188,10 @@ EnvDef {
 					// \multiplicationBus, targetBus.asMap
 				]
 			);
-			// synth
+			if(endTime.notNil)
+			{
+				clock.sched((endTime - startTime), { synth.free; nil; });
+			}
 		}
 		{ "% buffer not found".format(this).warn; }
 	}
