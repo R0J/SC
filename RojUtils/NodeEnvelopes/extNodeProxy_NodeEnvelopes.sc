@@ -12,20 +12,7 @@
 		});
 	}
 
-	cycle { |cycleName, quant ... args|
-		^CycleDef.newForNode(this, cycleName, quant, args);
-		/*
-		var name = "%_%".format(this.envirKey, cycleName).asSymbol;
-
-		if(CycleDef.exist(name))
-		{
-			if(quant.notNil)
-			{ CycleDef.newForNode(this, cycleName, quant, args); };
-			{ ^CycleDef(name); }
-		}
-		{ ^CycleDef.newForNode(this, cycleName, quant, args); }
-		*/
-	}
+	cycle { |cycleName, quant ... args| ^CycleDef.newForNode(this, cycleName, quant, args); }
 
 	stage { |stageName = nil|
 		if(stageName.notNil)
