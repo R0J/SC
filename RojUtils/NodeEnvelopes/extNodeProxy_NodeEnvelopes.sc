@@ -1,26 +1,14 @@
 + NodeProxy {
 
 	env { |envelopeName, envelope = nil, duration = nil|
-		var def;
-		if(envelope.notNil)
-		{ def = EnvDef.newForNode(this, envelopeName, envelope, duration); }
-		{
-			if(EnvDef.exist(envelopeName, this))
-			{ def = EnvDef.newForNode(this, envelopeName); }
-			{ def = nil; }
-		}
-		^def;
+		^EnvDef.newForNode(this, envelopeName, envelope, duration);
 	}
 
 	mapEnv { |controlName ... envDefKeys|
-
 		envDefKeys.do({|oneArg|
-			"%_%".format(this.envirKey, oneArg).postln;
 			if(EnvDef.exist(oneArg, this))
-			{
-				EnvDef.get(oneArg, this).map(this.envirKey, oneArg);
-			}
-			{ "EnvDef ('%') not found".format(oneArg).warn; }
+			{ this.env(oneArg).map(this.envirKey, controlName); }
+			{ "EnvDef ('%') in NodeProxy('%') not found".format(oneArg, this.envirKey).warn; }
 		});
 	}
 

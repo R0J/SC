@@ -3,8 +3,7 @@ EnvDef {
 	var <env;
 	var <bus;
 
-	var parentNode;
-	var <nodeName, <controlName;
+	var <parentNode;
 
 	var <duration;
 	var <minValue, <maxValue;
@@ -17,7 +16,6 @@ EnvDef {
 	classvar bufferSynthDef, testSynthDef;
 
 	*initClass {
-		// all = IdentityDictionary.new;
 		all = MultiLevelIdentityDictionary.new;
 		busLibrary = IdentityDictionary.new;
 		hasInitSynthDefs = false;
@@ -26,50 +24,31 @@ EnvDef {
 	*new { |key, item, dur = nil| ^this.newForNode(nil, key, item, dur); }
 
 	*newForNode { |node, key, item, dur ... args|
-		var def = this.get(key, node);
-
-		if(def.isNil)
-		{
-			if(item.notNil)
-			{ def = super.new.init.init2(node, key, item, dur); }
-			{ def = nil; }
-		}
-		{ if(item.notNil) {	def.init2(node, key, item, dur); }};
-		^def;
-	}
-
-	*get { |key, node = nil|
 		var def;
 		if(this.exist(key, node))
 		{
 			if(node.isNil)
-			{ def = this.all.atPath([key.asSymbol]); }
+			{ def = this.all.atPath([\default, key.asSymbol]); }
 			{ def = this.all.atPath([node.envirKey, key.asSymbol]); };
 		}
 		{ def = nil; };
-		("get:" + def).postln;
+
+		if(def.isNil)
+		{
+			if(item.notNil)
+			{ def = super.new.init(node, key, item, dur); }
+			{ def = nil; }
+		}
+		{ if(item.notNil) {	def.init(node, key, item, dur); }};
 		^def;
 	}
 
 	*exist { |key, node = nil|
-		var item;
+		var path;
 		if(node.isNil)
-		{
-			item = this.all.atPath([key.asSymbol]);
-			("item1: " + item).postln;
-			if(item.isKindOf(EnvDef) || item.isKindOf(IdentityDictionary)) { ^true; } { ^false; };
-			// if(this.all.atPath([key.asSymbol]).notNil) { ^true; } { ^false; } }
-		}
-		{
-			// if(this.all.atPath([node.envirKey.asSymbol, key.asSymbol]).notNil) { ^true; } { ^false; }
-			item = this.all.atPath([node.envirKey.asSymbol, key.asSymbol]);
-			("item2: " + item).postln;
-			case
-			{ item.isNil } { ^false; }
-			{ item.isKindOf(EnvDef) } { }
-			{ item.isKindOf(IdentityDictionary) } { ^true; } { ^false; };
-		};
-
+		{ path = [\default, key.asSymbol]; }
+		{ path = [node.envirKey.asSymbol, key.asSymbol] };
+		if(this.all.atPath(path).notNil) { ^true; }	{ ^false; }
 	}
 
 	*print {
@@ -86,23 +65,13 @@ EnvDef {
 				"key: %, one: %".format(key, oneNode).postln;
 			}
 		});
-		// this.all.postln;
-		// this.all.sortedKeysValuesDo({|envName, oneEnv| oneEnv.postln; })
 	}
 
-	init {
-		bus = nil;
-		nodeName = nil;
-		controlName = nil;
-		if(hasInitSynthDefs.not) { this.initSynthDefs; };
-	}
-
-	init2 { |node, itemKey, item, dur|
+	init { |node, itemKey, item, dur|
 
 		if(hasInitSynthDefs.not) { this.initSynthDefs; };
 
 		parentNode = node;
-
 		key = itemKey.asSymbol;
 
 		case
@@ -146,10 +115,9 @@ EnvDef {
 			// buffer.normalize;
 		});
 
-		// all.put(itemKey, this);
-		if(parentNode.isNil)
-		{ all.putAtPath([itemKey.asSymbol], this); }
-		{ all.putAtPath([parentNode.envirKey.asSymbol, itemKey.asSymbol], this); }
+		if(node.isNil)
+		{ all.putAtPath([\default, itemKey.asSymbol], this); }
+		{ all.putAtPath([node.envirKey.asSymbol, itemKey.asSymbol], this); }
 
 	}
 
@@ -158,8 +126,6 @@ EnvDef {
 		var busName = "%_%".format(nodeKey, controlKey).asSymbol;
 		Server.default.waitForBoot({
 			var targetBus = busLibrary.at(busName);
-			nodeName = nodeKey;
-			controlName = controlKey;
 			if(targetBus.isNil)
 			{
 				bus = Bus.control(Server.default, 1);
@@ -274,53 +240,6 @@ EnvDef {
 	}
 
 	synthName {	^"EnvDef('%')".format(key).asSymbol; }
-
-	prStore { |itemKey, item, dur|
-		key = itemKey.asSymbol;
-
-		case
-		{ item.isKindOf(Env) }
-		{
-			env = item;
-			if(dur.isNil)
-			{ duration = item.duration; }
-			{ duration = dur; };
-		}
-		{ item.isKindOf(Number) || item.isKindOf(Integer) }
-		{
-			if(dur.isNil) {
-				env = Env([item, item], 1, \lin);
-				duration = 1;
-			} {
-				env = Env([item, item], dur, \lin);
-				duration = dur;
-			};
-		}
-		{ item.isKindOf(Pbind) } { "Item is kind of Pbind".warn; ^this;}
-		{ item.isKindOf(UGen) } { "Item is kind of UGen".warn; ^this;}
-		;
-
-		maxValue = env.levels[0];
-		minValue = env.levels[0];
-		env.levels.do({|lev|
-			if(lev > maxValue) { maxValue = lev; };
-			if(lev < minValue) { minValue = lev; };
-		});
-		// "EnvDef min: % | max: % ".format(minValue, maxValue).postln;
-
-		Server.default.waitForBoot({
-			var controlRate = Server.default.sampleRate / Server.default.options.blockSize;
-			buffer = Buffer.alloc(
-				server: Server.default,
-				numFrames: (controlRate * this.duration).ceil,
-				numChannels: 1,
-			);
-			buffer.loadCollection(env.asSignal(controlRate * duration));
-			// buffer.normalize;
-		});
-
-		all.put(itemKey, this);
-	}
 
 	printOn { |stream| stream << this.class.name << "('" << key << "' | dur: " << duration << ")"; }
 

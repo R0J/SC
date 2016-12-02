@@ -10,7 +10,10 @@ CycleDef {
 
 	classvar <>all;
 
-	*initClass { all = IdentityDictionary.new; }
+	*initClass {
+		all = IdentityDictionary.new;
+		// all = MultiLevelIdentityDictionary.new;
+	}
 
 	*new { |key, quant ... args| ^this.newForNode(nil, key, quant, args); }
 
