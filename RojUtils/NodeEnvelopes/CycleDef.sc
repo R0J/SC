@@ -3,9 +3,6 @@ CycleDef {
 	var <group;
 	var <cycleQuant;
 	var <timeline;
-
-	var <env;
-
 	var parentNode;
 
 	classvar <>all;
@@ -65,7 +62,6 @@ CycleDef {
 
 		parentNode = node;
 		timeline = Timeline.new();
-		env = nil;
 
 		key = itemKey;
 		if(itemQuant.notNil) { this.quant(itemQuant); };
@@ -77,8 +73,6 @@ CycleDef {
 		args.flatten.do({|oneArg|
 			if(oneArg.isKindOf(Symbol))
 			{
-				// if(parentNode.notNil) { oneArg = "%_%".format(parentNode.envirKey, oneArg).asSymbol; };
-
 				if(EnvDef.exist(oneArg, node))
 				{
 					currentEnvDef = oneArg;
@@ -90,14 +84,7 @@ CycleDef {
 				}
 			}
 			{
-				if(isValidSymbol) {
-					timeline.put(oneArg, EnvDef.get(currentEnvDef, node), EnvDef.get(currentEnvDef,node).duration, currentEnvDef);
-					/*
-					if(node.isNil)
-					{ timeline.put(oneArg, EnvDef(currentEnvDef), EnvDef(currentEnvDef).duration, currentEnvDef); }
-					{ timeline.put(oneArg, EnvDef.get(currentEnvDef, node), EnvDef.get(currentEnvDef,node).duration, currentEnvDef); }
-					*/
-				}
+				if(isValidSymbol) { timeline.put(oneArg, EnvDef.get(currentEnvDef, node), EnvDef.get(currentEnvDef,node).duration, currentEnvDef);}
 			}
 		});
 	}
@@ -126,7 +113,6 @@ CycleDef {
 		{ group = Group.new( targetGroup ); };
 
 		"% trig time: %".format(this, clock.beats).postln;
-		// timeline.array.postln;
 		// |targetGroup, targetBus|
 
 		timeline.items({|time, duration, item, key|
@@ -134,7 +120,10 @@ CycleDef {
 			{
 				case
 				{ startTime <= time } { clock.sched((time - startTime), { item.trig(0, nil, group, clock); nil;}); }
-				{ (startTime > time) && (startTime <= (time + duration)) } { "play from middle %".format(item).warn };
+				{ (startTime > time) && (startTime < (time + duration)) } {
+					"play from middle %".format(item).warn;
+					item.trig(startTime, nil, group, clock);
+				};
 				// "\nCycle % :".format(item).postln;
 				// "at % to % -> key: % || %".format(time, (time + duration), key, item).postln;
 
@@ -142,14 +131,6 @@ CycleDef {
 			};
 		});
 
-
-		/*
-		timeline.play({|item|
-		// "% from: %".format(item, item.from).postln;
-		item.trig(0, group);
-
-		}, startTime);
-		*/
 		currentEnvironment.clock.sched(timeline.duration + 5, {
 			group.free;
 			// bus.free;
