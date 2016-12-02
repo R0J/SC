@@ -75,7 +75,7 @@ StageDef {
 				// "\nCycle % :".format(item).postln;
 				// "at % to % -> key: % || %".format(time, (time + duration), key, item).postln;
 
-				clock.sched(time, { item.trig(0, group, clock); nil;});
+				clock.sched(time, { item.trig(0, nil, group, clock); nil;});
 				// clock.schedAbs(time, { item.postln; nil;});
 			};
 		});

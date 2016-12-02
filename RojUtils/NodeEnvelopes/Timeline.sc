@@ -78,6 +78,15 @@ Timeline {
 		^items.asArray;
 	}
 
+	timeBars {
+		var items = List.new();
+		this.times.do({|oneTime|
+			var arrTimebar = timeline[oneTime];
+			arrTimebar.asArray.do({|oneTimebar|	items.add(oneTimebar) });
+		});
+		^items.asArray;
+	}
+
 	times { ^timeline.indices; }
 
 	duration {
@@ -159,11 +168,10 @@ Timeline {
 			function.value(time, duration, item, key);
 		});
 	}
-
 }
 
 Timebar {
-	var <from, <duration;
+	var <from, <>duration;
 	var <key;
 	var <item;
 

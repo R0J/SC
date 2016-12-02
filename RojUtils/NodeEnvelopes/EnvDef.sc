@@ -108,8 +108,9 @@ EnvDef {
 
 		if(node.isNil)
 		{ all.putAtPath([\default, itemKey.asSymbol], this); }
-		{ all.putAtPath([node.envirKey.asSymbol, itemKey.asSymbol], this); }
+		{ all.putAtPath([node.envirKey.asSymbol, itemKey.asSymbol], this); };
 
+		CycleDef.update;
 	}
 
 	map {|nodeKey, controlKey|

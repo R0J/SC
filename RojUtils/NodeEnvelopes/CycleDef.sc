@@ -36,6 +36,13 @@ CycleDef {
 
 	*exist { |key, node = nil| if(this.get(key, node).notNil) { ^true; } { ^false; } }
 
+	*update {
+		this.all.leafDo({ |path|
+			var cycleDef = this.all.atPath(path);
+			cycleDef.timeline.timeBars.do({|bar| bar.duration_(bar.item.duration) });
+		});
+	}
+
 	*print {
 		this.all.dictionary.sortedKeysValuesDo({ |key, oneNode|
 			"key: %".format(key).postln;
@@ -46,9 +53,7 @@ CycleDef {
 	}
 
 	cmdPeriod {
-		{
-			group = Group.new( RootNode (Server.default))
-		}.defer(0.01);
+		{ group = Group.new( RootNode (Server.default)) }.defer(0.01);
 	}
 
 	init { |node, itemKey, itemQuant, args|
@@ -113,7 +118,7 @@ CycleDef {
 
 	duration { ^timeline.duration; }
 
-	trig { |startTime = 0, targetGroup = nil, clock = nil|
+	trig { |startTime = 0, endTime = nil, targetGroup = nil, clock = nil|
 		if(clock.isNil) { clock = currentEnvironment.clock; };
 		if(group.notNil) { group.free; };
 		if(targetGroup.isNil)
@@ -127,13 +132,13 @@ CycleDef {
 		timeline.items({|time, duration, item, key|
 			if(item.isKindOf(EnvDef))
 			{
+				case
+				{ startTime <= time } { clock.sched((time - startTime), { item.trig(0, nil, group, clock); nil;}); }
+				{ (startTime > time) && (startTime <= (time + duration)) } { "play from middle %".format(item).warn };
 				// "\nCycle % :".format(item).postln;
 				// "at % to % -> key: % || %".format(time, (time + duration), key, item).postln;
-				// if(clock.beats >= time)
-				// {
-				clock.sched(time, { item.trig(0, nil, group, clock); nil;});
-				// };
-				// clock.schedAbs(time, { item.postln; nil;});
+
+
 			};
 		});
 
