@@ -431,21 +431,22 @@ p.clock.queue.postln
     ~saw_high={
         //        |       |       |       |       |
         var pat = [
-            1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0,
-            0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
-            1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0,
-            0,0,0,0, 0,0,0,0, 0,0,0,0, 1,1,1,1,
+            0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0,
+            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
+            0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0,
+            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,1,1,1,
         ].rotate(1);
 
-        //var mod2 = Duty.kr(4/~tempo,0,Dseq([1,2,1.5,1.33333],inf));
+        var mod2 = Duty.kr(16/~tempo,0,Dseq([1,2,1.5,1.33333],inf)).lag(1/4);
+        var len = LFNoise2.kr(1/4*~tempo).range(0.4,1.5);
         var mod = Duty.kr(16/~tempo,0,Dseq([1,2,1.5,1.33333],inf));
         var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env.adsr(0.001,0.5,0.5,0.001),imp * hit);
-        var sig = WhiteNoise.ar(0.2**7*env) + VarSaw.ar(60.midicps*10) ** LFNoise2.kr(1/400!2*~tempo).range(0.7,2);
+        var env = {EnvGen.ar(Env.perc(0.001,len*4,1,LFNoise2.kr(1/4*~tempo).range(-1,-8)),imp * hit)};
+        var sig = WhiteNoise.ar(0.2**7*env) + VarSaw.ar([60,64,67].midicps/4,0,env*mod2) * LFNoise2.kr(1/4!3*~tempo).range(0.07,0.9) ** LFDNoise1.kr(1/40*~tempo).range(0.2,2);
         sig = LPF.ar(sig,env**0.2*5800+800);
         sig = sig * env;
-        Splay.ar(sig,0.75,0.05);
+        Splay.ar(sig,0.75,0.15);
     };
     ~saw_high.play;
 );
@@ -517,7 +518,7 @@ Env.adsr(0.1,1,1,0.2,0.9,4).plot;
         sig = RHPF.ar(sig,[1000,2500,12500,15000,1000,500,12500],LFNoise2.kr(1/4!4 * ~tempo/2).range(0.1,0.9));
         sig = sig * env * LFPulse.ar(1/4/(1..6)*~tempo,0,1/4);
         sig = CompanderD.ar(sig,3/4,1,1/3,0.0002);
-        Splay.ar(sig,0.5,0.15);
+        Splay.ar(sig,0.5,0.25);
     };
     ~switch.play;
     //~switch[10] = \filter -> {|sig|LPF.ar(DWGReverb.ar(HPF.ar(NumChannels.ar(sig,2),5000),[4001,4011]),12000)+sig;};

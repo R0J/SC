@@ -457,7 +457,7 @@ p.arProxyNames;
 
 (
     ~harm.ar(2);
-    ~harm.quant=4;
+    ~harm.quant=16;
     ~harm.fadeTime=16;
     ~harm={
         var speed = 1/16/(1..8) * ~tempo;
