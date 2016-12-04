@@ -38,6 +38,7 @@ CycleDef {
 			var cycleDef = this.all.atPath(path);
 			cycleDef.timeline.timeBars.do({|bar| bar.duration_(bar.item.duration) });
 		});
+		StageDef.update;
 	}
 
 	*print {
@@ -87,6 +88,7 @@ CycleDef {
 				if(isValidSymbol) { timeline.put(oneArg, EnvDef.get(currentEnvDef, node), EnvDef.get(currentEnvDef,node).duration, currentEnvDef);}
 			}
 		});
+		StageDef.update;
 	}
 
 	free {

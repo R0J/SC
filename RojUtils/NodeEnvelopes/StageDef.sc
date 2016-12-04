@@ -9,15 +9,26 @@ StageDef {
 
 	*initClass { all = IdentityDictionary.new; }
 
-	*new { |key ... nodeNames|
-		var def = this.all.at(key);
+	*new { |key ... cycleArgs|
+		var def;
+		if(this.exist(key))
+		{ def = this.all.at(key); }
+		{ def = nil; };
+
 		if(def.isNil)
-		{ def = super.new.init.prStore(key, nodeNames); }
-		{ def.prStore(key, nodeNames); };
+		{ def = super.new.init(key).times(cycleArgs); }
+		{ if(cycleArgs.notEmpty) { def.times(cycleArgs); } } ;
 		^def;
 	}
 
 	*exist { |key| if(this.all.at(key.asSymbol).notNil) { ^true; } { ^false; } }
+
+	*update {
+		this.all.keysDo({ |key|
+			var stageDef = this.all.at(key.asSymbol);
+			stageDef.timeline.timeBars.do({|bar| bar.duration_(bar.item.duration) });
+		});
+	}
 
 	*print { this.all.sortedKeysValuesDo({|stageName, oneStage| oneStage.postln; }) }
 
@@ -28,13 +39,18 @@ StageDef {
 		}.defer(0.01);
 	}
 
-	init {
+	init { |stageKey|
 		CmdPeriod.add(this);
 		bus = Bus.control(Server.default, 1);
 		group = Group.new( RootNode (Server.default));
 		// group.onFree({ "Stage % end".format(key).postln; });
 		timeline = Timeline.new();
 		nodeLibrary = List.new();
+
+		key = stageKey;
+		// nodeLibrary = nodeNames;
+
+		all.put(stageKey.asSymbol, this);
 	}
 
 	free {
@@ -48,20 +64,48 @@ StageDef {
 
 	duration { ^timeline.duration; }
 
-	times { |cycleDefKey ... times|
-		if(CycleDef.exist(cycleDefKey))
-		{
-			timeline.removeKeys(cycleDefKey);
-			times.do({|oneTime|
+	// quant {|qnt| stageQuant = qnt; }
 
-				timeline.put(oneTime, CycleDef(cycleDefKey.asSymbol), CycleDef(cycleDefKey.asSymbol).cycleQuant, cycleDefKey);
-				// if(oneTime + CycleDef(cycleDefKey.asSymbol).cycleQuant > duration)
-				// {
-				// "% at % is longer than % quant".format(CycleDef(cycleDefKey.asSymbol), oneTime, this).warn;
-				// };
-			});
-		}
-		{ "EnvDef ('%') not found".format(cycleDefKey).warn; }
+	times { |cycleDefKey ... times|
+
+		var currentNodeProxy = nil;
+		var currentTime = 0;
+		// var isValidSymbol = false;
+		// "newTimes".warn;
+		timeline = Timeline.new();
+
+		cycleDefKey.do({|oneArg|
+			oneArg.class.postln;
+			case
+			{ oneArg.isKindOf(NodeProxy) } {
+				// "NodeProxy ('%') found".format(oneArg.envirKey).postln;
+				currentNodeProxy = oneArg;
+				currentTime = 0;
+			}
+			{ oneArg.isKindOf(Pattern) } {
+				// "Pattern ('%') found".format(oneArg).postln;
+				// oneArg.asStream.all.postln;
+				oneArg.asStream.all.do({|oneCycleKey|
+					if(CycleDef.exist(oneCycleKey, currentNodeProxy))
+					{
+						// "CycleDef ('%') found".format(oneCycleKey).postln;
+						timeline.put( currentTime, CycleDef.get(oneCycleKey, currentNodeProxy), CycleDef.get(oneCycleKey, currentNodeProxy).duration, oneCycleKey);
+						currentTime = currentTime + CycleDef.get(oneCycleKey, currentNodeProxy).cycleQuant;
+					}
+					{ "CycleDef ('%') not found".format(oneCycleKey).warn; }
+				});
+			}
+			{ oneArg.isKindOf(Symbol) } {
+				if(CycleDef.exist(oneArg, currentNodeProxy))
+				{
+					// "CycleDef ('%') found".format(oneArg).postln;
+					timeline.put(currentTime, CycleDef.get(oneArg, currentNodeProxy), CycleDef.get(oneArg, currentNodeProxy).duration, oneArg);
+				}
+				{ "CycleDef ('%') not found".format(oneArg).warn; }
+			}
+			{ oneArg.isKindOf(Integer) } { currentTime = oneArg; }
+			{ oneArg.isKindOf(Number) } { currentTime = oneArg; };
+		});
 	}
 
 	trig { |startTime = 0, clock = nil|
@@ -85,12 +129,61 @@ StageDef {
 		// timeline.play({|item| item.trig(0, group); }, startTime);
 	}
 
-	prStore { |itemKey, nodeNames|
-		key = itemKey;
-		nodeLibrary = nodeNames;
+	/*
+	play { |loops = inf|
 
-		all.put(itemKey, this);
+	// var node = NodeComposition.getNode(nodeName);
+	// node.play;
+
+	if(loopTask.notNil) { this.stop; };
+	if(timeline.duration > 0)
+	{
+	loopTask = Task({
+	loops.do({
+
+	timeline.items({|time, duration, item, key|
+	if(item.isKindOf(CycleDef))
+	{
+	// "\nCycle % :".format(item).postln;
+	// "at % to % -> key: % || %".format(time, (time + duration), key, item).postln;
+
+	clock.sched(time, { item.trig(0, nil, group, clock); nil;});
+	// clock.schedAbs(time, { item.postln; nil;});
+	};
+
+
+	// var node = NodeComposition.getNode(nodeName);
+	// if(node.isNil) { node.play; };
+	// if(stageGroup.isNil) { stageGroup = Group.new(RootNode.new(Server.default)); };
+	// timeline.play({|item| item.trig(stageGroup, stageMultBus); });
+
+	loopCount = loopCount + 1;
+	timeline.duration.wait;
+	})l
+	});
+	}).play;
+	};
 	}
+
+	stop {|releaseTime = 0|
+	var node = NodeComposition.getNode(nodeName);
+	Task({
+	releaseTime.wait;
+	group.free;
+	// CmdPeriod.remove(this);
+	node.free;
+	loopTask.stop;
+	loopTask = nil;
+	loopCount = 1;
+	}).play;
+	}
+	prStore { |itemKey, nodeNames|
+	key = itemKey;
+	nodeLibrary = nodeNames;
+
+	all.put(itemKey, this);
+	}
+	*/
 
 	printOn { |stream|
 		stream << this.class.name << "('" << key << "' | dur:" << this.duration << " | id:" << group.nodeID << ")";

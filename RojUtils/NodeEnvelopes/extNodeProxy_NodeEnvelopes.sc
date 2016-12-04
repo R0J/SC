@@ -8,19 +8,10 @@
 		envDefKeys.do({|oneArg|
 			if(EnvDef.exist(oneArg, this))
 			{ this.env(oneArg).map(this.envirKey, controlName); }
+			// { EnvDef.get(oneArg, this.envirKey).map(this.envirKey, controlName); }
 			{ "EnvDef ('%') in NodeProxy('%') not found".format(oneArg, this.envirKey).warn; }
 		});
 	}
 
 	cycle { |cycleName, quant ... args| ^CycleDef.newForNode(this, cycleName, quant, args); }
-
-	stage { |stageName = nil|
-		if(stageName.notNil)
-		{
-			if(StageDef.exist(stageName))
-			{ ^StageDef(stageName); }
-			{ ^StageDef(stageName); }
-		}
-	}
-
 }
