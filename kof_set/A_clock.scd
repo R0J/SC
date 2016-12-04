@@ -5,12 +5,40 @@
 
 p.disconnect;
 p = NetProxy.connect();
+TempoClock.default = p.clock;
 
+p.bpm(127);
 
 p.bpm;
 p.metro(4,1800);
-p.bpm(127);
 
+
+
+
+
+/////// CLOCK MASHING
+(
+  s.latency=0.4;
+  //p.clock.tempo_(120/60);
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){ p[synth.asSymbol].quant = [16,0]; p[synth.asSymbol].rebuild;};});
+  ~tick.kr(1);
+  ~tick.clock = p.clock;
+  ~tick.quant = 16;
+  ~counter.clock = p.clock;
+  ~counter.quant = 16;
+  //~counter = {PulseCount.kr(~tick.kr);};
+  //~tick = { Impulse.kr( ~tempo * 4 ); };
+    ~tick.rebuild;
+    ~counter.rebuild;
+/*
+    (
+      SystemClock.sched( p.clock.timeToNextBeat(1 * 16) ,{ 
+        p.restartClock;
+      
+      });
+    );
+    */
+);
 
 ////////////////////////////////////////////////
 
@@ -65,7 +93,7 @@ SystemClock.clear;
         //  |       |       |       |       |
         var pat = [
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
-        ];
+        ].rotate(1);
         var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.5],[3,-3]),imp * hit);

@@ -1,6 +1,6 @@
 #!/bin/bash
 # DEBUG
-scvim startup/startup.scd
+# scvim startup/startup.scd
 
-#scvim *.scd
+scvim *.scd
 
