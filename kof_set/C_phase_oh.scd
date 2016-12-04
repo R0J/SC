@@ -71,7 +71,7 @@ p.makeTempoClock;
     (
         ~kick.ar(2);
         //  ~kick.clock = p.clock;
-        ~kick.quant = [32,0];
+        ~kick.quant = [16,0];
         ~kick.fadeTime=0.02;
 
         ~kick={
@@ -84,7 +84,7 @@ p.makeTempoClock;
             ].rotate(1);
             var mod2 = LFNoise2.kr(~tempo/160!4).range(2,80);
             var mod = LFDNoise1.kr(~tempo/160!4).range(2,80);
-            var imp = PulseDivider.kr(~tick.kr,16,~counter.kr%pat.size);
+            var imp = PulseDivider.kr(~tick.kr,16);
             var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
             var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2.5/[1,1.01,1.011,1.0111]],[2,-3.3]), imp * hit);
             var hum = LFDNoise1.kr(~tempo).range(0.0,0.01);
@@ -114,8 +114,8 @@ p.makeTempoClock;
             1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
             1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,
         ].rotate(1);
-        var imp = PulseDivider.kr(~tick.kr,1,~counter.kr);
-        var imp2 = PulseDivider.kr(~tick.kr,[4,8,16,3],~counter.kr);
+        var imp = PulseDivider.kr(~tick.kr,1);
+        var imp2 = PulseDivider.kr(~tick.kr,[4,8,16,3]);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var hit2 = Select.kr(PulseCount.kr(imp2)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.5],[10,-3],curve:'exp'),imp * hit);
@@ -220,28 +220,6 @@ p.makeTempoClock;
     }.fork;  
 )
 
-// hiss synth ///////////////////////////////////////
-
-(
-    ~hiss.ar(2);
-    ~hiss.clock = p.clock;
-    ~hiss.quant=[32,1];
-    ~hiss.fadeTime=2.2;
-    ~hiss={
-        //         |       |       |       |       |  
-        var pat = [1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1].rotate(1);
-        var imp = PulseDivider.kr(~tick.kr,[1,2,3],~counter.kr);
-        var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.5],[3,-3],curve:'exp'),imp * hit);
-        var sig = Crackle.ar([0.1,0.2,0.6]+env);
-        sig = sig * env;
-        Splay.ar(sig,0.25,0.195);
-    };
-    ~hiss.play;
-);
-~hiss.stop(4);
-~hiss.clear(10);
-~hiss.clear;
 (
     p.clock.sched(p.clock.timeToNextBeat(16),{ ~hiss.clear; });
 );
@@ -249,13 +227,13 @@ p.makeTempoClock;
 
 (
     ~chaos.clock = p.clock;
-    ~chaos.quant = [16,1];
+    ~chaos.quant = [16,0];
     ~chaos.fadeTime = 1;
     ~chaos={
         var sig;
         var all = [];
-        var mod = TWChoose.kr(Impulse.kr(1/32*(1..16)*~tempo),[1,2,4,8,16,1.5,1.33333,1.25,1.125],[7,6,5,4,3,2,1],1).lag(1/10);
-        sig = {ChaosGen.allSubclasses.choose.ar}!16 * (Decay.ar(Impulse.ar(2/(1..16) * ~tempo),0.2 * LFNoise2.kr(1/16*~tempo*16).range(0.7,1.2)) ** 2);
+        var mod = TWChoose.kr(Impulse.kr(1/4*(1..16)*~tempo),[1,2,4,8,16,1.5,1.33333,1.25,1.125],[7,6,5,4,3,2,1],1).lag(1/10);
+        sig = {ChaosGen.allSubclasses.choose.ar}!16 * (Decay.ar(Impulse.ar(1/(1..16) * ~tempo),0.2 * LFNoise2.kr(1/16*~tempo*16).range(0.7,1.2)) ** 2);
         sig = LeakDC.ar(sig) * LFPulse.ar(8*~tempo*mod);
         sig = CompanderD.ar(sig,3/4,1/2,1/2);
         sig = PitchShift.ar(sig,0.05,1/mod/[1,2,1,4,1,8,1,16]);
@@ -264,7 +242,7 @@ p.makeTempoClock;
     };
     ~chaos.play;
 );
-~chaos.clear;
+~chaos.clear(16);
 (
     p.clock.sched(p.clock.timeToNextBeat(16),{ ~chaos.clear; });
 );
@@ -275,7 +253,7 @@ p.makeTempoClock;
 (
     ~shuttles.ar(2);
     ~shuttles.clock = p.clock;
-    ~shuttles.quant=[32];
+    ~shuttles.quant=[16];
     ~shuttles.fadeTime=4;
     ~shuttles={
         var mod = Duty.kr(4/~tempo,0,Dseq([1,2,1,4,1,1.5],inf));

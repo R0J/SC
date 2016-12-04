@@ -102,7 +102,7 @@ p.arProxyNames;
 (
     ~kick.ar(2);
     ~kick.clock = p.clock;
-    ~kick.quant = [32];
+    ~kick.quant = [16];
     ~kick.fadeTime=0.2;
     ~kick={
         //         |       |       |       |       |  
@@ -111,10 +111,10 @@ p.arProxyNames;
             1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
             1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
             1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,
-        ];
+        ].rotate(1);
         var mod2 = LFNoise2.kr(~tempo/160).range(20,80);
         var mod = LFDNoise1.kr(~tempo/160).range(20,80);
-        var imp = PulseDivider.kr(~tick.kr,8,~counter.kr%pat.size);
+        var imp = PulseDivider.kr(~tick.kr,8);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2.5],[mod,-3.3]), imp * hit);
         var sig;
@@ -166,7 +166,7 @@ p.arProxyNames;
             0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,
         ].rotate(1);
         //         |       |       |       |       |
-        var imp = PulseDivider.kr(~tick.kr,[1,2,3,4,5,6],~counter.kr%pat.size);
+        var imp = PulseDivider.kr(~tick.kr,[1,2,3,4,5,6]);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.15*[1,2,3,4]/~tempo],[3,30]),imp * hit);
         var sig = WhiteNoise.ar(0.4!4) + Crackle.ar(env+((1..6)/10))* SinOsc.ar(1/(1..6)*~tempo);
@@ -190,7 +190,7 @@ p.arProxyNames;
 (
     ~crack.ar(2);
     ~crack.clock = p.clock;
-    ~crack.quant=[32,1/2];
+    ~crack.quant=[16];
     ~crack.fadeTime=4;
     ~crack={
         var sig = Crackle.ar(1+LFNoise2.kr(1/4).range(0.01,0.7),LFPulse.ar(5000*[1,2,1.3333,1.5])/LFSaw.ar(1/4*~tempo/2).range(1,50)) * Pulse.ar(8*~tempo/2) * LFPulse.ar(1*~tempo/2) * LFPulse.ar(7/[1,2,3,4]*~tempo/2);
@@ -211,7 +211,7 @@ p.arProxyNames;
     ~under_bass.ar(2);
     ~under_bass.clock = p.clock;
     ~under_bass.quant=16;
-    ~under_bass.fadeTime=4;
+    ~under_bass.fadeTime=0.4;
     ~under_bass={
         var sig = SinOsc.ar(33.midicps!2,Pulse.ar(1/4/[1,2,3,4]*~tempo*2)*8pi) * SinOsc.ar(~tempo/2/[1,2,4,8]);
         sig = Limiter.ar(sig,0.9);
@@ -231,7 +231,7 @@ p.arProxyNames;
 (
     ~menavka_deep.ar(2);
     ~menavka_deep.clock = p.clock;
-    ~menavka_deep.quant=[32];
+    ~menavka_deep.quant=[16];
     ~menavka_deep.fadeTime=8;
     ~menavka_deep={
         var mal = TWChoose.kr(Impulse.kr(~tempo/8/[1,2,3,4]),[4,2,8,1],[4,0.5,0.3,0.1],1);
@@ -361,7 +361,7 @@ p.arProxyNames;
         sig = LPF.ar(sig,3000);
         sig = HPF.ar(sig,100);
         //sig = sig * Pulse.ar(2*~tempo);
-        Splay.ar(sig,0.65,0.25);
+        Splay.ar(sig,0.65,0.15);
     };
     ~flute3.play;
     ~flute3[1] = \filter -> {|sig| DWGReverb.ar(HPF.ar(LPF.ar(sig,3500),150),[4020,4000],1/5)};
@@ -427,10 +427,10 @@ p.arProxyNames;
         sig = Normalizer.ar(sig) * (LFTri.ar(speed/[1,2,3]/4) ** 4 * [1,0.66,0.33]);
         sig = LeakDC.ar(sig);
         sig = Vibrato.ar(sig,[5,6,7],0.02);
-        sig = HPF.ar(sig,100);
+        sig = HPF.ar(sig,100) * (LFSaw.ar(4*~tempo)**2 * LFSaw.ar(1/16*~tempo/2));
         //sig = LPF.ar(sig,f*4);
         sig = CompanderD.ar(sig,1,1/2);
-        Splay.ar(sig,0.35,0.015);
+        Splay.ar(sig,0.35,0.075);
     };
     ~flute1.play;
     ~flute1[1] = \filter -> {|sig| DWGReverb.ar(HPF.ar(LPF.ar(sig,3500),150),[4020,4000],1/2)};

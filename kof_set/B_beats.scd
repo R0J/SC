@@ -299,12 +299,12 @@ p.clock.queue.postln
             0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,
             0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
         ].rotate(1);
-        var imp = PulseDivider.kr(~tick.kr,[1,2,4],~counter.kr);
+        var imp = PulseDivider.kr(~tick.kr,[1,2,4]);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.25*[1,2,4]],[3,-3],curve:'exp'),imp * hit);
         var sig = Crackle.ar([0.1,0.2,0.6]+env);
         sig = sig * env;
-        Splay.ar(sig,0.25,0.095);
+        Splay.ar(sig,0.25,0.25);
     };
     ~hiss.play;
 );
@@ -329,7 +329,7 @@ p.clock.queue.postln
         sig = CompanderD.ar(sig,3/4,1/2,1/2);
         sig = PitchShift.ar(sig,0.05,1/mod/[1,2,1,4,1,8,1,16]);
         //sig = TChoose.ar(Impulse.ar(~tempo*4),all);
-        Splay.ar(sig,0.92,0.05,SinOsc.ar(1*~tempo));
+        Splay.ar(sig,0.92,0.25,SinOsc.ar(1*~tempo));
     };
     ~chaos.play;
 );
@@ -353,29 +353,30 @@ p.clock.queue.postln
     ~kick_one.fadeTime=0.02;
     ~kick_one={
         //         |       |       |       |       |
-        var mod = LFNoise2.kr(1/16*~tempo).range(4,8);
+        var mod = LFNoise2.kr(1/32*~tempo!2).range(2,20);
         var pat = [
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
-            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
+            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,1,0,
         ].rotate(1);
-        var len = LFNoise2.kr(~tempo/32).range(0.8,2.5);
-        var imp = PulseDivider.kr(~tick.kr,1);
+        var len = LFNoise2.kr(~tempo/32).range(2.2,4.5);
+        var imp = PulseDivider.kr(~tick.kr,4);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
 
-        var env = {EnvGen.ar( Env.perc(0.002,len,1,curve: -1 * mod) ,imp * hit)};
-        var sig = SinOsc.ar(30.midicps+(env**8*2),env**mod*8pi);
-        sig = sig + (LPF.ar(GrayNoise.ar(0.5!2),500) * (env**(0.2*mod)));
-        sig = Normalizer.ar(sig);
+        var env = {EnvGen.ar( Env([0,1,0],[0.005,len],curve: -1 * mod) ,imp * hit)};
+        var sig = SinOsc.ar(30.midicps+(env**0.8*20),env**mod*8pi);
+        sig = (LPF.ar(GrayNoise.ar(env/2),500) * (env**(0.4*mod))) + sig;
+        //sig = Normalizer.ar(sig);
         sig = sig * env;
-        sig = sig.distort;
-        Splay.ar(sig,0.01,0.25);
+        sig = NumChannels.ar(sig,2);
+       // sig = sig.distort;
+        Splay.ar(sig,0.001,0.25);
 
     };
     ~kick_one.play;
 );
-
+~kick_one.clear(16);
 
 (
     ~kick_one.clear(8);
@@ -399,12 +400,12 @@ p.clock.queue.postln
             1,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
             1,0,0,0, 0,0,0,0, 1,0,0,0, 1,0,1,0,
         ].rotate(1);
-        var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
+        var imp = PulseDivider.kr(~tick.kr,1);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = Decay.kr(imp * hit,[0.7,0.2,1]*1);
         var sig = BrownNoise.ar(0.4**4*env) + SinOsc.ar([30,36].midicps+(env**5*5),env**4*8pi);
         sig = sig * env;
-        Splay.ar(sig,0.05,0.75);
+        Splay.ar(sig,0.05,0.25);
     };
     ~high_kick.play;
 );
@@ -432,18 +433,19 @@ p.clock.queue.postln
         //        |       |       |       |       |
         var pat = [
             0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0,
-            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
             0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0,
-            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,1,1,1,
+            0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0,
+            0,0,1,0, 0,0,1,0, 0,0,1,0, 1,1,1,1,
         ].rotate(1);
 
-        var mod2 = Duty.kr(16/~tempo,0,Dseq([1,2,1.5,1.33333],inf)).lag(1/4);
+        var mel = Duty.kr(16/~tempo/[1,2,3],0,Dseq([60,64,60,67,60,65,72,36].midicps,inf)).lag(1/4);
+        var mod2 = Duty.kr(16/~tempo/[1,2,3],0,Dseq([1,2,1.5,1.33333],inf)).lag(1/4);
         var len = LFNoise2.kr(1/4*~tempo).range(0.4,1.5);
         var mod = Duty.kr(16/~tempo,0,Dseq([1,2,1.5,1.33333],inf));
         var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = {EnvGen.ar(Env.perc(0.001,len*4,1,LFNoise2.kr(1/4*~tempo).range(-1,-8)),imp * hit)};
-        var sig = WhiteNoise.ar(0.2**7*env) + VarSaw.ar([60,64,67].midicps/4,0,env*mod2) * LFNoise2.kr(1/4!3*~tempo).range(0.07,0.9) ** LFDNoise1.kr(1/40*~tempo).range(0.2,2);
+        var env = {EnvGen.ar(Env.perc(0.001,len*2,1,LFNoise2.kr(1/4*~tempo!2).range(-1,-8)),imp * hit)};
+        var sig = WhiteNoise.ar(0.2**7*env) + VarSaw.ar(mel/[4,4,1.5],0,env*mod2) * LFNoise2.kr(1/4!3*~tempo).range(0.07,0.9) ** LFDNoise1.kr(1/40*~tempo).range(0.2,2);
         sig = LPF.ar(sig,env**0.2*5800+800);
         sig = sig * env;
         Splay.ar(sig,0.75,0.15);
@@ -451,6 +453,7 @@ p.clock.queue.postln
     ~saw_high.play;
 );
 ~saw_high.stop(4);
+~saw_high.clear(8);
 ~saw_high.pause;
 ~saw_high.resume;
 
@@ -480,7 +483,7 @@ Env.adsr(0.1,1,1,0.2,0.9,4).plot;
             1,0,1,0, 1,0,1,0, 1,0,1,0, 1,1,1,1,
 
         ].rotate(1);
-        var imp = PulseDivider.kr(~tick.kr,[1,2,4,8,16,32],~counter.kr);
+        var imp = PulseDivider.kr(~tick.kr,[1,2,4,8,16,32]);
         var hit = Select.kr(PulseCount.kr(imp)/[1,2,3,4]%pat.size,pat);
         var env = EnvGen.ar(Env([0.01,1,0.0001],[0.005,1/16*[1,2,3]],[80,-5]),imp * hit);
         var sig = LFNoise1.ar(22000*LFNoise0.kr(1/4*~tempo/2!4).range(0.5,1)) * Crackle.ar([0.1,0.7,0.4]+env);
@@ -511,7 +514,7 @@ Env.adsr(0.1,1,1,0.2,0.9,4).plot;
             0,0,1,0, 0,0,0,0, 0,0,1,0, 0,0,0,0,
             0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
         ].rotate(1);
-        var imp = PulseDivider.kr(~tick.kr,[1,2,4,8],~counter.kr%pat.size);
+        var imp = PulseDivider.kr(~tick.kr,[1,2,4,8]);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.1*[1,2,3,4]],[3,30]),imp * hit);
         var sig = WhiteNoise.ar(0.4!4) * Pulse.ar(1000);
@@ -713,7 +716,7 @@ NodeProxy.help;
             0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,
         ].rotate(1);
         //         |       |       |       |       |
-        var imp = PulseDivider.kr(~tick.kr,[1,2,3,4,5,6],~counter.kr%pat.size);
+        var imp = PulseDivider.kr(~tick.kr,[1,2,3,4,5,6]);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.15*[1,2,3,4]/~tempo],[3,30]),imp * hit);
         var sig = WhiteNoise.ar(0.4!4) + Crackle.ar(env+((1..6)/10))* SinOsc.ar(1/(1..6)*~tempo);
@@ -818,7 +821,7 @@ p.restartClock;
 (
     ~mel_tick.ar(2);
     ~mel_tick.clock = p.clock;
-    ~mel_tick.quant=[16,1];
+    ~mel_tick.quant=[16,0];
     ~mel_tick.fadeTime=4.2;
     ~mel_tick={
         var f,sig,slo;
@@ -848,7 +851,7 @@ p.restartClock;
 (
     ~crack.ar(2);
     ~crack.clock = p.clock;
-    ~crack.quant=[16,1/2];
+    ~crack.quant=[16,0];
     ~crack.fadeTime=4;
     ~crack={
         var sig = Crackle.ar(1+LFNoise2.kr(1/4).range(0.01,0.7),LFPulse.ar(5000*[1,2,1.3333,1.5])/LFSaw.ar(1/4*~tempo/2).range(1,50)) * Pulse.ar(8*~tempo/2) * LFPulse.ar(1*~tempo/2) * LFPulse.ar(7/[1,2,3,4]*~tempo/2);
@@ -872,7 +875,7 @@ p.restartClock;
     ~hiss={
         //         |       |       |       |       |
         var pat = [1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1].rotate(1);
-        var imp = PulseDivider.kr(~tick.kr,[1,2,3],~counter.kr);
+        var imp = PulseDivider.kr(~tick.kr,[1,2,3]);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.5],[3,-3],curve:'exp'),imp * hit);
         var sig = Crackle.ar([0.1,0.2,0.6]+env);

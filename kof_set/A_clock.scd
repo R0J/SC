@@ -4,29 +4,42 @@
 /////////////// CONNECT //////////////////////
 
 p.disconnect;
-p = NetProxy.connect();
+p = NetProxy.connect(\kof);
 TempoClock.default = p.clock;
 
 p.bpm(127);
 
 p.bpm;
 p.metro(4,1800);
+p.players;
 
 
-
-
+// soft reset
+(
+//    p.restartClock;
+    ~tick.kr(1);
+    ~tick.clock = p.clock;
+    ~tick.quant = 16;
+    ~counter.clock = p.clock;
+    ~counter.quant = 16;
+    ~tick = { var imp = Impulse.kr(~tempo.kr * 4); SendTrig.kr(PulseDivider.kr(imp,16), 0, ~tempo.kr ); imp;  };
+    ~counter = {PulseCount.kr(~tick.kr);};
+    p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){ p[synth.asSymbol].quant = [16,0]; p[synth.asSymbol].rebuild;};});
+ 
+)
 
 /////// CLOCK MASHING, gloria heureka
 (
     s.latency=0.4;
+    p.restartClock;
     p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){ p[synth.asSymbol].quant = [16,0]; p[synth.asSymbol].rebuild;};});
     ~tick.kr(1);
     ~tick.clock = p.clock;
     ~tick.quant = 16;
     ~counter.clock = p.clock;
     ~counter.quant = 16;
-    ~tick.rebuild;
-    ~counter.rebuild;
+    ~tick = { var imp = Impulse.kr(~tempo.kr * 4); SendTrig.kr(PulseDivider.kr(imp,16), 0, ~tempo.kr ); imp;  };
+    ~counter = {PulseCount.kr(~tick.kr);};
     /*
     (
         SystemClock.sched( p.clock.timeToNextBeat(1 * 16) ,{ 
@@ -77,7 +90,11 @@ SystemClock.clear;
         p.proxyNames.do(z ++ _.asSymbol);
         p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].quantize(p[z]); p[synth.asSymbol].rebuild; }{ ~master.quantize(z); }; }; );
     );
+)
 
+
+
+(
     // test_one synth ///////////////////////////////////////
 
     (
