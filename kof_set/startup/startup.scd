@@ -61,16 +61,18 @@ s.options.numWireBufs = 256;
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 (
-
-    s = Server.default;
-    p = ProxySpace.push(s.boot).makeTempoClock;
-    
     SystemClock.sched(0.0,{|t| ("TIME NOW:"+t).postln;});
     " RUNNING ROJ STARTUP SEQUENCE ".padLeft(72,"-").postln;
 
 
-    SystemClock.schedAbs(8,{|t|
-        ("1) TIME NOW:"+t).postln;
+    s = Server.default;
+    
+    {
+      p = ProxySpace.push(s.boot);
+      3.wait;
+      p = NetProxy.push();
+      3.wait;
+
 
         p.clock.tempo = (120/60.0);
         //TempoClock.default = p.clock;
@@ -85,6 +87,7 @@ s.options.numWireBufs = 256;
 
         ~tick = { var imp = Impulse.kr(~tempo.kr * 4); SendTrig.kr(PulseDivider.kr(imp,16), 0, ~tempo.kr ); imp;  };
         ~counter = {PulseCount.kr(~tick.kr);};
+    }.fork;
 
     // 3 /////////////////////////////////////////////////
     {
@@ -107,7 +110,6 @@ s.options.numWireBufs = 256;
         " OK".postln;
     }.fork;
 
-    });
 
 );
 
