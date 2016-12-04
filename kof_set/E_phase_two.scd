@@ -140,7 +140,14 @@ p.arProxyNames;
     ~tick.quant=4;
     ~tick = { Impulse.kr(~tempo * 2); };
     ~counter = {PulseCount.kr(~tick.kr);};
-);    
+);   
+
+(
+//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+{
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+}.fork;  
+)
 
 (
     {
@@ -157,7 +164,7 @@ p.arProxyNames;
     ~switch={
         var pat = [
             0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,
-        ];
+        ].rotate(1);
         //         |       |       |       |       |
         var imp = PulseDivider.kr(~tick.kr,[1,2,3,4,5,6],~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
