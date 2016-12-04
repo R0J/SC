@@ -62,11 +62,14 @@ s.options.numWireBufs = 256;
 
 (
 
+    s = Server.default;
+    p = ProxySpace.push(s.boot).makeTempoClock;
+    
     SystemClock.sched(0.0,{|t| ("TIME NOW:"+t).postln;});
     " RUNNING ROJ STARTUP SEQUENCE ".padLeft(72,"-").postln;
-    p = ProxySpace.push(s.boot).makeTempoClock;
 
-    SystemClock.schedAbs(16,{|t|
+
+    SystemClock.schedAbs(8,{|t|
         ("1) TIME NOW:"+t).postln;
 
         p.clock.tempo = (120/60.0);
@@ -84,7 +87,7 @@ s.options.numWireBufs = 256;
         ~counter = {PulseCount.kr(~tick.kr);};
 
     // 3 /////////////////////////////////////////////////
-    (
+    {
         5.wait;
         " 3) define resender".padLeft(72,"-").postf;
         o = OSCFunc({ arg ...args;
@@ -102,7 +105,7 @@ s.options.numWireBufs = 256;
             };
         },'/tr',s.addr);
         " OK".postln;
-    );
+    }.fork;
 
     });
 
