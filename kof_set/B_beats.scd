@@ -15,8 +15,10 @@
     };
 );
 
-p.bpm(115)
 
+
+p.bpm(115)
+String.help
 
 (
 p.restartClock;
@@ -120,7 +122,7 @@ p.restartClock;
         fx = DWGReverb.ar(NumChannels.ar(fx,2),[5000,5100],1/len)/rev + fx;
 
         sig = SelectX.ar(wet,[orig,fx]);
-        sig = Compander.ar(sig,duck,8/10,1/2,1,0.0002,1/4*~tempo);
+        sig = Compander.ar(sig,LPF.ar(orig,500),8/10,1/2,1);
         sig = NumChannels.ar(sig,2) ;
         sig = Limiter.ar(sig.softclip);
         ReplaceOut.ar(0,sig);
@@ -358,53 +360,21 @@ p.clock.queue.postln
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
         ];
-        var len = LFNoise2.kr(~tempo/32!2).range(0.2,2.5);
+        var len = LFNoise2.kr(~tempo/32!2).range(0.2,1.5);
         var imp = PulseDivider.kr(~tick.kr,1);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
 
-        var env = {EnvGen.ar( Env.adsr(0.002,len/10,len,len,curve: -1 * mod) ,imp * hit)};
+        var env = {EnvGen.ar( Env.perc(0.002,len,1,curve: -1 * mod) ,imp * hit)};
         var sig = SinOsc.ar(30.midicps+(env**8*2),env**mod*8pi);
         sig = sig + (LPF.ar(GrayNoise.ar(0.5!2),500) * (env**(0.2*mod)));
         sig = Normalizer.ar(sig);
         sig = sig * env;
         sig = sig.distort;
-        Splay.ar(sig,0.01,0.95);
+        Splay.ar(sig,0.01,0.25);
 
     };
     ~kick_one.play;
 );
-
-
-
-// lalal synth ///////////////////////////////////////
-
-(
-    ~lalal.ar(2);
-    ~lalal.clock = p.clock;
-    ~lalal.quant=[4];
-    ~lalal.fadeTime=0.02;
-    ~lalal={
-        //  |       |       |       |       |
-        var pat = [
-            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
-        ];
-        var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
-        var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.0002,4.65],[3,-3]),imp * hit);
-        var sig = WhiteNoise.ar(0.7);
-
-        sig = LPF.ar(sig,)
-        Splay.ar(sig,0.75,0.25);
-    };
-    ~lalal.play;
-);
-
-~lalal.stop(4);
-~lalal.clear;
-~lalal.pause;
-~lalal.resume;
-
-
 
 
 (
@@ -1093,3 +1063,18 @@ p.restartClock;
 ~raw.resume;
 
 
+
+
+
+(
+  s.latency=0.6;
+  //p.clock.tempo_(120/60);
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
+  ~tick.kr(1);
+  ~tick.clock = p.clock;
+  ~tick.quant = 16;
+  ~counter.clock = p.clock;
+  ~counter.quant = 16;
+  ~counter = {PulseCount.kr(~tick.kr);};
+  ~tick = { Impulse.kr( ~tempo * 4 ); };
+);
