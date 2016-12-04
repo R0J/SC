@@ -21,7 +21,7 @@ p.bpm(115)
 String.help
 
 (
-p.restartClock;
+    p.restartClock;
     ~tick.kr(1);
     ~counter.kr(1);
 
@@ -122,7 +122,7 @@ p.restartClock;
         fx = DWGReverb.ar(NumChannels.ar(fx,2),[5000,5100],1/len)/rev + fx;
 
         sig = SelectX.ar(wet,[orig,fx]);
-      //  sig = Compander.ar(sig,~duck.ar,8/10,1/2,1);
+        //  sig = Compander.ar(sig,~duck.ar,8/10,1/2,1);
         sig = NumChannels.ar(sig,2) ;
         sig = Limiter.ar(sig.softclip);
         ReplaceOut.ar(0,sig);
@@ -1068,14 +1068,14 @@ p.restartClock;
 
 
 (
-  s.latency=0.6;
-  //p.clock.tempo_(120/60);
-  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
-  ~tick.kr(1);
-  ~tick.clock = p.clock;
-  ~tick.quant = 16;
-  ~counter.clock = p.clock;
-  ~counter.quant = 16;
-  ~counter = {PulseCount.kr(~tick.kr);};
-  ~tick = { Impulse.kr( ~tempo * 4 ); };
+    s.latency=0.6;
+    //p.clock.tempo_(120/60);
+    p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
+    ~tick.kr(1);
+    ~tick.clock = p.clock;
+    ~tick.quant = 16;
+    ~counter.clock = p.clock;
+    ~counter.quant = 16;
+    ~counter = {PulseCount.kr(~tick.kr);};
+    ~tick = { Impulse.kr( ~tempo * 4 ); };
 );
