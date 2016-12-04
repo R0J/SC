@@ -16,7 +16,7 @@ p.metro(4,1800);
 
 
 
-/////// CLOCK MASHING
+/////// CLOCK MASHING, gloria heureka
 (
   s.latency=0.4;
   //p.clock.tempo_(120/60);

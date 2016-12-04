@@ -122,7 +122,7 @@ p.restartClock;
         fx = DWGReverb.ar(NumChannels.ar(fx,2),[5000,5100],1/len)/rev + fx;
 
         sig = SelectX.ar(wet,[orig,fx]);
-        sig = Compander.ar(sig,LPF.ar(orig,500),8/10,1/2,1);
+      //  sig = Compander.ar(sig,~duck.ar,8/10,1/2,1);
         sig = NumChannels.ar(sig,2) ;
         sig = Limiter.ar(sig.softclip);
         ReplaceOut.ar(0,sig);
@@ -298,7 +298,7 @@ p.clock.queue.postln
             0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
             0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,
             0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
-        ];
+        ].rotate(1);
         var imp = PulseDivider.kr(~tick.kr,[1,2,4],~counter.kr);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.25*[1,2,4]],[3,-3],curve:'exp'),imp * hit);
@@ -359,8 +359,8 @@ p.clock.queue.postln
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
-        ];
-        var len = LFNoise2.kr(~tempo/32!2).range(0.2,1.5);
+        ].rotate(1);
+        var len = LFNoise2.kr(~tempo/32).range(0.8,2.5);
         var imp = PulseDivider.kr(~tick.kr,1);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
 
@@ -398,7 +398,7 @@ p.clock.queue.postln
             1,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
             1,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
             1,0,0,0, 0,0,0,0, 1,0,0,0, 1,0,1,0,
-        ];
+        ].rotate(1);
         var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = Decay.kr(imp * hit,[0.7,0.2,1]*1);
@@ -435,7 +435,7 @@ p.clock.queue.postln
             0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
             1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0,
             0,0,0,0, 0,0,0,0, 0,0,0,0, 1,1,1,1,
-        ];
+        ].rotate(1);
 
         //var mod2 = Duty.kr(4/~tempo,0,Dseq([1,2,1.5,1.33333],inf));
         var mod = Duty.kr(16/~tempo,0,Dseq([1,2,1.5,1.33333],inf));
@@ -478,7 +478,7 @@ Env.adsr(0.1,1,1,0.2,0.9,4).plot;
             1,0,1,0, 1,0,1,0, 1,0,1,0, 0,0,0,0,
             1,0,1,0, 1,0,1,0, 1,0,1,0, 1,1,1,1,
 
-        ];
+        ].rotate(1);
         var imp = PulseDivider.kr(~tick.kr,[1,2,4,8,16,32],~counter.kr);
         var hit = Select.kr(PulseCount.kr(imp)/[1,2,3,4]%pat.size,pat);
         var env = EnvGen.ar(Env([0.01,1,0.0001],[0.005,1/16*[1,2,3]],[80,-5]),imp * hit);
@@ -509,7 +509,7 @@ Env.adsr(0.1,1,1,0.2,0.9,4).plot;
             0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
             0,0,1,0, 0,0,0,0, 0,0,1,0, 0,0,0,0,
             0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
-        ];
+        ].rotate(1);
         var imp = PulseDivider.kr(~tick.kr,[1,2,4,8],~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.1*[1,2,3,4]],[3,30]),imp * hit);
@@ -659,7 +659,7 @@ Env.adsr(0.1,1,1,0.2,0.9,4).plot;
             //         |       |       |       |       |
             var pat = [
                 1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
-            ];
+            ].rotate(1);
             var imp = PulseDivider.kr(~tick.kr,4,~counter.kr % pat.size);
             var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
             var env = Decay2.kr(imp*hit,[1,2,3,4]/~tempo*LFNoise2.kr(~tempo/64!4).exprange(1.0,4.9),0.0005);
@@ -710,7 +710,7 @@ NodeProxy.help;
     ~switch={
         var pat = [
             0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,
-        ];
+        ].rotate(1);
         //         |       |       |       |       |
         var imp = PulseDivider.kr(~tick.kr,[1,2,3,4,5,6],~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
@@ -870,7 +870,7 @@ p.restartClock;
     ~hiss.fadeTime=2.2;
     ~hiss={
         //         |       |       |       |       |
-        var pat = [1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1];
+        var pat = [1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1].rotate(1);
         var imp = PulseDivider.kr(~tick.kr,[1,2,3],~counter.kr);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.5],[3,-3],curve:'exp'),imp * hit);
@@ -980,7 +980,7 @@ p.restartClock;
                 //     |       |       |       |       |
                 1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
                 1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
-            ];
+            ].rotate(1);
             var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
             var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
             var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2],[20,-3],curve:'exp'),imp * hit);
@@ -1007,7 +1007,7 @@ p.restartClock;
                 0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,
                 0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,
                 0,0,1,0,0,0,1,0,0,0,1,0,0,1,1,1,
-            ];
+            ].rotate(1);
             var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
             var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
             var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,4],[3,-3],curve:'exp'),imp * hit);
