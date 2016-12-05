@@ -4,20 +4,21 @@ StageDef {
 	var <bus;
 	var <timeline;
 	var nodeLibrary;
+	var <quant;
 
 	classvar <>all;
 
 	*initClass { all = IdentityDictionary.new; }
 
-	*new { |key ... cycleArgs|
+	*new { |key, qnt ... cycleArgs|
 		var def;
 		if(this.exist(key))
 		{ def = this.all.at(key); }
 		{ def = nil; };
 
 		if(def.isNil)
-		{ def = super.new.init(key).times(cycleArgs); }
-		{ if(cycleArgs.notEmpty) { def.times(cycleArgs); } } ;
+		{ def = super.new.init(key).times(qnt, cycleArgs); }
+		{ if(cycleArgs.notEmpty) { def.times(qnt, cycleArgs); } } ;
 		^def;
 	}
 
@@ -66,13 +67,15 @@ StageDef {
 
 	// quant {|qnt| stageQuant = qnt; }
 
-	times { |cycleDefKey ... times|
+	times { |qnt, cycleDefKey|
 
 		var currentNodeProxy = nil;
 		var currentTime = 0;
+
 		// var isValidSymbol = false;
 		// "newTimes".warn;
 		timeline = Timeline.new();
+		quant = qnt;
 
 		cycleDefKey.do({|oneArg|
 			oneArg.class.postln;
@@ -129,64 +132,8 @@ StageDef {
 		// timeline.play({|item| item.trig(0, group); }, startTime);
 	}
 
-	/*
-	play { |loops = inf|
-
-	// var node = NodeComposition.getNode(nodeName);
-	// node.play;
-
-	if(loopTask.notNil) { this.stop; };
-	if(timeline.duration > 0)
-	{
-	loopTask = Task({
-	loops.do({
-
-	timeline.items({|time, duration, item, key|
-	if(item.isKindOf(CycleDef))
-	{
-	// "\nCycle % :".format(item).postln;
-	// "at % to % -> key: % || %".format(time, (time + duration), key, item).postln;
-
-	clock.sched(time, { item.trig(0, nil, group, clock); nil;});
-	// clock.schedAbs(time, { item.postln; nil;});
-	};
-
-
-	// var node = NodeComposition.getNode(nodeName);
-	// if(node.isNil) { node.play; };
-	// if(stageGroup.isNil) { stageGroup = Group.new(RootNode.new(Server.default)); };
-	// timeline.play({|item| item.trig(stageGroup, stageMultBus); });
-
-	loopCount = loopCount + 1;
-	timeline.duration.wait;
-	})l
-	});
-	}).play;
-	};
-	}
-
-	stop {|releaseTime = 0|
-	var node = NodeComposition.getNode(nodeName);
-	Task({
-	releaseTime.wait;
-	group.free;
-	// CmdPeriod.remove(this);
-	node.free;
-	loopTask.stop;
-	loopTask = nil;
-	loopCount = 1;
-	}).play;
-	}
-	prStore { |itemKey, nodeNames|
-	key = itemKey;
-	nodeLibrary = nodeNames;
-
-	all.put(itemKey, this);
-	}
-	*/
-
 	printOn { |stream|
-		stream << this.class.name << "('" << key << "' | dur:" << this.duration << " | id:" << group.nodeID << ")";
+		stream << this.class.name << "('" << key << "' | qnt:" << this.quant << " | dur:" << this.duration << " | id:" << group.nodeID << ")";
 	}
 
 }
