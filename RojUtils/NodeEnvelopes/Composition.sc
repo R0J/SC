@@ -2,18 +2,88 @@ Composition {
 
 	classvar currentStage;
 
-	classvar clock;
+	// classvar clock;
 	classvar <timeline;
 
+	classvar playingGroup;
 	// classvar isPlaying;
 
+	var <group;
+	var fadeOutTask;
+	var clock;
+
+	*test {|stageName, quant, fadeTime = 0|
+		if(StageDef.exist(stageName))
+		{
+			var instance = super.new;
+			var envirClock = currentEnvironment.clock;
+			var time2quant = envirClock.timeToNextBeat(quant);
+			instance.initGroup(fadeTime);
+			envirClock.sched( time2quant, {
+				instance.currentStagePlay(stageName);
+				nil;
+			})
+			^instance;
+		}
+		{ ^nil; }
+	}
+
 	*initClass {
+		playingGroup = IdentityDictionary.new;
+
 		timeline = Timeline.new();
-		clock = nil;
+		// clock = nil;
 		currentStage = \default;
 		// isPlaying = false;
 	}
 
+
+	*stop {|fadeTime = 0|
+		playingGroup.keysValuesDo({|nodeID, oldInstance|
+			oldInstance.removeGroup(nodeID, fadeTime);
+		});
+	}
+
+	initGroup { |fadeTime|
+		group = Group.new( RootNode (Server.default));
+		fadeOutTask = nil;
+
+		playingGroup.keysValuesDo({|nodeID, oldInstance|
+			oldInstance.removeGroup(nodeID, fadeTime);
+		});
+		playingGroup.put(group.nodeID.asSymbol, this);
+	}
+
+	removeGroup {|nodeID, time = 0|
+		if(fadeOutTask.notNil) { fadeOutTask.stop; };
+		fadeOutTask = {
+			currentStage.nodes.do({|oneNode| oneNode.stop(time); });
+			time.wait;
+			clock.stop;
+			clock = nil;
+			group.free;
+			playingGroup.removeAt(nodeID.asSymbol);
+		}.fork;
+	}
+
+	currentStagePlay {|stageName|
+		currentStage = StageDef(stageName.asSymbol);
+currentStage.nodes.do({|oneNode| oneNode.play; });
+
+		if(clock.notNil) { this.stop; };
+		clock = TempoClock.new(
+			tempo: currentEnvironment.clock.tempo,
+			beats: 0
+		);
+
+		if(currentStage.quant.notNil)
+		{ clock.sched((currentStage.quant), { this.currentStagePlay(stageName); nil; }); }
+		{ clock.sched((currentStage.duration), { this.currentStagePlay(stageName); nil; }); };
+
+		clock.sched(0, { currentStage.trig(0, group, clock); nil; });
+
+	}
+/*
 	*playStage {|stageName, quant|
 		if(StageDef.exist(stageName))
 		{
@@ -70,7 +140,7 @@ Composition {
 				"at % to % -> key: % || %".format(time, (time + duration), key, item).postln;
 			};
 		});
-
+*/
 		/*
 		timeline.schedToClock(clock, {|time, duration, item, key|
 		"at % to % -> key: % || %".format(time, (time + duration), key, item).postln;
@@ -90,12 +160,16 @@ Composition {
 		});
 		*/
 
+/*
 	}
-
 	*stop {
 		clock.stop;
 		clock = nil;
+
 	}
+*/
+
+
 
 	*putNode { |nodeName, from, to|
 		var node = nodeName.asSymbol.envirGet;

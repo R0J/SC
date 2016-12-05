@@ -3,7 +3,7 @@ StageDef {
 	var <group;
 	var <bus;
 	var <timeline;
-	var nodeLibrary;
+	var <nodes;
 	var <quant;
 
 	classvar <>all;
@@ -43,10 +43,10 @@ StageDef {
 	init { |stageKey|
 		CmdPeriod.add(this);
 		bus = Bus.control(Server.default, 1);
-		group = Group.new( RootNode (Server.default));
+		// group = Group.new( RootNode (Server.default));
 		// group.onFree({ "Stage % end".format(key).postln; });
 		timeline = Timeline.new();
-		nodeLibrary = List.new();
+		nodes = List.new();
 
 		key = stageKey;
 		// nodeLibrary = nodeNames;
@@ -75,6 +75,7 @@ StageDef {
 		// var isValidSymbol = false;
 		// "newTimes".warn;
 		timeline = Timeline.new();
+		nodes = List.new();
 		quant = qnt;
 
 		cycleDefKey.do({|oneArg|
@@ -82,6 +83,7 @@ StageDef {
 			case
 			{ oneArg.isKindOf(NodeProxy) } {
 				// "NodeProxy ('%') found".format(oneArg.envirKey).postln;
+				nodes.add(oneArg);
 				currentNodeProxy = oneArg;
 				currentTime = 0;
 			}
@@ -115,11 +117,16 @@ StageDef {
 		});
 	}
 
-	trig { |startTime = 0, clock = nil|
+	trig { |startTime = 0, targetGroup = nil, clock = nil|
 		if(clock.isNil) { clock = currentEnvironment.clock; };
 		// nodeLibrary.postln;
 		// "% trig time: %".format(this, clock.beats).postln;
+		targetGroup.postln;
 		"% trig time: %".format(this, currentEnvironment.clock.beats).postln;
+
+		if(targetGroup.isNil)
+		{ group = Group.new( RootNode (Server.default) ); }
+		{ group = Group.new( targetGroup ); };
 
 
 		timeline.items({|time, duration, item, key|
@@ -139,7 +146,7 @@ StageDef {
 	}
 
 	printOn { |stream|
-		stream << this.class.name << "('" << key << "' | qnt:" << this.quant << " | dur:" << this.duration << " | id:" << group.nodeID << ")";
+		stream << this.class.name << "('" << key << "' | qnt:" << this.quant << " | dur:" << this.duration /*<< " | id:" << group.nodeID*/ << ")";
 	}
 
 }
