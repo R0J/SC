@@ -2,5 +2,5 @@
 # DEBUG
 # scvim startup/startup.scd
 
-screen scvim *.scd
+scvim *.scd
 

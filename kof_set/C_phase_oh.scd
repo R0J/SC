@@ -81,7 +81,7 @@ p.makeTempoClock;
                 1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,
                 1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,
                 1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,
-            ];
+            ].rotate(1);
             var mod2 = LFNoise2.kr(~tempo/160!4).range(2,80);
             var mod = LFDNoise1.kr(~tempo/160!4).range(2,80);
             var imp = PulseDivider.kr(~tick.kr,16,~counter.kr%pat.size);
@@ -113,7 +113,7 @@ p.makeTempoClock;
             1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
             1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
             1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,
-        ];
+        ].rotate(1);
         var imp = PulseDivider.kr(~tick.kr,1,~counter.kr);
         var imp2 = PulseDivider.kr(~tick.kr,[4,8,16,3],~counter.kr);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
@@ -229,7 +229,7 @@ p.makeTempoClock;
     ~hiss.fadeTime=2.2;
     ~hiss={
         //         |       |       |       |       |  
-        var pat = [1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1];
+        var pat = [1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1].rotate(1);
         var imp = PulseDivider.kr(~tick.kr,[1,2,3],~counter.kr);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.5],[3,-3],curve:'exp'),imp * hit);
