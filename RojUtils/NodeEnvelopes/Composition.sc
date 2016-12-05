@@ -5,24 +5,37 @@ Composition {
 	classvar clock;
 	classvar <timeline;
 
+	// classvar isPlaying;
+
 	*initClass {
 		timeline = Timeline.new();
-		currentStage = \default;
 		clock = nil;
+		currentStage = \default;
+		// isPlaying = false;
 	}
 
-	*playStage {|stageName|
+	*playStage {|stageName, quant|
 		if(StageDef.exist(stageName))
 		{
+			var envirClock = currentEnvironment.clock;
+			var time2quant = 0;
+
 			currentStage = StageDef(stageName.asSymbol);
+			if(clock.isNil) { time2quant = envirClock.timeToNextBeat(quant); };
 
 			if(clock.notNil) { this.stop; };
 			clock = TempoClock.new(
-				tempo: 127/60,
+				tempo: envirClock.tempo,
 				beats: 0
 			);
-			clock.sched(8, { this.playStage(stageName); nil; });
-			clock.sched(0, {"% time tick: %".format(currentStage, clock.beats).postln; 1 });
+
+			if(currentStage.quant.notNil)
+			{ clock.sched((currentStage.quant + time2quant), { this.playStage(stageName); nil; }); }
+			{ clock.sched((currentStage.duration + time2quant), { this.playStage(stageName); nil; }); };
+
+			clock.sched(time2quant, { currentStage.trig(0, clock); nil; });
+			// clock.sched(0, {"% time tick: %".format(currentStage, clock.beats).postln; 1 });
+			// });
 		}
 		{ "StageDef ('%') not found".format(stageName).warn; }
 	}

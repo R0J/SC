@@ -1,7 +1,7 @@
 CycleDef {
 	var <key;
 	var <group;
-	var <cycleQuant;
+	var <>quant;
 	var <timeline;
 	var parentNode;
 
@@ -11,15 +11,15 @@ CycleDef {
 
 	*new { |key, quant ... args| ^this.newForNode(nil, key, quant, args); }
 
-	*newForNode { |node, key, quant ... args|
+	*newForNode { |node, key, qnt ... args|
 		var def;
 		if(this.exist(key, node))
 		{ def = this.get(key, node); }
 		{ def = nil; };
 
 		if(def.isNil)
-		{ def = super.new.init(node, key, quant, args); }
-		{ if(quant.notNil) { def.init(node, key, quant, args); } } ;
+		{ def = super.new.init(node, key, qnt, args); }
+		{ if(qnt.notNil) { def.init(node, key, qnt, args); } } ;
 		^def;
 	}
 
@@ -54,7 +54,7 @@ CycleDef {
 		{ group = Group.new( RootNode (Server.default)) }.defer(0.01);
 	}
 
-	init { |node, itemKey, itemQuant, args|
+	init { |node, itemKey, qnt, args|
 		// CmdPeriod.add(this);
 		// bus = Bus.control(Server.default, 1);
 		// group = Group.new( RootNode (Server.default));
@@ -65,7 +65,7 @@ CycleDef {
 		timeline = Timeline.new();
 
 		key = itemKey;
-		if(itemQuant.notNil) { this.quant(itemQuant); };
+		if(qnt.notNil) { quant = qnt; };
 
 		if(node.isNil)
 		{ all.putAtPath([\default, itemKey.asSymbol], this); }
@@ -100,11 +100,6 @@ CycleDef {
 
 	removeEnv {|envKey| timeline.removeKeys(envKey); }
 
-	quant {|qnt|
-		cycleQuant = qnt;
-		// timeline.setEnd(qnt);
-	}
-
 	duration { ^timeline.duration; }
 
 	trig { |startTime = 0, endTime = nil, targetGroup = nil, clock = nil|
@@ -114,7 +109,9 @@ CycleDef {
 		{ group = Group.new( RootNode (Server.default) ); }
 		{ group = Group.new( targetGroup ); };
 
-		"% trig time: %".format(this, clock.beats).postln;
+		// "% trig time: %".format(this, clock.beats).postln;
+		"% trig time: %".format(this, currentEnvironment.clock.beats).postln;
+
 		// |targetGroup, targetBus|
 
 		timeline.items({|time, duration, item, key|
@@ -167,7 +164,7 @@ CycleDef {
 	}
 
 	printOn { |stream|
-		stream << this.class.name << "('" << key << "' | qnt: " << cycleQuant << " | dur: " << this.duration << ")";
+		stream << this.class.name << "('" << key << "' | qnt: " << quant << " | dur: " << this.duration << ")";
 	}
 
 }

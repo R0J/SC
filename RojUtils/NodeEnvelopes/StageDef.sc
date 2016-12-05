@@ -91,9 +91,13 @@ StageDef {
 				oneArg.asStream.all.do({|oneCycleKey|
 					if(CycleDef.exist(oneCycleKey, currentNodeProxy))
 					{
+						var cycleDef = CycleDef.get(oneCycleKey, currentNodeProxy);
 						// "CycleDef ('%') found".format(oneCycleKey).postln;
-						timeline.put( currentTime, CycleDef.get(oneCycleKey, currentNodeProxy), CycleDef.get(oneCycleKey, currentNodeProxy).duration, oneCycleKey);
-						currentTime = currentTime + CycleDef.get(oneCycleKey, currentNodeProxy).cycleQuant;
+						timeline.put( currentTime, cycleDef, cycleDef.duration, oneCycleKey);
+
+						if(cycleDef.quant.notNil)
+						{ currentTime = currentTime + cycleDef.quant; }
+						{ currentTime = currentTime + cycleDef.duration; }
 					}
 					{ "CycleDef ('%') not found".format(oneCycleKey).warn; }
 				});
@@ -114,7 +118,9 @@ StageDef {
 	trig { |startTime = 0, clock = nil|
 		if(clock.isNil) { clock = currentEnvironment.clock; };
 		// nodeLibrary.postln;
-		"% trig time: %".format(this, clock.beats).postln;
+		// "% trig time: %".format(this, clock.beats).postln;
+		"% trig time: %".format(this, currentEnvironment.clock.beats).postln;
+
 
 		timeline.items({|time, duration, item, key|
 			if(item.isKindOf(CycleDef))
