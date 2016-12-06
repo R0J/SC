@@ -4,10 +4,10 @@
 ProxySynthDef(\kick, { |amp = 0, freq = 63, fplus = 0, noise = 0.0|
 	var bus = \out.kr;
 	var num = 4;
-	var freqSaw = Saw.ar(20, 20);
+	// var freqSaw = Saw.ar(20, 20);
 	var sig = Mix.fill(num,{|i|
 		SinOsc.ar(
-			freq: freq!2 + fplus + freqSaw,
+			freq: freq!2 + fplus /*+ freqSaw*/,
 			mul:num.reciprocal
 		)
 	});

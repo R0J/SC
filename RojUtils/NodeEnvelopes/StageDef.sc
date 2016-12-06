@@ -55,17 +55,21 @@ StageDef {
 	}
 
 	free {
-		group.free;
+		// group.free;
 		bus.free;
 		CmdPeriod.remove(this);
 		all.removeAt(key);
 	}
 
-	removeCycle {|cycleKey| timeline.removeKeys(cycleKey); }
+	playNodes {
+
+	}
+
+	stopNodes {
+
+	}
 
 	duration { ^timeline.duration; }
-
-	// quant {|qnt| stageQuant = qnt; }
 
 	times { |qnt, cycleDefKey|
 
@@ -79,7 +83,7 @@ StageDef {
 		quant = qnt;
 
 		cycleDefKey.do({|oneArg|
-			oneArg.class.postln;
+			// oneArg.class.postln;
 			case
 			{ oneArg.isKindOf(NodeProxy) } {
 				// "NodeProxy ('%') found".format(oneArg.envirKey).postln;
@@ -117,16 +121,19 @@ StageDef {
 		});
 	}
 
-	trig { |startTime = 0, targetGroup = nil, clock = nil|
+	trig { |startTime = 0, parentGroup = nil, clock = nil, multBus = nil|
 		if(clock.isNil) { clock = currentEnvironment.clock; };
 		// nodeLibrary.postln;
 		// "% trig time: %".format(this, clock.beats).postln;
-		targetGroup.postln;
+
 		"% trig time: %".format(this, currentEnvironment.clock.beats).postln;
 
-		if(targetGroup.isNil)
+		if(parentGroup.isNil)
 		{ group = Group.new( RootNode (Server.default) ); }
-		{ group = Group.new( targetGroup ); };
+		{
+			// group = Group.new( targetGroup );
+			group = parentGroup;
+		};
 
 
 		timeline.items({|time, duration, item, key|
@@ -135,14 +142,9 @@ StageDef {
 				// "\nCycle % :".format(item).postln;
 				// "at % to % -> key: % || %".format(time, (time + duration), key, item).postln;
 
-				clock.sched(time, { item.trig(0, nil, group, clock); nil;});
-				// clock.schedAbs(time, { item.postln; nil;});
+				clock.sched(time, { item.trig(0, nil, group, clock, multBus); nil;});
 			};
 		});
-
-
-		// |targetGroup, targetBus|
-		// timeline.play({|item| item.trig(0, group); }, startTime);
 	}
 
 	printOn { |stream|

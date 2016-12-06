@@ -102,12 +102,15 @@ CycleDef {
 
 	duration { ^timeline.duration; }
 
-	trig { |startTime = 0, endTime = nil, targetGroup = nil, clock = nil|
+	trig { |startTime = 0, endTime = nil, parentGroup = nil, clock = nil, multBus = nil|
 		if(clock.isNil) { clock = currentEnvironment.clock; };
-		if(group.notNil) { group.free; };
-		if(targetGroup.isNil)
+		// if(group.notNil) { group.free; };
+		if(parentGroup.isNil)
 		{ group = Group.new( RootNode (Server.default) ); }
-		{ group = Group.new( targetGroup ); };
+		{
+			// group = Group.new( targetGroup );
+			group = parentGroup ;
+		};
 
 		// "% trig time: %".format(this, clock.beats).postln;
 		"% trig time: %".format(this, currentEnvironment.clock.beats).postln;
@@ -118,10 +121,10 @@ CycleDef {
 			if(item.isKindOf(EnvDef))
 			{
 				case
-				{ startTime <= time } { clock.sched((time - startTime), { item.trig(0, nil, group, clock); nil;}); }
+				{ startTime <= time } { clock.sched((time - startTime), { item.trig(0, nil, group, clock, multBus); nil;}); }
 				{ (startTime > time) && (startTime < (time + duration)) } {
 					"play from middle %".format(item).warn;
-					item.trig(startTime, nil, group, clock);
+					item.trig(startTime, nil, group, clock, multBus);
 				};
 				// "\nCycle % :".format(item).postln;
 				// "at % to % -> key: % || %".format(time, (time + duration), key, item).postln;
@@ -129,13 +132,14 @@ CycleDef {
 
 			};
 		});
-
+		 /*
 		currentEnvironment.clock.sched(timeline.duration + 5, {
 			group.free;
 			// bus.free;
 			group = nil;
 			nil;
 		});
+		*/
 	}
 
 	plot {|size = 400|

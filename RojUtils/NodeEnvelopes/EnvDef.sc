@@ -146,7 +146,7 @@ EnvDef {
 
 	initSynthDefs{
 		Server.default.waitForBoot({
-			bufferSynthDef = { |cBus, bufnum, startTime = 0|
+			bufferSynthDef = { |cBus, multBus, bufnum, startTime = 0|
 				var controlRate = Server.default.sampleRate / Server.default.options.blockSize;
 				var buf = PlayBuf.kr(
 					numChannels: 1,
@@ -156,6 +156,7 @@ EnvDef {
 					loop: 0
 				);
 				FreeSelfWhenDone.kr(buf);
+				// Out.kr(cBus,buf * In.kr(multBus));
 				Out.kr(cBus,buf * \multiplicationBus.kr(1));
 			}.asSynthDef;
 
@@ -167,10 +168,12 @@ EnvDef {
 		});
 	}
 
-	trig { |startTime = 0, endTime = nil, parentGroup = nil, clock = nil|
+	trig { |startTime = 0, endTime = nil, parentGroup = nil, clock = nil, multBus = nil|
 		if(clock.isNil) { clock = currentEnvironment.clock; };
 
 		// "% trig time: %".format(this, clock.beats).postln;
+
+		// multBus.warn;
 
 		if(buffer.notNil)
 		{
@@ -186,9 +189,11 @@ EnvDef {
 					\bufnum: buffer.bufnum,
 					\startTime, startTime,
 					\tempoClock, currentEnvironment.clock.tempo,
-					// \multiplicationBus, targetBus.asMap
+					// \multBus, multBus.index
+					\multiplicationBus, multBus.asMap
 				]
 			);
+			// synth.set(\multiplicationBus, multBus);
 			if(endTime.notNil)
 			{
 				clock.sched((endTime - startTime), { synth.free; nil; });
