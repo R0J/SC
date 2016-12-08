@@ -1,4 +1,4 @@
-SignalDef {
+Sdef {
 	var <path;
 	var <duration;
 	var <signal;
@@ -34,31 +34,12 @@ SignalDef {
 		library.putAtPath(pathKey, this);
 	}
 
-	envs { |...timeEnvArgs|
-		var order = Order.new;
-		var totalDuration = 0;
-		timeEnvArgs.pairsDo({|time, envelope|
-			var endTime = time + envelope.duration;
-			if(totalDuration < endTime) { totalDuration = endTime };
-			// "time: % | dur: % | total: %".format(time, envelope.duration, totalDuration).postln;
-			order.put(time, envelope.asSignal(controlRate * envelope.duration));
-		});
-
-		signal = Signal.newClear(controlRate * totalDuration);
-		duration = totalDuration;
-
-		order.indicesDo({|oneSignal, time|
-			// "time: %".format(time).postln;
-			// signal.overWrite(oneSignal, time * controlRate);
-			signal.overDub(oneSignal, time * controlRate);
-		});
-
-		if(autoPlot) { this.plot };
+	fill {|dur, value|
+		signal = Signal.newClear(controlRate * dur).fill(value);
+		duration = dur;
 	}
 
-	fill {|dur, value| signal = Signal.newClear(controlRate * dur).fill(value);	}
-
-	set { |item, shift = 0, dur = nil, newFill = true|
+	set { |item, shift = 0|
 		var itemSignal;
 		var itemDur = 0;
 		var fillValue = 0;
@@ -67,23 +48,59 @@ SignalDef {
 		{ item.isKindOf(Env) }
 		{
 			itemSignal = item.asSignal(controlRate * item.duration);
-			itemDur = item.duration + shift;
+			duration = item.duration + shift;
+			this.fill(item.duration + shift, fillValue)
 		};
 
-		if(newFill) { this.fill(itemDur, fillValue) };
-		duration = itemDur;
 		signal.overDub( itemSignal, shift * controlRate);
 		// signal.overWrite(itemSignal, shift * controlRate);
 
 		if(autoPlot) { this.plot };
 	}
 
-	setn {
+	setn {  |...pairsTimeItem|
+		var order = Order.new;
+		var totalDuration = 0;
+
+		if(pairsTimeItem.size % 2 != 0)
+		{
+			"Arguments of time and items are't set in pairs. ArgExample: (0, Env(), 1.2, Env())".warn;
+			^this;
+		};
+
+		pairsTimeItem.pairsDo({|time, item|
+			var endTime;
+
+			case
+			{ item.isKindOf(Env) }
+			{
+				endTime = time + item.duration;
+				if(totalDuration < endTime) { totalDuration = endTime };
+				order.put(time, item.asSignal(controlRate * item.duration));
+				// "time: % | dur: % | total: %".format(time, envelope.duration, totalDuration).postln;
+			}
+			{ item.isKindOf(Sdef) }
+			{
+				endTime = time + item.duration;
+				if(totalDuration < endTime) { totalDuration = endTime };
+				order.put(time, item.signal);
+			};
+		});
+
+		this.fill(totalDuration, 0);
+
+		order.indicesDo({|oneSignal, time|
+			"time: %".format(time).postln;
+			// signal.overWrite(oneSignal, time * controlRate);
+			signal.overDub(oneSignal, time * controlRate);
+		});
+
+		if(autoPlot) { this.plot };
 
 	}
 
 	plot {
-		if(signal.notNil)
+		if(signal.notEmpty)
 		{
 			var windows = Window.allWindows;
 			var plotWin = nil;
@@ -97,7 +114,7 @@ SignalDef {
 			{
 				plotter = signal.plot(
 					name: this.path2txt.asSymbol,
-					bounds: Rect(800,700,500,300)
+					bounds: Rect(700,680,500,300)
 				);
 				plotter.parent.alwaysOnTop_(true);
 				plotter.parent.view.background_(Color.new255(30,30,30)).alpha_(0.9);
@@ -132,8 +149,8 @@ SignalDef {
 
 	}
 
+	// printOn { |stream|	stream << this.class.name << " (key: " << this.path2txt << " | dur: " << duration << ")"; }
 	printOn { |stream|	stream << this.class.name << " (dur: " << duration << ")"; }
-	// printOn { |stream|	stream << this.class.name << " ( " << this.path2txt << " )"; }
 
 	path2txt {
 		var txtPath = "";
