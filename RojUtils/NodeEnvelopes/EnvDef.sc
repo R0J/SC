@@ -10,10 +10,13 @@ EnvDef {
 
 	var <buffer;
 
+	var isSynthLoaded, isBufferRendered;
+
 	classvar <>all;
 	classvar <>busLibrary;
 	classvar hasInitSynthDefs;
 	classvar bufferSynthDef, testSynthDef;
+	classvar isEnvDefReady;
 
 	*initClass {
 		all = MultiLevelIdentityDictionary.new;
@@ -25,17 +28,21 @@ EnvDef {
 
 	*newForNode { |node, key, item, dur ... args|
 		var def;
-		if(this.exist(key, node))
-		{ def = this.get(key, node); }
-		{ def = nil; };
+		// isEnvDefReady = Condition.new;
+		// Routine {
+			if(this.exist(key, node))
+			{ def = this.get(key, node); }
+			{ def = nil; };
 
-		if(def.isNil)
-		{
-			if(item.notNil)
-			{ def = super.new.init(node, key, item, dur); }
-			{ def = nil; }
-		}
-		{ if(item.notNil) {	def.init(node, key, item, dur); }};
+			if(def.isNil)
+			{
+				if(item.notNil)
+				{ def = super.new.init(node, key, item, dur); }
+				{ def = nil; }
+			}
+			{ if(item.notNil) {	def.init(node, key, item, dur); }};
+		// isEnvDefReady.hang;
+	// }.play;
 		^def;
 	}
 
@@ -59,58 +66,91 @@ EnvDef {
 	}
 
 	init { |node, itemKey, item, dur|
+		var controlRate;
+		var renderTimeStart, renderTimeEnd;
+		var bufferID, bufferFramesCnt;
+
+		isSynthLoaded = Condition.new;
+		isBufferRendered = Condition.new;
 
 		if(hasInitSynthDefs.not) { this.initSynthDefs; };
 
-		parentNode = node;
-		key = itemKey.asSymbol;
-
-		case
-		{ item.isKindOf(Env) }
-		{
-			env = item;
-			if(dur.isNil)
-			{ duration = item.duration; }
-			{ duration = dur; };
-		}
-		{ item.isKindOf(Number) || item.isKindOf(Integer) }
-		{
-			if(dur.isNil) {
-				env = Env([item, item], 1, \lin);
-				duration = 1;
-			} {
-				env = Env([item, item], dur, \lin);
-				duration = dur;
+		Routine {
+			if(hasInitSynthDefs.not)
+			{
+				// "time % -> wainting for load synth".format(SystemClock.beats).warn;
+				isSynthLoaded.hang;
+				// "time % -> Synth loaded ".format(SystemClock.beats).warn;
 			};
-		}
-		{ item.isKindOf(Pbind) } { "Item is kind of Pbind".warn; ^this;}
-		{ item.isKindOf(UGen) } { "Item is kind of UGen".warn; ^this;}
-		;
 
-		maxValue = env.levels[0];
-		minValue = env.levels[0];
-		env.levels.do({|lev|
-			if(lev > maxValue) { maxValue = lev; };
-			if(lev < minValue) { minValue = lev; };
-		});
-		// "EnvDef min: % | max: % ".format(minValue, maxValue).postln;
+			parentNode = node;
+			key = itemKey.asSymbol;
 
-		Server.default.waitForBoot({
-			var controlRate = Server.default.sampleRate / Server.default.options.blockSize;
+			case
+			{ item.isKindOf(Env) }
+			{
+				env = item;
+				if(dur.isNil)
+				{ duration = item.duration; }
+				{ duration = dur; };
+			}
+			{ item.isKindOf(Number) || item.isKindOf(Integer) }
+			{
+				if(dur.isNil) {
+					env = Env([item, item], 1, \lin);
+					duration = 1;
+				} {
+					env = Env([item, item], dur, \lin);
+					duration = dur;
+				};
+			}
+			{ item.isKindOf(Pbind) } { "Item is kind of Pbind".warn; ^this;}
+			{ item.isKindOf(UGen) } { "Item is kind of UGen".warn; ^this;}
+			;
+
+			maxValue = env.levels[0];
+			minValue = env.levels[0];
+			env.levels.do({|lev|
+				if(lev > maxValue) { maxValue = lev; };
+				if(lev < minValue) { minValue = lev; };
+			});
+			// "EnvDef min: % | max: % ".format(minValue, maxValue).postln;
+
+			renderTimeStart = SystemClock.beats;
+			// "time % -> wainting for render buffer".format(SystemClock.beats).warn;
+			controlRate = Server.default.sampleRate / Server.default.options.blockSize;
 			buffer = Buffer.alloc(
 				server: Server.default,
 				numFrames: (controlRate * this.duration).ceil,
 				numChannels: 1,
 			);
-			buffer.loadCollection(env.asSignal(controlRate * duration));
+			buffer.loadCollection(
+				collection: env.asSignal(controlRate * duration),
+				action: {|buff|
+					bufferID = buff.bufnum;
+					bufferFramesCnt = buff.numFrames;
+					isBufferRendered.unhang;
+				}
+			);
+			isBufferRendered.hang;
+			renderTimeEnd = SystemClock.beats;
+
+			"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
+				bufferID,
+				env.duration,
+				(renderTimeEnd - renderTimeStart),
+				bufferFramesCnt
+			).postln;
 			// buffer.normalize;
-		});
+			// });
 
-		if(node.isNil)
-		{ all.putAtPath([\default, itemKey.asSymbol], this); }
-		{ all.putAtPath([node.envirKey.asSymbol, itemKey.asSymbol], this); };
+			if(node.isNil)
+			{ all.putAtPath([\default, itemKey.asSymbol], this); }
+			{ all.putAtPath([node.envirKey.asSymbol, itemKey.asSymbol], this); };
 
-		CycleDef.update;
+			CycleDef.update;
+			// isEnvDefReady.unhang;
+		}.play;
 	}
 
 	map {|nodeKey, controlKey|
@@ -165,6 +205,7 @@ EnvDef {
 			}.asSynthDef;
 
 			hasInitSynthDefs = true;
+			isSynthLoaded.unhang;
 		});
 	}
 
