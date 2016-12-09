@@ -2,6 +2,8 @@ Sdef {
 	var <path;
 	var <duration;
 	var <signal;
+	var <setOrder;
+	var <references;
 
 	var autoPlot;
 
@@ -19,7 +21,6 @@ Sdef {
 		{ def = this.get(path); }
 		{ def = super.new.init(path); };
 		^def;
-
 	}
 
 	*exist { |path|	if(this.get(path).notNil) { ^true; } { ^false; } }
@@ -30,13 +31,23 @@ Sdef {
 
 	init { |pathKey|
 		path = pathKey;
+		references = Set.new;
 		autoPlot = false;
 		library.putAtPath(pathKey, this);
+	}
+
+	addRef { |target| references.add(target); }
+	updateRefs {
+		references.do({|oneRef|
+			"UPDATE %".format(oneRef).postln;
+			// oneRef.setOrder
+		})
 	}
 
 	fill {|dur, value|
 		signal = Signal.newClear(controlRate * dur).fill(value);
 		duration = dur;
+		this.updateRefs;
 	}
 
 	set { |item, shift = 0|
@@ -49,18 +60,19 @@ Sdef {
 		{
 			itemSignal = item.asSignal(controlRate * item.duration);
 			duration = item.duration + shift;
-			this.fill(item.duration + shift, fillValue)
+			signal = Signal.newClear(controlRate * duration);
 		};
 
 		signal.overDub( itemSignal, shift * controlRate);
 		// signal.overWrite(itemSignal, shift * controlRate);
-
+		this.updateRefs;
 		if(autoPlot) { this.plot };
 	}
 
 	setn {  |...pairsTimeItem|
-		var order = Order.new;
+		// var order = Order.new;
 		var totalDuration = 0;
+		setOrder = Order.new;
 
 		if(pairsTimeItem.size % 2 != 0)
 		{
@@ -76,27 +88,29 @@ Sdef {
 			{
 				endTime = time + item.duration;
 				if(totalDuration < endTime) { totalDuration = endTime };
-				order.put(time, item.asSignal(controlRate * item.duration));
+				setOrder.put(time, item.asSignal(controlRate * item.duration));
 				// "time: % | dur: % | total: %".format(time, envelope.duration, totalDuration).postln;
 			}
 			{ item.isKindOf(Sdef) }
 			{
 				endTime = time + item.duration;
 				if(totalDuration < endTime) { totalDuration = endTime };
-				order.put(time, item.signal);
+				setOrder.put(time, item.signal);
+				item.addRef(this);
 			};
 		});
 
-		this.fill(totalDuration, 0);
+		signal = Signal.newClear(controlRate * totalDuration);
+		duration = totalDuration;
 
-		order.indicesDo({|oneSignal, time|
-			"time: %".format(time).postln;
+		setOrder.indicesDo({|oneSignal, time|
+			// "time: %".format(time).postln;
 			// signal.overWrite(oneSignal, time * controlRate);
 			signal.overDub(oneSignal, time * controlRate);
 		});
 
+		this.updateRefs;
 		if(autoPlot) { this.plot };
-
 	}
 
 	plot {
