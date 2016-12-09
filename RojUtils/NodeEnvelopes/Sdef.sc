@@ -19,6 +19,7 @@ Sdef {
 		var def;
 		if(path.notEmpty)
 		{
+			path = path ++ \item;
 			if(this.exist(path))
 			{ def = this.get(path); }
 			{ def = super.new.init(path); };
@@ -80,8 +81,6 @@ Sdef {
 	prSetSignal {|inOrder|
 		if(inOrder.isKindOf(Order)) {
 			var totalDuration = 0;
-			var sigOrder = Order.new;
-			// var itemSignal;
 			setOrder = Order.new;
 
 			inOrder.keysValuesDo({|time, item|
@@ -97,31 +96,22 @@ Sdef {
 					if(totalDuration < endTime) { totalDuration = endTime };
 					sDef.signal = item.asSignal(controlRate * item.duration);
 					setOrder.put(time, sDef);
-					// sigOrder.put(time, signal);
 					// "time: % | dur: % | total: %".format(time, envelope.duration, totalDuration).postln;
 				}
 				{ item.isKindOf(Sdef) }
 				{
 					endTime = time + item.duration;
 					if(totalDuration < endTime) { totalDuration = endTime };
-					// signal = Signal.newClear(controlRate * totalDuration);
 					setOrder.put(time, item);
 					item.addRef(this);
 				};
 			});
-/*
-			if(inOrder.indices.size > 1)
-			{
 
-				"multiSet".warn;
-				signal = Signal.newClear(controlRate * totalDuration);
-			};
-			*/
 			signal = Signal.newClear(controlRate * totalDuration);
 			duration = totalDuration;
 
 			setOrder.indicesDo({|sdef, time|
-				"time: % | sig: %".format(time, sdef.duration).postln;
+				// "time: % | sig: %".format(time, sdef.duration).postln;
 				// signal.overWrite(oneSignal, time * controlRate);
 				signal.overDub(sdef.signal, time * controlRate);
 			});
