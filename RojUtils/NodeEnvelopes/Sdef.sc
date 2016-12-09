@@ -1,7 +1,7 @@
 Sdef {
 	var <path;
 	var <duration;
-	var <signal;
+	var <>signal;
 	var <setOrder;
 	var <references;
 
@@ -17,10 +17,14 @@ Sdef {
 
 	*new { |...path|
 		var def;
-		if(this.exist(path))
-		{ def = this.get(path); }
-		{ def = super.new.init(path); };
-		^def;
+		if(path.notEmpty)
+		{
+			if(this.exist(path))
+			{ def = this.get(path); }
+			{ def = super.new.init(path); };
+			^def;
+		}
+		{^super.new.init(nil)}
 	}
 
 	*exist { |path|	if(this.get(path).notNil) { ^true; } { ^false; } }
@@ -33,85 +37,101 @@ Sdef {
 		path = pathKey;
 		references = Set.new;
 		autoPlot = false;
-		library.putAtPath(pathKey, this);
+		if(pathKey.notNil) { library.putAtPath(pathKey, this); }
 	}
 
 	addRef { |target| references.add(target); }
 	updateRefs {
 		references.do({|oneRef|
-			"UPDATE %".format(oneRef).postln;
-			// oneRef.setOrder
+			oneRef.prSetSignal(oneRef.setOrder);
 		})
 	}
 
-	fill {|dur, value|
-		signal = Signal.newClear(controlRate * dur).fill(value);
-		duration = dur;
-		this.updateRefs;
+	fill {|dur, value, shift = 0|
+		var inOrder = Order.new;
+		var item = Env([value, value], dur, \lin);
+		inOrder.put(shift, item);
+		this.prSetSignal(inOrder);
 	}
 
 	set { |item, shift = 0|
-		var itemSignal;
-		var itemDur = 0;
-		var fillValue = 0;
-
-		case
-		{ item.isKindOf(Env) }
-		{
-			itemSignal = item.asSignal(controlRate * item.duration);
-			duration = item.duration + shift;
-			signal = Signal.newClear(controlRate * duration);
-		};
-
-		signal.overDub( itemSignal, shift * controlRate);
-		// signal.overWrite(itemSignal, shift * controlRate);
-		this.updateRefs;
-		if(autoPlot) { this.plot };
+		var inOrder = Order.new;
+		inOrder.put(shift, item);
+		this.prSetSignal(inOrder);
 	}
 
 	setn {  |...pairsTimeItem|
-		// var order = Order.new;
-		var totalDuration = 0;
-		setOrder = Order.new;
-
-		if(pairsTimeItem.size % 2 != 0)
-		{
-			"Arguments of time and items are't set in pairs. ArgExample: (0, Env(), 1.2, Env())".warn;
-			^this;
-		};
+		var inOrder = Order.new;
 
 		pairsTimeItem.pairsDo({|time, item|
-			var endTime;
-
-			case
-			{ item.isKindOf(Env) }
-			{
-				endTime = time + item.duration;
-				if(totalDuration < endTime) { totalDuration = endTime };
-				setOrder.put(time, item.asSignal(controlRate * item.duration));
-				// "time: % | dur: % | total: %".format(time, envelope.duration, totalDuration).postln;
-			}
-			{ item.isKindOf(Sdef) }
-			{
-				endTime = time + item.duration;
-				if(totalDuration < endTime) { totalDuration = endTime };
-				setOrder.put(time, item.signal);
-				item.addRef(this);
-			};
+			inOrder.put(time, item);
 		});
+		this.prSetSignal(inOrder);
 
-		signal = Signal.newClear(controlRate * totalDuration);
-		duration = totalDuration;
-
-		setOrder.indicesDo({|oneSignal, time|
-			// "time: %".format(time).postln;
-			// signal.overWrite(oneSignal, time * controlRate);
-			signal.overDub(oneSignal, time * controlRate);
-		});
-
-		this.updateRefs;
-		if(autoPlot) { this.plot };
+		/*
+		if(times.size != items.size)
+		{
+		"Arguments of time and items are't set in pairs. ArgExample: (0, Env(), 1.2, Env())".warn;
+		^this;
+		};
+		*/
 	}
+
+	prSetSignal {|inOrder|
+		if(inOrder.isKindOf(Order)) {
+			var totalDuration = 0;
+			var sigOrder = Order.new;
+			// var itemSignal;
+			setOrder = Order.new;
+
+			inOrder.keysValuesDo({|time, item|
+				var endTime;
+				// ("time:" + time).postln;
+				// ("item:" + item).postln;
+
+				case
+				{ item.isKindOf(Env) }
+				{
+					var sDef = Sdef();
+					endTime = time + item.duration;
+					if(totalDuration < endTime) { totalDuration = endTime };
+					sDef.signal = item.asSignal(controlRate * item.duration);
+					setOrder.put(time, sDef);
+					// sigOrder.put(time, signal);
+					// "time: % | dur: % | total: %".format(time, envelope.duration, totalDuration).postln;
+				}
+				{ item.isKindOf(Sdef) }
+				{
+					endTime = time + item.duration;
+					if(totalDuration < endTime) { totalDuration = endTime };
+					// signal = Signal.newClear(controlRate * totalDuration);
+					setOrder.put(time, item);
+					item.addRef(this);
+				};
+			});
+/*
+			if(inOrder.indices.size > 1)
+			{
+
+				"multiSet".warn;
+				signal = Signal.newClear(controlRate * totalDuration);
+			};
+			*/
+			signal = Signal.newClear(controlRate * totalDuration);
+			duration = totalDuration;
+
+			setOrder.indicesDo({|sdef, time|
+				"time: % | sig: %".format(time, sdef.duration).postln;
+				// signal.overWrite(oneSignal, time * controlRate);
+				signal.overDub(sdef.signal, time * controlRate);
+			});
+
+			this.updateRefs;
+			if(autoPlot) { this.plot };
+		};
+	}
+
+
 
 	plot {
 		if(signal.notEmpty)
@@ -163,8 +183,8 @@ Sdef {
 
 	}
 
-	// printOn { |stream|	stream << this.class.name << " (key: " << this.path2txt << " | dur: " << duration << ")"; }
-	printOn { |stream|	stream << this.class.name << " (dur: " << duration << ")"; }
+	printOn { |stream|	stream << this.class.name << " (key: " << this.path2txt << " | dur: " << duration << ")"; }
+	// printOn { |stream|	stream << this.class.name << " (dur: " << duration << ")"; }
 
 	path2txt {
 		var txtPath = "";
