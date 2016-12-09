@@ -16,23 +16,19 @@ Sdef {
 	}
 
 	*new { |...path|
-		var def;
 		if(path.notEmpty)
 		{
 			path = path ++ \item;
 			if(this.exist(path))
-			{ def = this.get(path); }
-			{ def = super.new.init(path); };
-			^def;
+			{ ^this.library.atPath(path); }
+			{ ^super.new.init(path); };
 		}
-		{^super.new.init(nil)}
+		{ ^super.new.init(nil) }
 	}
 
-	*exist { |path|	if(this.get(path).notNil) { ^true; } { ^false; } }
+	*exist { |path|	if(this.library.atPath(path).notNil) { ^true; } { ^false; } }
 
-	*get { |path| ^this.library.atPath(path); }
-
-	*print { this.library.postTree; }
+	*printAll { this.library.postTree; }
 
 	init { |pathKey|
 		path = pathKey;
@@ -48,34 +44,37 @@ Sdef {
 		})
 	}
 
-	fill {|dur, value, shift = 0|
-		var inOrder = Order.new;
-		var item = Env([value, value], dur, \lin);
-		inOrder.put(shift, item);
-		this.prSetSignal(inOrder);
+	level { |level = 1, dur = 1, shift = 0|
+		duration = dur;
+		signal = Signal.newClear(controlRate * dur).fill(level);
+		this.updateRefs;
 	}
 
-	set { |item, shift = 0|
-		var inOrder = Order.new;
-		inOrder.put(shift, item);
-		this.prSetSignal(inOrder);
+	env { |levels = #[0,1,0], times = #[0.15,0.85], curves = #[5,-3], shift = 0|
+		var envelope = Env(levels, times, curves);
+		duration = envelope.duration;
+		signal = envelope.asSignal(controlRate * envelope.duration);
+		this.updateRefs;
 	}
 
 	setn {  |...pairsTimeItem|
 		var inOrder = Order.new;
 
+		if(pairsTimeItem.size % 2 != 0)
+		{
+			"Arguments of time and items are't set in pairs. MethodArgExample (0, Env(), 1.2, Sdef(\\x), ...)".warn;
+			^this;
+		};
+
 		pairsTimeItem.pairsDo({|time, item|
-			inOrder.put(time, item);
+			var sDef = item;
+			case
+			{ item.isKindOf(Env) }
+			{ sDef = Sdef.new.env(item.levels, item.times, item.curves); }
+			;
+			inOrder.put(time, sDef);
 		});
 		this.prSetSignal(inOrder);
-
-		/*
-		if(times.size != items.size)
-		{
-		"Arguments of time and items are't set in pairs. ArgExample: (0, Env(), 1.2, Env())".warn;
-		^this;
-		};
-		*/
 	}
 
 	prSetSignal {|inOrder|
@@ -85,19 +84,7 @@ Sdef {
 
 			inOrder.keysValuesDo({|time, item|
 				var endTime;
-				// ("time:" + time).postln;
-				// ("item:" + item).postln;
-
 				case
-				{ item.isKindOf(Env) }
-				{
-					var sDef = Sdef();
-					endTime = time + item.duration;
-					if(totalDuration < endTime) { totalDuration = endTime };
-					sDef.signal = item.asSignal(controlRate * item.duration);
-					setOrder.put(time, sDef);
-					// "time: % | dur: % | total: %".format(time, envelope.duration, totalDuration).postln;
-				}
 				{ item.isKindOf(Sdef) }
 				{
 					if(item.duration.notNil)
@@ -123,8 +110,6 @@ Sdef {
 			if(autoPlot) { this.plot };
 		};
 	}
-
-
 
 	plot {
 		if(signal.notEmpty)
@@ -173,10 +158,9 @@ Sdef {
 	updatePlot {|bool|
 		bool.isKindOf(Boolean).postln;
 		if(bool.isKindOf(Boolean)) { autoPlot = bool; };
-
 	}
 
-	printOn { |stream|	stream << this.class.name << " (key: " << this.path2txt << " | dur: " << duration << ")"; }
+	printOn { |stream|	stream << this.class.name << " ( " << this.path2txt << " | dur: " << duration << ")"; }
 	// printOn { |stream|	stream << this.class.name << " (dur: " << duration << ")"; }
 
 	path2txt {
@@ -184,7 +168,10 @@ Sdef {
 		path.do({|oneFolder|
 			if(txtPath.isEmpty)
 			{ txtPath = "%%".format("\\", oneFolder); }
-			{ txtPath = "%, %%".format(txtPath,"\\", oneFolder); }
+			{
+				if(oneFolder != \item)
+				{ txtPath = "%%%".format(txtPath,"\\", oneFolder); }
+			}
 		});
 		^txtPath;
 	}
