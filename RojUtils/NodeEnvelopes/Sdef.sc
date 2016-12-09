@@ -100,10 +100,13 @@ Sdef {
 				}
 				{ item.isKindOf(Sdef) }
 				{
-					endTime = time + item.duration;
-					if(totalDuration < endTime) { totalDuration = endTime };
-					setOrder.put(time, item);
-					item.addRef(this);
+					if(item.duration.notNil)
+					{
+						endTime = time + item.duration;
+						if(totalDuration < endTime) { totalDuration = endTime };
+						setOrder.put(time, item);
+						item.addRef(this);
+					}
 				};
 			});
 
@@ -164,7 +167,7 @@ Sdef {
 			);
 			plotter.refresh;
 		}
-		{ "% envelope not found".format(this).warn; };
+		{ "% signal is empty".format(this).warn; };
 	}
 
 	updatePlot {|bool|
