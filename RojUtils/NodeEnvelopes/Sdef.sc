@@ -1,21 +1,29 @@
 Sdef {
 	var <path;
 	var <duration;
+	var <size;
 	var <>signal;
 	var <setOrder;
 	var <references;
+	var <buffer;
 
 	var autoPlot;
 
 	classvar <>library;
 	classvar controlRate;
 
+	classvar hasInitSynthDefs;
+	classvar testSynthDef;
+
 	*initClass {
 		library = MultiLevelIdentityDictionary.new;
 		controlRate = 44100 / 64;
+		// controlRate = 44100;
+		hasInitSynthDefs = false;
 	}
 
 	*new { |...path|
+		if(hasInitSynthDefs.not) { this.initSynthDefs; };
 		if(path.notEmpty)
 		{
 			path = path ++ \item;
@@ -32,9 +40,31 @@ Sdef {
 
 	init { |pathKey|
 		path = pathKey;
+		duration = nil;
+		size = nil;
 		references = Set.new;
+		buffer = nil;
 		autoPlot = false;
 		if(pathKey.notNil) { library.putAtPath(pathKey, this); }
+	}
+
+	*initSynthDefs{
+		Server.default.waitForBoot({
+			testSynthDef = { |numBuf, freq = 440, startTime = 0|
+				var buf = PlayBuf.kr(
+					numChannels: 1,
+					bufnum: numBuf,
+					startPos: startTime * controlRate,
+					rate: \tempoClock.kr(1),
+					loop: 0
+				);
+				var sig = SinOsc.ar(freq!2, 0, mul: buf);
+				FreeSelfWhenDone.kr(buf);
+				Out.ar(0, sig);
+			}.asSynthDef;
+
+			hasInitSynthDefs = true;
+		});
 	}
 
 	addRef { |target| references.add(target); }
@@ -45,19 +75,23 @@ Sdef {
 	}
 
 	level { |level = 1, dur = 1, shift = 0|
-		duration = dur;
 		signal = Signal.newClear(controlRate * dur).fill(level);
+		duration = dur;
+		size = signal.size;
 		this.updateRefs;
+		this.prRender;
 	}
 
 	env { |levels = #[0,1,0], times = #[0.15,0.85], curves = #[5,-3], shift = 0|
 		var envelope = Env(levels, times, curves);
-		duration = envelope.duration;
 		signal = envelope.asSignal(controlRate * envelope.duration);
+		duration = envelope.duration;
+		size = signal.size;
 		this.updateRefs;
+		this.prRender;
 	}
 
-	setn {  |...pairsTimeItem|
+	setn { |...pairsTimeItem|
 		var inOrder = Order.new;
 
 		if(pairsTimeItem.size % 2 != 0)
@@ -99,6 +133,7 @@ Sdef {
 
 			signal = Signal.newClear(controlRate * totalDuration);
 			duration = totalDuration;
+			size = signal.size;
 
 			setOrder.indicesDo({|sdef, time|
 				// "time: % | sig: %".format(time, sdef.duration).postln;
@@ -107,8 +142,63 @@ Sdef {
 			});
 
 			this.updateRefs;
+			this.prRender;
 			if(autoPlot) { this.plot };
 		};
+	}
+
+	prRender {
+		var renderTimeStart = SystemClock.beats;
+		if(buffer.notNil) { buffer.free; };
+
+		buffer = Buffer.alloc(
+			server: Server.default,
+			numFrames: size,
+			numChannels: 1,
+		);
+		buffer.loadCollection(
+			collection: signal,
+			action: {|buff|
+				var bufferID = buff.bufnum;
+				var bufferFramesCnt = buff.numFrames;
+				var renderTimeEnd = SystemClock.beats;
+				"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
+					bufferID,
+					duration,
+					(renderTimeEnd - renderTimeStart),
+					bufferFramesCnt
+				).postln;
+			}
+		);
+	}
+
+	test {|freq = 120, startTime = 0|
+		{
+			if(duration - startTime > 0)
+			{
+				var testSynth;
+				// currentEnvironment.clock.sched(0, {
+				testSynthDef.name_("Sdef_test_%".format(this.path2txt));
+				testSynth = testSynthDef.play(
+					target: RootNode(Server.default),
+					args:[
+						\numBuf: buffer.bufnum,
+						\freq: freq
+					]
+				);
+				// this.trig(startTime);
+				// nil;
+				// });
+				// currentEnvironment.clock.sched((duration - startTime), {/
+				// currentEnvironment.clock.sched((duration - startTime), {
+				// "End of test %".format(testSynth).postln;
+				// testSynth.free;
+				// testSynth.release(2);
+				// nil;
+				// });
+			}
+			{ "% is shorter than arg startTime(%)".format(this, startTime).warn; }
+		}.defer(0.01);
 	}
 
 	plot {
@@ -160,7 +250,7 @@ Sdef {
 		if(bool.isKindOf(Boolean)) { autoPlot = bool; };
 	}
 
-	printOn { |stream|	stream << this.class.name << " ( " << this.path2txt << " | dur: " << duration << ")"; }
+	printOn { |stream|	stream << this.class.name << "( " << this.path2txt << " | dur: " << duration << ")"; }
 	// printOn { |stream|	stream << this.class.name << " (dur: " << duration << ")"; }
 
 	path2txt {

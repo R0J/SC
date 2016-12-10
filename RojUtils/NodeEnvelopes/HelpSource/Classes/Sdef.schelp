@@ -1,5 +1,5 @@
 title:: Sdef
-summary:: definition of named signal
+summary:: named definition of signal
 categories:: Libraries>JITLib>NodeProxy
 related:: Classes/Signal
 
@@ -70,44 +70,43 @@ Sdef.printAll
 ::
 
 InstanceMethods::
+private::prSetSignal, addRef, updateRefs, path
 
-private::prSetSignal, addRef, updateRefs
 
 subsection::Informations
 
 method::plot
-Plot a view of signal
+plot a view of signal
 
 method::duration
-Return duration of signal
+return signal time duration
+
+method::size
+return frames count of signal
+
+
 
 subsection::Signal definition
 
-
-
 method::level
 Set constat value for signal
-
 code::
 Sdef(\x).level(0.2, 1.5, 0.5).plot;
 ::
-
 argument::level
-Value of signal level
+value of signal level
 argument::dur
-Duration of signal
+duration of signal
 argument::shift
-Shift of signal start
+shift of signal start
 
 
 
 method::env
 Set value for signal from envelope. Detail envelope description at link::Classes/Env#*new::
-
 code::
 Sdef(\x).env([0,1,0.5,0], [0.2,0.5,0.3], [8, \sin, -5]).plot;
 ::
-
 argument::levels
 an array of signal levels
 argument::times
@@ -115,7 +114,7 @@ an array of signal segment duration
 argument::curves
 an array of signal segment curvature
 argument::shift
-Shift of signal start
+shift of signal start
 
 
 
