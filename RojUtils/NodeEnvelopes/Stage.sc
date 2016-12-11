@@ -12,6 +12,7 @@ Stage {
 	classvar controlRate;
 	classvar isServerBooted;
 
+
 	*initClass {
 		all = IdentityDictionary.new;
 		controlRate = 44100 / 64;
@@ -33,20 +34,23 @@ Stage {
 
 	init { |stageKey|
 
-		Server.default.waitForBoot({ isServerBooted = true;	});
-		// CmdPeriod.add(this);
-		// bus = Bus.control(Server.default, 1);
+		Server.default.waitForBoot({
+			isServerBooted = true;
+			controlRate = Server.default.sampleRate / Server.default.options.blockSize;
+			// CmdPeriod.add(this);
+			// bus = Bus.control(Server.default, 1);
 
-		key = stageKey;
-		quant = 1;
-		timeline = nil;
-		group = Group.new( RootNode (Server.default));
-		group.onFree({ "Stage % end".format(key).postln; });
-		references = Set.new;
-		volLibrary = IdentityDictionary.new;
-		busLibrary = IdentityDictionary.new;
+			key = stageKey;
+			quant = 1;
+			timeline = nil;
+			group = Group.new( RootNode (Server.default));
+			group.onFree({ "Stage % end".format(key).postln; });
+			references = Set.new;
+			volLibrary = IdentityDictionary.new;
+			busLibrary = IdentityDictionary.new;
 
-		all.put(stageKey.asSymbol, this);
+			all.put(stageKey.asSymbol, this);
+		});
 	}
 
 	addRef { |target| references.add(target); }
