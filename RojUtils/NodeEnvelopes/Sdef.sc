@@ -1,10 +1,14 @@
 Sdef {
 	var <path;
+
 	var <duration;
 	var <size;
+	var <bus;
+
 	var <timeline;
 	var <references;
-	var <>signal;
+	var <signal;
+
 	var <buffer;
 	var <isRendered;
 
@@ -35,19 +39,23 @@ Sdef {
 		{ ^super.new.init(nil) }
 	}
 
+
 	*exist { |path|	if(this.library.atPath(path).notNil) { ^true; } { ^false; } }
 
 	*printAll { this.library.postTree; }
 
 	init { |pathKey|
-		path = pathKey;
-		duration = nil;
-		size = nil;
-		references = Set.new;
-		buffer = nil;
-		isRendered = false;
-		autoPlot = false;
-		if(pathKey.notNil) { library.putAtPath(pathKey, this); }
+		Server.default.waitForBoot({
+			path = pathKey;
+			bus = Bus.control(Server.default, 1);
+			timeline = Timeline2.new;
+			size = nil;
+			references = Set.new;
+			buffer = nil;
+			isRendered = false;
+			autoPlot = false;
+			if(pathKey.notNil) { library.putAtPath(pathKey, this); }
+		});
 	}
 
 	*initSynthDefs{
@@ -64,10 +72,10 @@ Sdef {
 				Out.kr(bus, buf);
 			}.asSynthDef;
 
-			testSynthDef = { |numBuf, freq = 440, startTime = 0|
+			testSynthDef = { |bufnum, freq = 440, startTime = 0|
 				var buf = PlayBuf.kr(
 					numChannels: 1,
-					bufnum: numBuf,
+					bufnum: bufnum,
 					startPos: startTime * controlRate,
 					rate: \tempoClock.kr(1),
 					loop: 0
@@ -78,8 +86,11 @@ Sdef {
 			}.asSynthDef;
 
 			hasInitSynthDefs = true;
+			controlRate = Server.default.sampleRate / Server.default.options.blockSize;
 		});
 	}
+
+	kr { ^BusPlug.for(bus); }
 
 	addRef { |target| references.add(target); }
 	updateRefs {
@@ -90,21 +101,32 @@ Sdef {
 		})
 	}
 
-	level { |level = 1, dur = 1, shift = 0|
-		signal = Signal.newClear(controlRate * dur).fill(level);
+	frame { |time| ^controlRate * time; }
+
+	emptySignal { |dur| ^Signal.newClear(this.frame(dur)); }
+
+	level { |dur, level = 1, time = 1, shift = 0|
+		var levelSignal = this.emptySignal(time).fill(level);
+		signal = this.emptySignal(dur);
 		duration = dur;
 		size = signal.size;
+
+		signal.overWrite(levelSignal, this.frame(shift));
+
 		this.updateRefs;
 		this.prRender;
+		if(autoPlot) { this.plot };
 	}
 
 	env { |levels = #[0,1,0], times = #[0.15,0.85], curves = #[5,-3], shift = 0|
 		var envelope = Env(levels, times, curves);
+		// timeline = Timeline2.new;
 		signal = envelope.asSignal(controlRate * envelope.duration);
-		duration = envelope.duration;
+		timeline.put(0, this, envelope.duration);
 		size = signal.size;
 		this.updateRefs;
-		this.prRender;
+		// this.prRender;
+		if(autoPlot) { this.plot };
 	}
 
 	setn { |...pairsTimeItem|
@@ -145,7 +167,7 @@ Sdef {
 			});
 
 			signal = Signal.newClear(controlRate * timeline.duration);
-			duration = timeline.duration;
+			// duration = timeline.duration;
 			size = signal.size;
 
 			timeline.items({|time, duration, sdef|
@@ -155,46 +177,69 @@ Sdef {
 			});
 
 			this.updateRefs;
-			this.prRender;
+			// this.prRender;
 			if(autoPlot) { this.plot };
 		};
 	}
 
-	prRender {
-		// startRenderTime = SystemClock.beats;
-		if(buffer.notNil) { buffer.free; };
-		isRendered = false;
+	clone {|targetDur, cloneDur|
+		var dupSignal = signal;
+		var rest = targetDur % cloneDur;
+		var loopCnt = (targetDur-rest)/cloneDur;
+		var currentTime = 0;
+		/*
+		var temp = Timeline2.new;
+		// var sDef = Sdef.new.sig(signal);
+		// ("dupSize:" + dupSignal.size).postln;
 
-		buffer = Buffer.alloc(
-			server: Server.default,
-			numFrames: size,
-			numChannels: 1,
-		);
-		buffer.loadCollection(
-			collection: signal,
-			action: {|buff|
-				var bufferID = buff.bufnum;
-				var bufferFramesCnt = buff.numFrames;
-				isRendered = true;
-				// endRenderTime = SystemClock.beats;
-				/*
-				"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
-				bufferID,
-				duration,
-				(renderTimeEnd - renderTimeStart),
-				bufferFramesCnt
-				).postln;
+		signal = Signal.newClear(controlRate * targetDur);
+		loopCnt.do({|i|
+		signal.overWrite(dupSignal, controlRate * currentTime);
+		// var sDef = Sdef.new.sig(dupSignal);
+		// temp.put(currentTime, sDef, cloneDur);
+		currentTime = i * cloneDur;
+		});
+		temp.put(0, this, targetDur);
+		// size = signal.size;
 
-				"Rendering of buffer (id: % | dur:% | size:% ) done. Render time: % sec".format(
-				bufferID, duration, bufferFramesCnt, (endRenderTime - startRenderTime)
-				).postln;
-				*/
-
-			}
-		);
+		this.prSetSignal(temp);
+		// this.updateRefs;
+		// this.prRender;
+		// if(autoPlot) { this.plot };
+		*/
 	}
 
-	trig { |bus, startTime = 0, endTime = nil, parentGroup = nil, clock = nil, multBus = nil|
+	prRender {
+		Server.default.waitForBoot({
+			var startRenderTime = SystemClock.beats;
+			if(buffer.notNil) { buffer.free; };
+			isRendered = false;
+
+			buffer = Buffer.alloc(
+				server: Server.default,
+				numFrames: size,
+				numChannels: 1,
+			);
+			buffer.loadCollection(
+				collection: signal,
+				action: {|buff|
+					var bufferID = buff.bufnum;
+					var bufferFramesCnt = buff.numFrames;
+					isRendered = true;
+
+					"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
+						bufferID,
+						this.duration,
+						(SystemClock.beats - startRenderTime),
+						bufferFramesCnt
+					).postln;
+
+				}
+			);
+		});
+	}
+
+	trig { |startTime = 0, endTime = nil, parentGroup = nil, clock = nil, multBus = nil|
 		if(clock.isNil) { clock = currentEnvironment.clock; };
 
 		if(buffer.notNil)
@@ -226,19 +271,24 @@ Sdef {
 
 	test {|freq = 120, startTime = 0|
 		{
-			if(duration - startTime > 0)
+			var clock;
+			if(currentEnvironment[\tempo].notNil)
+			{ clock = currentEnvironment.clock }
+			{ clock = TempoClock.default };
+
+			if(this.duration - startTime > 0)
 			{
 				var testSynth;
 				testSynthDef.name_("Sdef_test_%".format(this.path2txt));
 				testSynth = testSynthDef.play(
 					target: RootNode(Server.default),
 					args:[
-						\numBuf: buffer.bufnum,
+						\bufnum: buffer.bufnum,
 						\freq: freq,
-						\tempoClock, currentEnvironment.clock.tempo,
+						\tempoClock, clock.tempo,
 					]
 				);
-				^testSynth;
+				// ^testSynth;
 			}
 			{ "% is shorter than arg startTime(%)".format(this, startTime).warn; }
 		}.defer(0.01);
@@ -275,7 +325,7 @@ Sdef {
 				plotter.value = signal;
 			};
 
-			plotter.domainSpecs = [[0, duration, 0, 0, "", " s"]];
+			plotter.domainSpecs = [[0, this.duration, 0, 0, "", " s"]];
 			plotter.setProperties (
 				\backgroundColor, Color.new255(30,30,30),
 				\plotColor, Color.new255(30,190,230),
@@ -291,7 +341,7 @@ Sdef {
 
 	updatePlot {|bool| if(bool.isKindOf(Boolean)) { autoPlot = bool; }; }
 
-	printOn { |stream|	stream << this.class.name << "( " << this.path2txt << " | dur: " << duration << ")"; }
+	printOn { |stream|	stream << this.class.name << "( " << this.path2txt << " | dur: " << this.duration << ")"; }
 	// printOn { |stream|	stream << this.class.name << " (dur: " << duration << ")"; }
 
 	path2txt {

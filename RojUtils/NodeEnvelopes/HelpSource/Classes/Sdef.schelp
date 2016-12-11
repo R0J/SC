@@ -29,8 +29,7 @@ Ndef(\a, ...)
 
 ClassMethods::
 
-private::initClass
-private::library
+private::initClass, initSynthDefs, library
 
 subsection::Access
 
