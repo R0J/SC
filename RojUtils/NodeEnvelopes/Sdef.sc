@@ -2,9 +2,9 @@ Sdef {
 	var <path;
 	var <duration;
 	var <size;
-	var <>signal;
-	var <setOrder;
+	var <timeline;
 	var <references;
+	var <>signal;
 	var <buffer;
 	var <isRendered;
 
@@ -85,7 +85,7 @@ Sdef {
 	updateRefs {
 		references.do({|oneRef|
 			case
-			{ oneRef.isKindOf(Sdef) } {	oneRef.prSetSignal(oneRef.setOrder) }
+			{ oneRef.isKindOf(Sdef) } {	oneRef.prSetSignal(oneRef.timeline) }
 			{ oneRef.isKindOf(Stage) } { oneRef.update }
 		})
 	}
@@ -108,8 +108,7 @@ Sdef {
 	}
 
 	setn { |...pairsTimeItem|
-		var inOrder = Order.new;
-
+		var temp = Timeline2.new;
 		if(pairsTimeItem.size % 2 != 0)
 		{
 			"Arguments of time and items are't set in pairs. MethodArgExample (0, Env(), 1.2, Sdef(\\x), ...)".warn;
@@ -122,36 +121,34 @@ Sdef {
 			{ item.isKindOf(Env) }
 			{ sDef = Sdef.new.env(item.levels, item.times, item.curves); }
 			;
-			inOrder.put(time, sDef);
+			temp.put(time, sDef, sDef.duration);
 		});
-		this.prSetSignal(inOrder);
+		this.prSetSignal(temp);
 	}
 
 	prSetSignal {|inOrder|
-		if(inOrder.isKindOf(Order)) {
+		if(inOrder.isKindOf(Timeline2)) {
 			var totalDuration = 0;
-			setOrder = Order.new;
+			timeline = Timeline2.new;
 
-			inOrder.keysValuesDo({|time, item|
-				var endTime;
+			inOrder.items({|time, duration, item|
 				case
 				{ item.isKindOf(Sdef) }
 				{
 					if(item.duration.notNil)
 					{
-						endTime = time + item.duration;
-						if(totalDuration < endTime) { totalDuration = endTime };
-						setOrder.put(time, item);
+						timeline.put(time, item, item.duration);
 						item.addRef(this);
 					}
+					{ "% not found".format(item).warn; }
 				};
 			});
 
-			signal = Signal.newClear(controlRate * totalDuration);
-			duration = totalDuration;
+			signal = Signal.newClear(controlRate * timeline.duration);
+			duration = timeline.duration;
 			size = signal.size;
 
-			setOrder.indicesDo({|sdef, time|
+			timeline.items({|time, duration, sdef|
 				// "time: % | sig: %".format(time, sdef.duration).postln;
 				// signal.overWrite(oneSignal, time * controlRate);
 				signal.overDub(sdef.signal, time * controlRate);
@@ -178,18 +175,18 @@ Sdef {
 			action: {|buff|
 				var bufferID = buff.bufnum;
 				var bufferFramesCnt = buff.numFrames;
-		isRendered = true;
+				isRendered = true;
 				// endRenderTime = SystemClock.beats;
 				/*
 				"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
-					bufferID,
-					duration,
-					(renderTimeEnd - renderTimeStart),
-					bufferFramesCnt
+				bufferID,
+				duration,
+				(renderTimeEnd - renderTimeStart),
+				bufferFramesCnt
 				).postln;
 
 				"Rendering of buffer (id: % | dur:% | size:% ) done. Render time: % sec".format(
-					bufferID, duration, bufferFramesCnt, (endRenderTime - startRenderTime)
+				bufferID, duration, bufferFramesCnt, (endRenderTime - startRenderTime)
 				).postln;
 				*/
 
@@ -292,10 +289,7 @@ Sdef {
 		{ "% signal is empty".format(this).warn; };
 	}
 
-	updatePlot {|bool|
-		bool.isKindOf(Boolean).postln;
-		if(bool.isKindOf(Boolean)) { autoPlot = bool; };
-	}
+	updatePlot {|bool| if(bool.isKindOf(Boolean)) { autoPlot = bool; }; }
 
 	printOn { |stream|	stream << this.class.name << "( " << this.path2txt << " | dur: " << duration << ")"; }
 	// printOn { |stream|	stream << this.class.name << " (dur: " << duration << ")"; }
