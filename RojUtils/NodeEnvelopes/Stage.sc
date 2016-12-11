@@ -35,7 +35,7 @@ Stage {
 
 	*initSynthDefs{
 		Server.default.waitForBoot({
-			bufferSynthDef = { |cBus, bufnum, startTime = 0|
+			bufferSynthDef = { |bus, bufnum, startTime = 0|
 				var buf = PlayBuf.kr(
 					numChannels: 1,
 					bufnum: bufnum,
@@ -46,10 +46,11 @@ Stage {
 				FreeSelfWhenDone.kr(buf);
 				// Out.kr(cBus,buf * In.kr(multBus));
 				// Out.kr(cBus,buf * \multiplicationBus.kr(1));
-				Out.kr(cBus,buf);
+				Out.kr(bus,buf);
 			}.asSynthDef;
 
 			hasInitSynthDefs = true;
+			isServerBooted = true;
 		});
 	}
 
@@ -71,12 +72,18 @@ Stage {
 
 	times {|...cycleDefKey|
 		timeline = Timeline2.new();
-		// cycleDefKey.postln;
+		cycleDefKey.postln;
+
 		cycleDefKey.pairsDo({|time, item|
+		item.class.postln;
 			case
 			{ item.isKindOf(Sdef) }
 			{
 				timeline.put(time, item, item.duration);
+			}
+			{ item.isKindOf(NodeProxy) }
+			{
+				timeline.put(time, item, 0);
 			}
 		});
 	}
@@ -96,18 +103,20 @@ Stage {
 				clock.sched(time, {
 					// item.trig(0, nil, group, clock, multBus);
 					var buffer = item.buffer;
-					var bus = Bus.control(Server.default, 1);
+					var bus = item.bus;
+					var name = "Sdef(%)".format(item.path2txt);
+
 					if(buffer.notNil)
 					{
 						var synth;
 						var group = RootNode(Server.default);
 						if(parentGroup.notNil) { group = parentGroup; };
-						bufferSynthDef.name_(this.key.asSymbol);
+						bufferSynthDef.name_("Sdef(%)".format(item.path2txt));
 						synth =	bufferSynthDef.play(
 							target: group,
 							args:
 							[
-								\cBus: bus,
+								\bus: bus,
 								\bufnum: buffer.bufnum,
 								\startTime, startTime,
 								\tempoClock, currentEnvironment.clock.tempo,

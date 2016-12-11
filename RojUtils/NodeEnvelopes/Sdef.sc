@@ -6,6 +6,7 @@ Sdef {
 	var <setOrder;
 	var <references;
 	var <buffer;
+var <>bus;
 
 	var autoPlot;
 
@@ -13,7 +14,7 @@ Sdef {
 	classvar controlRate;
 
 	classvar hasInitSynthDefs;
-	classvar testSynthDef;
+	classvar bufferSynthDef, testSynthDef;
 
 	*initClass {
 		library = MultiLevelIdentityDictionary.new;
@@ -50,6 +51,18 @@ Sdef {
 
 	*initSynthDefs{
 		Server.default.waitForBoot({
+			bufferSynthDef = { |bus, bufnum, freq = 440, startTime = 0|
+				var buf = PlayBuf.kr(
+					numChannels: 1,
+					bufnum: bufnum,
+					startPos: startTime * controlRate,
+					rate: \tempoClock.kr(1),
+					loop: 0
+				);
+				FreeSelfWhenDone.kr(buf);
+				Out.kr(bus, buf);
+			}.asSynthDef;
+
 			testSynthDef = { |numBuf, freq = 440, startTime = 0|
 				var buf = PlayBuf.kr(
 					numChannels: 1,
@@ -172,30 +185,51 @@ Sdef {
 		);
 	}
 
+	trig { |startTime = 0, endTime = nil, parentGroup = nil, clock = nil, multBus = nil|
+		if(clock.isNil) { clock = currentEnvironment.clock; };
+
+		if(buffer.notNil)
+		{
+			var synth;
+			var group = RootNode(Server.default);
+			buffer.bufnum.postln;
+			if(parentGroup.notNil) { group = parentGroup; };
+			bufferSynthDef.name_("Sdef(%)".format(this.path2txt));
+			synth =	bufferSynthDef.play(
+				target: group,
+				args:
+				[
+					\bus: bus,
+					\bufnum: buffer.bufnum,
+					\startTime, startTime,
+					\tempoClock, currentEnvironment.clock.tempo,
+					// \multiplicationBus, multBus.asMap
+				]
+			);
+			// synth.set(\multiplicationBus, multBus);
+			if(endTime.notNil)
+			{
+				clock.sched((endTime - startTime), { synth.free; nil; });
+			}
+		}
+		{ "% buffer not found".format(this).warn; }
+	}
+
 	test {|freq = 120, startTime = 0|
 		{
 			if(duration - startTime > 0)
 			{
 				var testSynth;
-				// currentEnvironment.clock.sched(0, {
 				testSynthDef.name_("Sdef_test_%".format(this.path2txt));
 				testSynth = testSynthDef.play(
 					target: RootNode(Server.default),
 					args:[
 						\numBuf: buffer.bufnum,
-						\freq: freq
+						\freq: freq,
+						\tempoClock, currentEnvironment.clock.tempo,
 					]
 				);
-				// this.trig(startTime);
-				// nil;
-				// });
-				// currentEnvironment.clock.sched((duration - startTime), {/
-				// currentEnvironment.clock.sched((duration - startTime), {
-				// "End of test %".format(testSynth).postln;
-				// testSynth.free;
-				// testSynth.release(2);
-				// nil;
-				// });
+				^testSynth;
 			}
 			{ "% is shorter than arg startTime(%)".format(this, startTime).warn; }
 		}.defer(0.01);
