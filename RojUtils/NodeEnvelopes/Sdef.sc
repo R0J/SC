@@ -6,7 +6,7 @@ Sdef {
 	var <setOrder;
 	var <references;
 	var <buffer;
-var <>bus;
+	var <isRendered;
 
 	var autoPlot;
 
@@ -45,6 +45,7 @@ var <>bus;
 		size = nil;
 		references = Set.new;
 		buffer = nil;
+		isRendered = false;
 		autoPlot = false;
 		if(pathKey.notNil) { library.putAtPath(pathKey, this); }
 	}
@@ -83,7 +84,9 @@ var <>bus;
 	addRef { |target| references.add(target); }
 	updateRefs {
 		references.do({|oneRef|
-			oneRef.prSetSignal(oneRef.setOrder);
+			case
+			{ oneRef.isKindOf(Sdef) } {	oneRef.prSetSignal(oneRef.setOrder) }
+			{ oneRef.isKindOf(Stage) } { oneRef.update }
 		})
 	}
 
@@ -161,8 +164,9 @@ var <>bus;
 	}
 
 	prRender {
-		var renderTimeStart = SystemClock.beats;
+		// startRenderTime = SystemClock.beats;
 		if(buffer.notNil) { buffer.free; };
+		isRendered = false;
 
 		buffer = Buffer.alloc(
 			server: Server.default,
@@ -174,18 +178,26 @@ var <>bus;
 			action: {|buff|
 				var bufferID = buff.bufnum;
 				var bufferFramesCnt = buff.numFrames;
-				var renderTimeEnd = SystemClock.beats;
+		isRendered = true;
+				// endRenderTime = SystemClock.beats;
+				/*
 				"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
 					bufferID,
 					duration,
 					(renderTimeEnd - renderTimeStart),
 					bufferFramesCnt
 				).postln;
+
+				"Rendering of buffer (id: % | dur:% | size:% ) done. Render time: % sec".format(
+					bufferID, duration, bufferFramesCnt, (endRenderTime - startRenderTime)
+				).postln;
+				*/
+
 			}
 		);
 	}
 
-	trig { |startTime = 0, endTime = nil, parentGroup = nil, clock = nil, multBus = nil|
+	trig { |bus, startTime = 0, endTime = nil, parentGroup = nil, clock = nil, multBus = nil|
 		if(clock.isNil) { clock = currentEnvironment.clock; };
 
 		if(buffer.notNil)
@@ -234,6 +246,7 @@ var <>bus;
 			{ "% is shorter than arg startTime(%)".format(this, startTime).warn; }
 		}.defer(0.01);
 	}
+
 
 	plot {
 		if(signal.notEmpty)
