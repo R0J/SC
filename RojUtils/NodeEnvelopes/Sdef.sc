@@ -5,13 +5,12 @@ Sdef {
 	var <size;
 	var <bus;
 
-	var <timeline;
 	var <references;
 	var <signal;
-
 	var <buffer;
 	var <isRendered;
 
+	var <timeline;
 	var autoPlot;
 
 	classvar <>library;
@@ -45,17 +44,20 @@ Sdef {
 	*printAll { this.library.postTree; }
 
 	init { |pathKey|
+		path = pathKey;
+		timeline = Timeline2.new;
+		size = nil;
+		references = Set.new;
+		buffer = nil;
+		isRendered = false;
+		autoPlot = false;
+
+		bus = nil;
 		Server.default.waitForBoot({
-			path = pathKey;
 			bus = Bus.control(Server.default, 1);
-			timeline = Timeline2.new;
-			size = nil;
-			references = Set.new;
-			buffer = nil;
-			isRendered = false;
-			autoPlot = false;
-			if(pathKey.notNil) { library.putAtPath(pathKey, this); }
 		});
+
+		if(pathKey.notNil) { library.putAtPath(pathKey, this); };
 	}
 
 	*initSynthDefs{
@@ -210,33 +212,35 @@ Sdef {
 	}
 
 	prRender {
-		Server.default.waitForBoot({
-			var startRenderTime = SystemClock.beats;
-			if(buffer.notNil) { buffer.free; };
-			isRendered = false;
+		// Server.default.waitForBoot({
+		var startRenderTime = SystemClock.beats;
+		if(buffer.notNil) { buffer.free; };
+		isRendered = false;
+		"size: %".format(size).warn;
+		buffer = Buffer.alloc(
+			server: Server.default,
+			numFrames: size,
+			numChannels: 1,
+		);
+		"ok".warn;
+		buffer.loadCollection(
+			collection: signal,
+			action: {|buff|
+				var bufferID = buff.bufnum;
+				var bufferFramesCnt = buff.numFrames;
+				isRendered = true;
 
-			buffer = Buffer.alloc(
-				server: Server.default,
-				numFrames: size,
-				numChannels: 1,
-			);
-			buffer.loadCollection(
-				collection: signal,
-				action: {|buff|
-					var bufferID = buff.bufnum;
-					var bufferFramesCnt = buff.numFrames;
-					isRendered = true;
-
-					"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
-						bufferID,
-						this.duration,
-						(SystemClock.beats - startRenderTime),
-						bufferFramesCnt
-					).postln;
-
-				}
-			);
-		});
+				/*
+				"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
+				bufferID,
+				this.duration,
+				(SystemClock.beats - startRenderTime),
+				bufferFramesCnt
+				).postln;
+				*/
+			}
+		);
+		// });
 	}
 
 	trig { |startTime = 0, endTime = nil, parentGroup = nil, clock = nil, multBus = nil|
