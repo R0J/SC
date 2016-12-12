@@ -55,6 +55,7 @@ Sdef {
 		parents = Set.new;
 		children = Set.new;
 
+		signal = Signal.newClear(0);
 		buffer = nil;
 		isRendered = false;
 		autoPlot = false;
@@ -100,7 +101,7 @@ Sdef {
 	}
 
 	kr {
-		this.prRender;
+		// this.prRender;
 		^BusPlug.for(bus);
 	}
 
@@ -137,31 +138,46 @@ Sdef {
 		}
 	}
 
-	frame { |time| ^controlRate * time; }
+	atFrame { |time| ^controlRate * time; }
 
-	emptySignal { |dur| ^Signal.newClear(this.frame(dur)); }
-
-	level { |dur, level = 1, time = 1, shift = 0|
-		var levelSignal = this.emptySignal(time).fill(level);
+	duration_ {|dur|
 		duration = dur;
-		signal = this.emptySignal(duration);
-		size = signal.size;
-		// offset = shift;
-
-		signal.overWrite(levelSignal, this.frame(shift));
-
-		this.updateRefs;
-		if(autoPlot) { this.plot };
+		// if(signal.isEmpty) { this.newSignal };
+		this.newSignal
 	}
 
-	env { |levels = #[0,1,0], times = #[0.15,0.85], curves = #[5,-3], shift = 0|
-		var envelope = Env(levels, times, curves);
-		// timeline = Timeline2.new;
-		signal = envelope.asSignal(controlRate * envelope.duration);
-		timeline.put(0, this, envelope.duration);
+	newSignal {
+		signal = Signal.newClear(this.atFrame(duration));
 		size = signal.size;
 		this.updateRefs;
 		if(autoPlot) { this.plot };
+		"newSignal".warn;
+	}
+
+	level { |from = 0, dur = 1, level = 1|
+		var levelSignal = Signal.newClear(this.atFrame(dur)).fill(level);
+		// signal.overWrite(levelSignal, this.atFrame(from));
+		signal.overDub(levelSignal, this.atFrame(from));
+
+		this.updateRefs;
+		if(autoPlot) { this.plot };
+		"level".warn;
+	}
+
+	env { |from = 0, levels = #[0,1,0], times = #[0.15,0.85], curves = #[5,-3]|
+		var envelope = Env(levels, times, curves);
+		var envSignal = envelope.asSignal(this.atFrame(envelope.duration));
+		// signal.overWrite(envSignal, this.atFrame(from));
+		signal.overDub(envSignal, this.atFrame(from));
+
+		this.updateRefs;
+		if(autoPlot) { this.plot };
+		"env".warn;
+	}
+
+	ramp { |from = 0, dur = 1, startLevel = 1, endLevel = 0|
+		this.env(from, [startLevel, endLevel], dur, \lin);
+		"ramp".warn;
 	}
 
 	shift { |time|
@@ -283,7 +299,7 @@ Sdef {
 		*/
 	}
 
-	prRender {
+	render {
 		var startRenderTime = SystemClock.beats;
 		if(buffer.notNil) { buffer.free; };
 		isRendered = false;
