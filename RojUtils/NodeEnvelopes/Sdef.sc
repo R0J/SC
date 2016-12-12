@@ -165,13 +165,13 @@ Sdef {
 	}
 
 	shift { |time|
-		var originSignal = this.signal;
-		offset = time;
-		signal = this.emptySignal(duration);
-		signal.overWrite(originSignal, this.frame(offset));
+		// var originSignal = this.signal;
+		// offset = time;
+		// signal = this.emptySignal(duration);
+		// signal.overWrite(originSignal, this.frame(offset));
 
-		this.updateRefs;
-		if(autoPlot) { this.plot };
+		// this.updateRefs;
+		// if(autoPlot) { this.plot };
 	}
 
 	add {|dur ...sDefs|
