@@ -1,5 +1,5 @@
 Sdef {
-	var <key, path;
+	var <key, <path;
 
 	var <duration;
 	var <size;
@@ -8,12 +8,14 @@ Sdef {
 	var <references;
 	var <>parents, <children;
 
-	var <signal;
+	var <>signal;
+	var <>layers;
+
 	var <buffer;
 	var <isRendered;
 
 	// var <timeline;
-	var autoPlot;
+	var <autoPlot;
 
 	classvar <>library;
 	classvar controlRate;
@@ -36,10 +38,10 @@ Sdef {
 			{
 				var path = key.asArray  ++ \def;
 				if(dur.notNil)
-				{ ^super.new.init(key, dur) }
+				{ ^super.new.init(key, dur).prAdd(args) }
 				{ ^this.library.atPath(path) }
 			}
-			{ ^super.new.init(key, dur).initBus }
+			{ ^super.new.init(key, dur).initBus.prAdd(args) }
 		}
 		{ ^super.new.init(nil, dur)	}
 	}
@@ -52,9 +54,13 @@ Sdef {
 	*printAll { this.library.postTree; ^nil; }
 
 	init { |initKey, initDur|
+		// "init".warn;
 
 		key = initKey;
 		path = key.asArray ++ \def;
+
+		autoPlot = false;
+		layers = List.new;
 
 		if(initDur.isNil)
 		{ this.duration = 0 }
@@ -67,17 +73,43 @@ Sdef {
 		buffer = nil;
 		isRendered = false;
 
-		autoPlot = false;
+		if(key.notNil) {
+			if(super.class.exist(key))
+			{
+				// var path = key.asArray  ++ \def;
+				var oldInstance = super.class.library.atPath(path);
+				("oldInstance: " + oldInstance).postln;
+				("oldInstance.parents: " + oldInstance.parents).postln;
+				("oldInstance.children: " + oldInstance.children).postln;
+				oldInstance.parents.do({|onePath| parents.add(onePath) });
+				oldInstance.children.do({|onePath| children.add(onePath) });
+				("parents: " + parents).postln;
+				("children: " + children).postln;
 
-		if(key.notNil) { library.putAtPath(path, this); }
+				// parents = oldInstance.parents;
+				// children = oldInstance.children;
+				/*
+				parents.do({|oneParent|
+				oneParent.children.remove(oldInstance);
+				oneParent.children.add(this);
+				});
+				*/
+				autoPlot = oldInstance.autoPlot;
+				"ref copy done".warn;
+			};
+			library.putAtPath(path, this);
+		};
+		// "init done".warn;
 	}
 
-	frame { |time| ^controlRate * time; }
+	*frame { |time| ^controlRate * time; }
 
 	duration_ {|dur|
 		duration = dur;
-		signal = Signal.newClear(this.frame(duration));
+		signal = Signal.newClear(super.class.frame(duration));
 		size = signal.size;
+
+		if(layers.notEmpty) { this.prAdd(layers.array) };
 	}
 
 	initBus {
@@ -127,26 +159,33 @@ Sdef {
 		hasInitSynthDefs = true;
 	}
 
-	kr {
-		// this.prRender;
-		^BusPlug.for(bus);
-	}
-
 	addRef { |target|
-		children.add(target);
-		target.parents.add(this);
+		children.add(target.path);
+		target.parents.add(this.path);
 	}
 
-	updateRefs { parents.do({|oneRef| oneRef.update}) }
+	updateRefs { parents.do({|oneRefPath| super.class.library.atPath(oneRefPath).update}) }
 
 	update {
-		signal = this.emptySignal(duration);
-		children.do({|oneRef|
-			signal.overDub(oneRef.signal, 0);
-			this.updateRefs;
-			if(autoPlot) { this.plot };
-		})
+		// var temp = Set.new;
+		signal = Signal.newClear(super.class.frame(duration));
+		layers = List.new;
+		// this.prAdd(children);
+
+		// this.updateRefs;
+		// layers = List.new;
+		children.do({|oneRefPath|
+			var sDef = super.class.library.atPath(oneRefPath);
+			"oneRef: % dur: %".format(sDef, sDef.duration).postln;
+			this.prAdd(sDef);
+		});
+		("UPDATE" + this + "autoPlot:" + autoPlot).warn;
+
+		this.updateRefs;
+		if(autoPlot) { this.plot };
 	}
+
+	kr { ^BusPlug.for(bus);	}
 
 	copy {|...path|
 		if(path.notEmpty)
@@ -165,41 +204,67 @@ Sdef {
 		}
 	}
 
-
-
-
-	newSignal {
-		signal = Signal.newClear(this.frame(duration));
-		size = signal.size;
-		this.updateRefs;
-		if(autoPlot) { this.plot };
-		"newSignal".warn;
-	}
-
-	level { |from = 0, dur = 1, level = 1|
+	*level { |level = 1, dur = 1, offset = 0|
+		var sDef = Sdef(nil, dur + offset);
 		var levelSignal = Signal.newClear(this.frame(dur)).fill(level);
-		// signal.overWrite(levelSignal, this.atFrame(from));
-		signal.overDub(levelSignal, this.frame(from));
-
-		this.updateRefs;
-		if(autoPlot) { this.plot };
+		sDef.signal.overWrite(levelSignal, this.frame(offset));
+		("parents: " + sDef.parents).postln;
+		sDef.updateRefs;
 		"level".warn;
+		^sDef;
 	}
 
-	env { |from = 0, levels = #[0,1,0], times = #[0.15,0.85], curves = #[5,-3]|
+	*ramp { |startLevel = 1, endLevel = 0, dur = 1, offset = 0|
+		"ramp".warn;
+		^this.env([startLevel, endLevel], dur, \lin, offset);
+	}
+
+	*env { |levels = #[0,1,0], times = #[0.15,0.85], curves = #[5,-3], offset = 0|
 		var envelope = Env(levels, times, curves);
+		var sDef = Sdef(nil, envelope.duration + offset);
 		var envSignal = envelope.asSignal(this.frame(envelope.duration));
 		// signal.overWrite(envSignal, this.atFrame(from));
-		signal.overDub(envSignal, this.frame(from));
-
-		this.updateRefs;
-		if(autoPlot) { this.plot };
+		sDef.signal.overDub(envSignal, this.frame(offset));
 		"env".warn;
+		^sDef;
 	}
 
-	ramp { |from = 0, dur = 1, startLevel = 1, endLevel = 0|
-		this.env(from, [startLevel, endLevel], dur, \lin);
-		"ramp".warn;
+	add {|... args|
+		// var sDef = Sdef(nil, 10);
+		this.prAdd(args);
+		// ^sDef;
+	}
+
+	prAdd {|items|
+		// "prAdd".warn;
+		items.do({|item|
+			var itemSignal;
+			item.class.postln;
+			case
+			{ item.isKindOf(Signal) } { itemSignal = item; }
+			{ item.isKindOf(Sdef) }
+			{
+				itemSignal = item.signal;
+				layers.add(itemSignal);
+				this.addRef(item);
+			}
+			{ item.isKindOf(Env) }
+			{
+				itemSignal = Sdef.env(item.levels, item.times, item.curves).signal;
+				layers.add(itemSignal);
+			}
+			{ item.isKindOf(Integer) || item.isKindOf(Float)}
+			{
+				itemSignal = Sdef.level(item, this.duration).signal;
+				layers.add(itemSignal);
+			};
+
+			signal.overDub(itemSignal, 0)
+		});
+		// "prAdd done".warn;
+
+		// this.updateRefs;
+		// if(autoPlot) { this.plot };
 	}
 
 	shift { |time|
@@ -211,88 +276,6 @@ Sdef {
 		// this.updateRefs;
 		// if(autoPlot) { this.plot };
 	}
-
-	add {|dur ...sDefs|
-		duration = dur;
-		signal = this.emptySignal(duration);
-		size = signal.size;
-		sDefs.do({ |sDef|
-			this.addRef(sDef);
-			signal.overDub(sDef.signal, 0);
-		});
-
-		this.updateRefs;
-		if(autoPlot) { this.plot };
-	}
-	/*
-	setn { |...pairsTimeItem|
-	// timeline = Timeline2.new;
-	if(pairsTimeItem.size % 2 != 0)
-	{
-	"Arguments of time and items are't set in pairs. MethodArgExample (0, Env(), 1.2, Sdef(\\x), ...)".warn;
-	^this;
-	};
-
-	pairsTimeItem.pairsDo({|time, item|
-	var sDef = item;
-
-	case
-	{ item.isKindOf(Sdef) }
-	{
-	if(item.duration.notNil)
-	{
-	this.addRef(item);
-	// item.addRef(this)
-	}
-	{ "% not found".format(item).warn; };
-	}
-	{ item.isKindOf(Env) }
-	{ sDef = Sdef.new.env(item.levels, item.times, item.curves); }
-	;
-
-	// timeline.put(time, sDef, sDef.duration);
-	});
-
-	// this.prSetSignal(timeline);
-	}
-
-	prSetSignal {|inOrder|
-	if(inOrder.isKindOf(Timeline2)) {
-	/*
-	timeline = Timeline2.new;
-	inOrder.items({|time, duration, item|
-	case
-	{ item.isKindOf(Sdef) }
-	{
-	if(item.duration.notNil)
-	{
-	timeline.put(time, item, item.duration);
-	item.addRef(this);
-	}
-	{ "% not found".format(item).warn; }
-	};
-	});
-	*/
-
-	// duration = timeline.duration;
-	// "dur: %, ref:%".format(duration, references).warn;
-	// duration = timeline.duration;
-	signal = this.emptySignal(duration);
-	size = signal.size;
-
-	timeline.items({|time, duration, sdef|
-	// timeline.items({|time, duration, sdef|
-	// "time: % | sig: %".format(time, sdef.duration).postln;
-	// signal.overWrite(oneSignal, time * controlRate);
-	signal.overDub(sdef.signal, time * controlRate);
-	});
-
-	this.updateRefs;
-	if(autoPlot) { this.plot };
-	};
-	}
-	*/
-
 
 	clone {|targetDur, cloneDur|
 		var dupSignal = signal;
@@ -409,7 +392,8 @@ Sdef {
 	}
 
 
-	plot {
+	plot {|update = false|
+		autoPlot = update;
 		if(signal.notEmpty)
 		{
 			var windows = Window.allWindows;
