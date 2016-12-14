@@ -4,59 +4,76 @@ categories:: Libraries>JITLib>NodeProxy
 related:: Classes/Signal
 
 description::
-Reference to a proxy, forms an alternative to link::Classes/ProxySpace::. All methods are inherited from link::Classes/NodeProxy::.
+tady bude komentar
 
 code::
-Sdef(path)	        //returns the instance
-Sdef(path, item)	//convert item to signal and returns the instance
+Sdef(\key, duration, items)	//store new signal definition
+Sdef(\key)	                // get the definition
 ::
 
-Similar to Adverbs (see link::Guides/J-concepts-in-SC::), roles allow to specify how a source for a link::Classes/NodeProxy:: is being used. A role is an association of a link::Classes/Symbol:: and the new proxy source object.
-
-The below examples can equally be used for link::Classes/Ndef:: and in link::Classes/ProxySpace::.
-
-code::
-// Thus, the following expressions behave in an equivalent way:
-
-a = NodeProxy(s);
-a[0] = ...
-
-ProxySpace.push(s);
-~a[0] = ...
-
-Ndef(\a, ...)
-::
+tady bude komentar
 
 ClassMethods::
 
 private::initClass, initSynthDefs, library
 
-subsection::Access
+subsection::Creation
 
 method::new
-Return a new node proxy and store it in a global ProxySpace under the key. If there is already an Ndef there, replace its object with the new one. The object can be any supported class, see link::Classes/NodeProxy#Supported sources:: help.
+Store new signal definition named by key to library and returns the instance of them. If there is already an Sdef there with same key, replace its object with the new one.
 
-argument::... path
-the name of the proxy (a symbol). It returns the proxy object:
+argument::key
+name of signal definition. Key can be defined in multilevel form as array too.
 code::
-Sdef(\x) // get the proxy
+Sdef(\someName)
+Sdef([\someFolder, \someName_A])
+Sdef([\someFolder, \someName_B])
 ::
 
-Path can be defined in multilevel form, like (\path1, \path2).
+argument::dur
+new signal duration
+
+argument::... args
+Objects for derivation a signal. Supported forms are displayed below
+
+definitionList::
+## Sdef: || Other signal definitions
 code::
-Sdef(\myFolder)              // get the item on this addres
-Sdef(\myFolder, \x)          // get the item on this addres
-Sdef(\myFolder, \y, \test1)  // get the item on this addres
-Sdef(\myFolder, \y, \test2)  // get the item on this addres
+Sdef(\x, 4, Sdef.ramp(0,1,3,0.5)).plot
 ::
+
+## Env: || Signal from envelope
+code::
+Sdef(\x, 4, Env([0,1,0.65,0], [0.6,1.1,2.3], [4, \sin, -8])).plot
+::
+
+## Integer or Float: || Level of constant signal
+code::
+Sdef(\x, 4, 0.3).plot
+::
+
+## UGen:  || NOT WORK YET
+## Pbind:  || NOT WORK YET
+::
+
+subsection::Empty definitions
+
+If Sdef is defined without name, that definition is not stored in library. But this definition could be use like source of data for other Sdef. Empty named Sdef cannot be a target of reference chain directly.
+
+method::level
+
+method::env
+
+method::ramp
+
 
 subsection::Information
 
 method::exist
-Return a new signal proxy and store it in a global library under the key.
+If signal definition named by key is store in library yet, returns true. Else false.
 
-argument::path
-the name of the proxy (usually a symbol). If only the key is given and no object, it returns the proxy object:
+argument::key
+the name of the instance (symbol or array)
 code::
 Sdef.exist(\x) // get the proxy
 ::
