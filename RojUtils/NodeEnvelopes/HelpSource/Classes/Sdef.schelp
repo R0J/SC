@@ -1,6 +1,6 @@
 title:: Sdef
 summary:: named definition of signal
-categories:: Libraries>JITLib>NodeProxy
+categories:: Libraries>RojUtils
 related:: Classes/Signal
 
 description::
@@ -15,7 +15,7 @@ tady bude komentar
 
 ClassMethods::
 
-private::initClass, initSynthDefs, library
+private::initClass, initSynthDefs, library, frame
 
 subsection::Creation
 
@@ -56,72 +56,35 @@ Sdef(\x, 4, 0.3).plot
 ## Pbind:  || NOT WORK YET
 ::
 
+
 subsection::Empty definitions
 
-If Sdef is defined without name, that definition is not stored in library. But this definition could be use like source of data for other Sdef. Empty named Sdef cannot be a target of reference chain directly.
-
-method::level
-
-method::env
-
-method::ramp
-
-
-subsection::Information
-
-method::exist
-If signal definition named by key is store in library yet, returns true. Else false.
-
-argument::key
-the name of the instance (symbol or array)
+If Sdef is defined without name, that definition is not stored in library.
+But this definition could be use like source of data for other Sdef.
+Empty named Sdef cannot be a target of reference chain directly.
 code::
-Sdef.exist(\x) // get the proxy
+ // 3 equivalent way how get empty Sdef
+a = Sdef.new
+a = Sdef()
+a = Sdef(nil)
 ::
 
-method::printAll
-Print all stored signals from library. Style like .postTree
-
-code::
-Sdef.printAll
-::
-
-InstanceMethods::
-private::prSetSignal, addRef, updateRefs, path
-
-
-subsection::Informations
-
-method::plot
-plot a view of signal
-
-method::duration
-return signal time duration
-
-method::size
-return frames count of signal
-
-
-
-subsection::Signal definition
-
 method::level
-Set constat value for signal
+Return new instance of signal definition and set signal by constat value. This definition is not stored in library.
 code::
-Sdef(\x).level(0.2, 1.5, 0.5).plot;
+Sdef.level(0.2, 1.5, 0.5).plot;
 ::
 argument::level
 value of signal level
 argument::dur
 duration of signal
-argument::shift
-shift of signal start
-
-
+argument::offset
+offset of signal start
 
 method::env
-Set value for signal from envelope. Detail envelope description at link::Classes/Env#*new::
+Return new instance of signal definition and set signal by envelope. This definition is not stored in library. Detail envelope description at link::Classes/Env#*new::
 code::
-Sdef(\x).env([0,1,0.5,0], [0.2,0.5,0.3], [8, \sin, -5]).plot;
+Sdef.env([0,1,0.5,0], [0.2,0.5,0.3], [8, \sin, -5]).plot;
 ::
 argument::levels
 an array of signal levels
@@ -129,8 +92,95 @@ argument::times
 an array of signal segment duration
 argument::curves
 an array of signal segment curvature
-argument::shift
-shift of signal start
+argument::offset
+offset of signal start
+
+method::ramp
+Return new instance of signal definition and set signal by start and end level. This definition is not stored in library.
+code::
+Sdef.ramp(0.6,0.2,1,0.5).plot;
+::
+argument::from
+value of signal level at start
+argument::to
+value of signal level at end
+argument::dur
+duration of signal
+argument::offset
+offset of signal start
+
+
+subsection::Information
+
+method::exist
+If signal definition named by key is store in library yet, return it. Else return nil.
+code::
+Sdef.exist(\x) // return nil
+Sdef(\x)
+Sdef.exist(\x) // return Sdef(\x)
+::
+argument::key
+the name of the instance (symbol or array)
+
+method::printAll
+Print all stored signals definition from library. Style like .postTree
+code::
+Sdef.printAll
+::
+
+
+
+InstanceMethods::
+private::prSetSignal, addRef, updateRefs, path
+
+method::key
+Rename instance and store new definition to library. Old definition is delete from library.
+code::
+a = Sdef.new
+a.key = \x
+Sdef.printAll
+::
+argument::name
+name of signal definition
+
+method::duration
+code::
+a = Sdef.new
+a.duration = 6
+a.plot
+::
+Set time limitation for this definition and prepare new signal with this time duration.
+argument::dur
+duration of signal definition
+
+method::size
+return nuber of frames in signal
+
+method::plot
+plot a preview of signal
+argument::update
+regenerate preview of signal when some reference was changed
+
+
+subsection::References
+
+code::
+Sdef(\x, 2).parents
+Sdef(\y, 8).parents
+Sdef(\z, 10, Sdef(\x), Sdef(\y)).children
+
+Sdef(\x).parents
+Sdef(\y).parents
+::
+
+method::parents
+
+method::children
+
+
+
+
+
 
 
 
