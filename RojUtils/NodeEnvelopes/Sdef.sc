@@ -8,14 +8,14 @@ Sdef {
 	var <references;
 	var <parents, <children;
 
-	var <>signal;
-	var <>layers;
+	var <signal;
+	var <layers;
 
 	var <buffer;
 	var <isRendered;
 
 	// var <timeline;
-	var <autoPlot;
+	var <updatePlot;
 
 	classvar <>library;
 	classvar controlRate;
@@ -41,12 +41,13 @@ Sdef {
 				if(dur.notNil) { sDef.duration_(dur) };
 				if(args.notEmpty)
 				{
-					sDef.layers = List.new;
-					sDef.prAdd(args);
+					sDef.initLayers;
+					sDef.addLayer(args);
+					// sDef.updateParents;
 				}
 				^sDef;
 			}
-			{ ^super.new.init(key, dur).initBus.prAdd(args) }
+			{ ^super.new.init(key, dur).initBus.addLayer(args) }
 		}
 		{ ^super.new.init(nil, dur)	}
 	}
@@ -62,8 +63,9 @@ Sdef {
 	init { |initKey, initDur|
 		this.key = initKey;
 
-		autoPlot = false;
-		layers = List.new;
+		this.updatePlot = false;
+		// layers = List.new;
+		this.initLayers;
 
 		if(initDur.isNil)
 		{ this.duration = 0 }
@@ -132,14 +134,14 @@ Sdef {
 		var sDef = Sdef(nil, dur + offset);
 		var levelSignal = Signal.newClear(this.frame(dur)).fill(level);
 		sDef.signal.overWrite(levelSignal, this.frame(offset));
-		("parents: " + sDef.parents).postln;
-		sDef.updateRefs;
-		"level".warn;
+		// ("parents: " + sDef.parents).postln;
+		// sDef.update;
+		// "level".warn;
 		^sDef;
 	}
 
 	*ramp { |from = 1, to = 0, dur = 1, offset = 0|
-		"ramp".warn;
+		// "ramp".warn;
 		^this.env([from, to], dur, \lin, offset);
 	}
 
@@ -149,7 +151,8 @@ Sdef {
 		var envSignal = envelope.asSignal(this.frame(envelope.duration));
 		sDef.signal.overWrite(envSignal, this.frame(offset));
 		// sDef.signal.overDub(envSignal, this.frame(offset));
-		"env".warn;
+		// "env".warn;
+		// sDef.update;
 		^sDef;
 	}
 
@@ -178,9 +181,10 @@ Sdef {
 		signal = Signal.newClear(super.class.frame(duration));
 		size = signal.size;
 
-		if(layers.notEmpty) { this.prAdd(layers.array) };
+		// if(layers.notEmpty) { this.prAdd(layers.array) };
+		// if(layers.notEmpty) { this.addLayer(layers.array) };
 
-		this.updateParents;
+		// this.updateParents;
 	}
 
 	// references //////////////////////////
@@ -188,7 +192,8 @@ Sdef {
 	*connectRefs {|parentKey, childKey|
 		var parentDef = this.exist(parentKey);
 		var childDef = this.exist(childKey);
-		if(parentDef.notNil && childDef.notNil)
+		// "Sdef.connectRefs(parent:% | child:%)".format(parentDef, childDef).warn;
+		if(parentDef.key.notNil && childDef.key.notNil)
 		{
 			parentDef.addChild(childDef);
 			childDef.addParent(parentDef);
@@ -198,8 +203,8 @@ Sdef {
 	*disconnectRefs {|parentKey, childKey|
 		var parentDef = this.exist(parentKey);
 		var childDef = this.exist(childKey);
-		if(parentDef.notNil) { parentDef.removeChild(childDef) };
-		if(childDef.notNil) { childDef.removeParent(parentDef) };
+		if(parentDef.key.notNil) { parentDef.removeChild(childDef) };
+		if(childDef.key.notNil) { childDef.removeParent(parentDef) };
 	}
 
 	addChild { |target| children.add(target.key); }
@@ -209,36 +214,57 @@ Sdef {
 	removeParent { |target| parents.remove(target.key); }
 
 	updateParents {
-		"updateParents".warn;
-		// parents.do({|oneRefPath| super.class.library.atPath(oneRefPath).update})
 		parents.do({|parentKey|
 			var sDef = Sdef.exist(parentKey);
-			if(sDef.notNil) { sDef.update };
+			if(sDef.notNil) {
+				"%.updateParents -> %".format(this, sDef).warn;
+				sDef.update;
+			};
 		});
 	}
 
 	update {
-		"update".warn;
-		// var temp = Set.new;
-		/*
-		signal = Signal.newClear(super.class.frame(duration));
-		layers = List.new;
-		// this.prAdd(children);
+		// "update".warn;
 
-		// this.updateRefs;
-		// layers = List.new;
-		children.do({|oneRefPath|
-		var sDef = super.class.library.atPath(oneRefPath);
-		"oneRef: % dur: %".format(sDef, sDef.duration).postln;
-		this.prAdd(sDef);
-		});
-
-		("UPDATE" + this + "autoPlot:" + autoPlot).warn;
-
-		this.updateRefs;
-		if(autoPlot) { this.plot };
-		*/
+		this.mergeLayers;
+		if(updatePlot) { this.plot };
 	}
+
+	// layers //////////////////////////
+
+	initLayers {
+		// "%.initLayers".format(this).warn;
+		layers = List.new;
+	}
+
+	addLayer {|data|
+		data.do({|item|
+			var sDef;
+			"%.addLayer from val: % | class: %".format(this, item, item.class).postln;
+			case
+			{ item.isKindOf(Sdef) }
+			{
+				sDef = item;
+				Sdef.connectRefs(key, sDef.key);
+			}
+			{ item.isKindOf(Env) } { sDef = Sdef.env(item.levels, item.times, item.curves);	}
+			{ item.isKindOf(Integer) || item.isKindOf(Float)} { sDef = Sdef.level(item, this.duration); };
+
+			layers.add(sDef);
+		});
+		this.mergeLayers;
+	}
+
+	insertLayer {|index, sDef| }
+
+	getLayer {|index| }
+
+	mergeLayers {
+		signal = Signal.newClear(super.class.frame(duration));
+		layers.do({|item| signal.overDub(item.signal, 0) });
+		this.updateParents;
+	}
+
 
 	kr { ^BusPlug.for(bus);	}
 
@@ -261,45 +287,10 @@ Sdef {
 		*/
 	}
 
-
-
 	add {|... args|
 		// var sDef = Sdef(nil, 10);
-		this.prAdd(args);
+		// this.prAdd(args);
 		// ^sDef;
-	}
-
-	prAdd {|items|
-		// "prAdd".warn;
-		items.do({|item|
-			var itemSignal;
-			item.class.postln;
-			case
-			{ item.isKindOf(Signal) } { itemSignal = item; }
-			{ item.isKindOf(Sdef) }
-			{
-				itemSignal = item.signal;
-				layers.add(itemSignal);
-				// this.addRef(item);
-				Sdef.connectRefs(key, item.key);
-			}
-			{ item.isKindOf(Env) }
-			{
-				itemSignal = Sdef.env(item.levels, item.times, item.curves).signal;
-				layers.add(itemSignal);
-			}
-			{ item.isKindOf(Integer) || item.isKindOf(Float)}
-			{
-				itemSignal = Sdef.level(item, this.duration).signal;
-				layers.add(itemSignal);
-			};
-
-			signal.overDub(itemSignal, 0)
-		});
-		// "prAdd done".warn;
-
-		// this.updateRefs;
-		// if(autoPlot) { this.plot };
 	}
 
 	shift { |time|
@@ -427,8 +418,9 @@ Sdef {
 	}
 
 
-	plot {|update = false|
-		autoPlot = update;
+	plot {|update|
+		this.updatePlot = update;
+
 		if(signal.notEmpty)
 		{
 			var windows = Window.allWindows;
@@ -472,7 +464,7 @@ Sdef {
 		{ "% signal is empty".format(this).warn; };
 	}
 
-	updatePlot {|bool| if(bool.isKindOf(Boolean)) { autoPlot = bool; }; }
+	updatePlot_ {|bool|	if(bool.isKindOf(Boolean)) { updatePlot = bool } }
 
 	printOn { |stream|	stream << this.class.name << "('" << this.key << "' | dur: " << this.duration << ")"; }
 	// printOn { |stream|	stream << this.class.name << " (dur: " << duration << ")"; }
