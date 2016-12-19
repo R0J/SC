@@ -238,6 +238,7 @@ Sdef {
 	}
 
 	addLayer {|data|
+		data.postln;
 		data.do({|item|
 			var sDef;
 			"%.addLayer from val: % | class: %".format(this, item, item.class).postln;
@@ -248,7 +249,21 @@ Sdef {
 				Sdef.connectRefs(key, sDef.key);
 			}
 			{ item.isKindOf(Env) } { sDef = Sdef.env(item.levels, item.times, item.curves);	}
-			{ item.isKindOf(Integer) || item.isKindOf(Float)} { sDef = Sdef.level(item, this.duration); };
+			{ item.isKindOf(Integer) || item.isKindOf(Float)} { sDef = Sdef.level(item, this.duration); }
+			{ item.isKindOf(Function) } {
+				Routine.run({
+					var condition = Condition.new;
+					"Rendering layer from function. Duration: %".format(this.duration).warn;
+					item.loadToFloatArray(this.duration, Server.default, {|array|
+						signal = array;
+						condition.test = true;
+						condition.signal;
+					});
+					condition.wait;
+					"render done".postln;
+				});
+				^nil;
+			};
 
 			layers.add(sDef);
 		});

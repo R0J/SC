@@ -52,7 +52,12 @@ code::
 Sdef(\x, 4, 0.3).plot
 ::
 
-## UGen:  || NOT WORK YET
+## Function:  || TEST!! NOT FIXED YET
+code::
+Sdef(\x, 4, { SinOsc.ar(1/2, mul:0.5) + SinOsc.ar(8, mul:0.1) })
+Sdef(\x).plot
+::
+
 ## Pbind:  || NOT WORK YET
 ::
 
