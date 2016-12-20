@@ -61,7 +61,6 @@ Sdef(\x).plot
 ## Pbind:  || NOT WORK YET
 ::
 
-
 subsection::Empty definitions
 
 If Sdef is defined without name, that definition is not stored in library.
@@ -166,6 +165,11 @@ plot a preview of signal
 argument::update
 regenerate preview of signal when some reference was changed
 
+subsection::Layers
+Lists of information about Signals define Sdef.
+
+method::initLayers
+Prepare all new lists for layers.
 
 subsection::References
 

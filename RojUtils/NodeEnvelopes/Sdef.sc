@@ -9,7 +9,7 @@ Sdef {
 	var <parents, <children;
 
 	var <signal;
-	var <layers;
+	var <layers, <layers2;
 
 	var <buffer;
 	var <isRendered;
@@ -235,6 +235,7 @@ Sdef {
 	initLayers {
 		// "%.initLayers".format(this).warn;
 		layers = List.new;
+		layers2 = Table(\signal, \offset, \selector);
 	}
 
 	addLayer {|data|
