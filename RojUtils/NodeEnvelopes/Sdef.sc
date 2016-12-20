@@ -242,6 +242,7 @@ Sdef {
 		data.postln;
 		data.do({|item|
 			var sDef;
+			var sig, offset, sel;
 			"%.addLayer from val: % | class: %".format(this, item, item.class).postln;
 			case
 			{ item.isKindOf(Sdef) }
@@ -249,8 +250,16 @@ Sdef {
 				sDef = item;
 				Sdef.connectRefs(key, sDef.key);
 			}
-			{ item.isKindOf(Env) } { sDef = Sdef.env(item.levels, item.times, item.curves);	}
-			{ item.isKindOf(Integer) || item.isKindOf(Float)} { sDef = Sdef.level(item, this.duration); }
+			{ item.isKindOf(Env) }
+			{
+				sDef = Sdef.env(item.levels, item.times, item.curves);
+				sig = item.asSignal(super.class.frame(item.duration));
+			}
+			{ item.isKindOf(Integer) || item.isKindOf(Float)}
+			{
+				sDef = Sdef.level(item, this.duration);
+				sig = Signal.newClear(super.class.frame(this.duration)).fill(item);
+			}
 			{ item.isKindOf(Function) } {
 				Routine.run({
 					var condition = Condition.new;
@@ -267,6 +276,7 @@ Sdef {
 			};
 
 			layers.add(sDef);
+			layers2.addLine(sig, 0, \add);
 		});
 		this.mergeLayers;
 	}

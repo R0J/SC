@@ -6,9 +6,8 @@ Table {
 
 	init {|columnNames|
 		cntRows = columnNames.size;
-		cntColumns = 0;
+		cntColumns = -1;
 		columns = IdentityDictionary.new;
-		columnNames.postln;
 		columnNames.do({|name| columns.put(name,  Order.new) });
 	}
 
@@ -18,7 +17,7 @@ Table {
 
 	put { |name, line, data|
 		var order = columns.at(name.asSymbol);
-		order.put(line, data);
+		order.put((line + 1), data);
 		if(line > cntColumns) { cntColumns = line };
 	}
 
@@ -31,8 +30,8 @@ Table {
 	}
 
 	addLine {|...data|
-		var arrData = Array.newFrom(data.flatten);
-		this.putLine(cntColumns + 1, arrData);
+		var arrData = Array.newFrom(data);
+		this.putLine(cntColumns, arrData);
 	}
 
 	get { |name, line|
