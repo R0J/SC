@@ -15,6 +15,7 @@ Table {
 
 	size { ^[cntRows, cntColumns] }
 
+	lines { ^(cntColumns + 1) }
 	// names { ^columns.keys }
 
 	put { |name, line, data|
@@ -50,7 +51,7 @@ Table {
 	}
 
 	getName { |name|
-		var list = Array.fill((cntColumns + 1), nil);
+		var list = Array.fill(this.lines, nil);
 		columns.at(name.asSymbol).indicesDo({|data, line|
 			// "line: %  data: %".format(line, data).postln;
 			list.put(line, data);

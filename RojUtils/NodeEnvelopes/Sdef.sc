@@ -42,12 +42,16 @@ Sdef {
 				if(args.notEmpty)
 				{
 					sDef.initLayers;
-					sDef.addLayer(args);
+					args.do({|oneArg| sDef.addLayer(oneArg) });
 					// sDef.updateParents;
 				}
 				^sDef;
 			}
-			{ ^super.new.init(key, dur).initBus.addLayer(args) }
+			{
+				sDef = super.new.init(key, dur).initBus;
+				args.do({|oneArg| sDef.addLayer(oneArg) });
+				^sDef;
+			}
 		}
 		{ ^super.new.init(nil, dur)	}
 	}
@@ -133,10 +137,7 @@ Sdef {
 	*level { |level = 1, dur = 1, offset = 0|
 		var sDef = Sdef(nil, dur + offset);
 		var levelSignal = Signal.newClear(this.frame(dur)).fill(level);
-		sDef.signal.overWrite(levelSignal, this.frame(offset));
-		// ("parents: " + sDef.parents).postln;
-		// sDef.update;
-		// "level".warn;
+		sDef.addLayer(levelSignal, offset, \new);
 		^sDef;
 	}
 
@@ -149,7 +150,8 @@ Sdef {
 		var envelope = Env(levels, times, curves);
 		var sDef = Sdef(nil, envelope.duration + offset);
 		var envSignal = envelope.asSignal(this.frame(envelope.duration));
-		sDef.signal.overWrite(envSignal, this.frame(offset));
+		sDef.addLayer(envSignal, offset, \new);
+		// sDef.signal.overWrite(envSignal, this.frame(offset));
 		// sDef.signal.overDub(envSignal, this.frame(offset));
 		// "env".warn;
 		// sDef.update;
@@ -235,49 +237,56 @@ Sdef {
 	initLayers {
 		// "%.initLayers".format(this).warn;
 		layers = List.new;
-		layers2 = Table(\signal, \offset, \selector);
+		layers2 = Table(\selector, \offset, \signal);
 	}
 
 	addLayer {|data, offset = 0, type = \add|
-		data.postln;
-		data.do({|item|
-			var sDef;
-			var sig, offset, sel;
-			"%.addLayer from val: % | class: %".format(this, item, item.class).postln;
-			case
-			{ item.isKindOf(Sdef) }
-			{
-				sDef = item;
-				Sdef.connectRefs(key, sDef.key);
-			}
-			{ item.isKindOf(Env) }
-			{
-				sDef = Sdef.env(item.levels, item.times, item.curves);
-				sig = item.asSignal(super.class.frame(item.duration));
-			}
-			{ item.isKindOf(Integer) || item.isKindOf(Float)}
-			{
-				sDef = Sdef.level(item, this.duration);
-				sig = Signal.newClear(super.class.frame(this.duration)).fill(item);
-			}
-			{ item.isKindOf(Function) } {
-				Routine.run({
-					var condition = Condition.new;
-					"Rendering layer from function. Duration: %".format(this.duration).warn;
-					item.loadToFloatArray(this.duration, Server.default, {|array|
-						signal = array;
-						condition.test = true;
-						condition.signal;
-					});
-					condition.wait;
-					"render done".postln;
+		// data.postln;
+		// data.do({|item|
+		// var sDef;
+		var sig;
+		// var sig, offset, sel;
+		"%.addLayer from class: % | val: %".format(this, data.class, data).postln;
+		case
+		{ data.isKindOf(Signal) }
+		{
+			sig = data;
+		}
+		{ data.isKindOf(Sdef) }
+		{
+			// sDef = data;
+			sig = data.signal;
+			Sdef.connectRefs(key, data.key);
+		}
+		{ data.isKindOf(Env) }
+		{
+			// sDef = Sdef.env(item.levels, item.times, item.curves);
+			sig = data.asSignal(super.class.frame(data.duration));
+		}
+		{ data.isKindOf(Integer) || data.isKindOf(Float)}
+		{
+			// sDef = Sdef.level(item, this.duration);
+			sig = Signal.newClear(super.class.frame(this.duration)).fill(data);
+		}
+		{ data.isKindOf(Function) } {
+			Routine.run({
+				var condition = Condition.new;
+				"Rendering layer from function. Duration: %".format(this.duration).warn;
+				data.loadToFloatArray(this.duration, Server.default, {|array|
+					signal = array;
+					sig = array;
+					condition.test = true;
+					condition.signal;
 				});
-				^nil;
-			};
+				condition.wait;
+				"render done".postln;
+			});
+			^nil;
+		};
 
-			layers.add(sDef);
-			layers2.addLine(sig, offset, type.asSymbol);
-		});
+		// layers.add(sDef);
+		layers2.addLine(type.asSymbol, offset, sig);
+		// });
 		this.mergeLayers;
 	}
 
@@ -287,7 +296,18 @@ Sdef {
 
 	mergeLayers {
 		signal = Signal.newClear(super.class.frame(duration));
-		layers.do({|item| signal.overDub(item.signal, 0) });
+		// layers.do({|item| signal.overDub(item.signal, 0) });
+		layers2.lines.do({|i|
+			var oneLine = layers2.getLine(i);
+			var type = oneLine[0];
+			var offset = oneLine[1];
+			var sig = oneLine[2];
+			"type: % || off: % || sig: %".format(type, offset, sig).postln;
+			case
+			{ type.asSymbol == \new } { signal.overWrite(sig, super.class.frame(offset));	}
+			{ type.asSymbol == \add } { signal.overDub(sig, super.class.frame(offset));	}
+
+		});
 		this.updateParents;
 	}
 
