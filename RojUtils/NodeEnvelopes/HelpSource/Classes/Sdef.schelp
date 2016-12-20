@@ -166,10 +166,21 @@ argument::update
 regenerate preview of signal when some reference was changed
 
 subsection::Layers
-Lists of information about Signals define Sdef.
+Table keeping information about Sdef input sources. Table has columns signal, offset and merge opeartion types. This table is used like data for merge layers for Sdef output signal.
 
 method::initLayers
 Prepare all new lists for layers.
+
+method::addLayer
+argument::data
+Any type of supported data type for creation signal for new layer
+argument::offset
+Start time offset of layer signal
+argument::type
+Type of operation for signal merge procedure
+
+method::mergeLayers
+Merge all signals from table of layers and store result like Sdef.signal. Update all references.
 
 subsection::References
 

@@ -17,21 +17,23 @@ Table {
 
 	put { |name, line, data|
 		var order = columns.at(name.asSymbol);
-		order.put((line + 1), data);
+		order.put(line, data);
 		if(line > cntColumns) { cntColumns = line };
 	}
 
 	putLine { |line ... data|
-		var arrData = Array.newFrom(data.flatten);
 		columns.keys.do({|oneKey, i|
-			// "putLine line:% | oneKey: % | data: %".format(line, oneKey, arrData[i]).postln;
-			this.put(oneKey, line, arrData[i]);
+			// "putLine line:% | oneKey: % | data: %".format(line, oneKey, data[i]).postln;
+			this.put(oneKey, line, data[i]);
 		})
 	}
 
 	addLine {|...data|
-		var arrData = Array.newFrom(data);
-		this.putLine(cntColumns, arrData);
+		var line = cntColumns + 1;
+		columns.keys.do({|oneKey, i|
+			// "putLine line:% | oneKey: % | data: %".format(line, oneKey, data[i]).postln;
+			this.put(oneKey, line, data[i]);
+		})
 	}
 
 	get { |name, line|
@@ -51,6 +53,12 @@ Table {
 		^list;
 	}
 
-	print {	(cntColumns + 1).do({|line| this.getLine(line).postln; }); }
+	print {
+
+		"\nTable.print\nnames: %".format(this.names.asArray).postln;
+		(cntColumns + 1).do({|line| "%:  %".format(line, this.getLine(line)).postln; });
+	}
+
+	printOn { |stream|	stream << this.class.name << "(" << cntRows << ", "<< if(cntColumns < 0) { "nil" } { cntColumns } << ")"; }
 
 }

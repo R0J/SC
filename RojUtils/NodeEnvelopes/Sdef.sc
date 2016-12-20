@@ -238,7 +238,7 @@ Sdef {
 		layers2 = Table(\signal, \offset, \selector);
 	}
 
-	addLayer {|data|
+	addLayer {|data, offset = 0, type = \add|
 		data.postln;
 		data.do({|item|
 			var sDef;
@@ -276,7 +276,7 @@ Sdef {
 			};
 
 			layers.add(sDef);
-			layers2.addLine(sig, 0, \add);
+			layers2.addLine(sig, offset, type.asSymbol);
 		});
 		this.mergeLayers;
 	}
