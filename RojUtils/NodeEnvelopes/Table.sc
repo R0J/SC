@@ -32,8 +32,6 @@ Table {
 
 	addLine {|...data|
 		var arrData = Array.newFrom(data.flatten);
-		cntColumns.postln;
-		arrData.postln;
 		this.putLine(cntColumns + 1, arrData);
 	}
 
@@ -53,5 +51,7 @@ Table {
 		columns[name.asSymbol].indicesDo({|data, line| list.put(line-1, data) });
 		^list;
 	}
+
+	print {	(cntColumns + 1).do({|line| this.getLine(line).postln; }); }
 
 }
