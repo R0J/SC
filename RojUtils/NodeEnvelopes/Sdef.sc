@@ -227,9 +227,8 @@ Sdef {
 
 	update {
 		// "update".warn;
-
 		this.mergeLayers;
-		if(updatePlot) { this.plot };
+
 	}
 
 	// layers //////////////////////////
@@ -241,40 +240,31 @@ Sdef {
 	}
 
 	addLayer {|data, offset = 0, type = \add|
-		// data.postln;
-		// data.do({|item|
-		// var sDef;
-		var sig;
-		// var sig, offset, sel;
 		"%.addLayer from class: % | val: %".format(this, data.class, data).postln;
+		"FIX! resend to layer".warn;
+		this.layer(layers2.lines, type, offset, data);
+	}
+
+	layer {|index, type, offset, data|
+		"Sdef.layer data class: %".format(data.class).postln;
 		case
 		{ data.isKindOf(Signal) }
-		{
-			sig = data;
-		}
+		{ layers2.putLine(index, type.asSymbol, offset, data.signal) }
+		{ data.isKindOf(Env) }
+		{ layers2.putLine(index, type.asSymbol, offset, data.asSignal(super.class.frame(data.duration))) }
+		{ data.isKindOf(Integer) || data.isKindOf(Float)}
+		{ layers2.putLine(index, type.asSymbol, offset, Signal.newClear(super.class.frame(this.duration)).fill(data)) }
 		{ data.isKindOf(Sdef) }
 		{
-			// sDef = data;
-			sig = data.signal;
+			layers2.putLine(index, type.asSymbol, offset, data.signal);
 			Sdef.connectRefs(key, data.key);
-		}
-		{ data.isKindOf(Env) }
-		{
-			// sDef = Sdef.env(item.levels, item.times, item.curves);
-			sig = data.asSignal(super.class.frame(data.duration));
-		}
-		{ data.isKindOf(Integer) || data.isKindOf(Float)}
-		{
-			// sDef = Sdef.level(item, this.duration);
-			sig = Signal.newClear(super.class.frame(this.duration)).fill(data);
 		}
 		{ data.isKindOf(Function) } {
 			Routine.run({
 				var condition = Condition.new;
 				"Rendering layer from function. Duration: %".format(this.duration).warn;
 				data.loadToFloatArray(this.duration, Server.default, {|array|
-					signal = array;
-					sig = array;
+					layers2.putLine(index, type.asSymbol, offset, array);
 					condition.test = true;
 					condition.signal;
 				});
@@ -283,20 +273,11 @@ Sdef {
 			});
 			^nil;
 		};
-
-		// layers.add(sDef);
-		layers2.addLine(type.asSymbol, offset, sig);
-		// });
 		this.mergeLayers;
 	}
 
-	insertLayer {|index, sDef| }
-
-	getLayer {|index| }
-
 	mergeLayers {
 		signal = Signal.newClear(super.class.frame(duration));
-		// layers.do({|item| signal.overDub(item.signal, 0) });
 		layers2.lines.do({|i|
 			var oneLine = layers2.getLine(i);
 			var type = oneLine[0];
@@ -308,6 +289,7 @@ Sdef {
 			{ type.asSymbol == \add } { signal.overDub(sig, super.class.frame(offset));	}
 
 		});
+		if(updatePlot) { this.plot };
 		this.updateParents;
 	}
 
@@ -334,9 +316,10 @@ Sdef {
 	}
 
 	add {|... args|
-		// var sDef = Sdef(nil, 10);
-		// this.prAdd(args);
-		// ^sDef;
+		args.pairsDo({|offset, data|
+			"Sdef.add offset: % | data: %".format(offset, data).postln;
+			this.addLayer(data, offset, \add);
+		});
 	}
 
 	shift { |time|
