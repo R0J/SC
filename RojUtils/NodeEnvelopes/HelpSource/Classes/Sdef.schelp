@@ -52,13 +52,14 @@ code::
 Sdef(\x, 4, 0.3).plot
 ::
 
-## Function:  || TEST!! NOT FIXED YET
+## Function:  || Render result of function and use it like new signal. UGen allways use like .kr
 code::
-Sdef(\x, 4, { SinOsc.ar(1/2, mul:0.5) + SinOsc.ar(8, mul:0.1) })
+Sdef(\x, 4, { SinOsc.kr(1/2, mul:0.5) + SinOsc.kr(8, mul:0.1) })
 Sdef(\x).plot
 ::
+note::FIRST TEST::
 
-## Pbind:  || NOT WORK YET
+## Pbind:  || note::NOT WORK YET::
 ::
 
 subsection::Empty definitions
@@ -165,28 +166,14 @@ plot a preview of signal
 argument::update
 regenerate preview of signal when some reference was changed
 
-subsection::Layers
-Table keeping information about Sdef input sources. Table has columns signal, offset and merge opeartion types. This table is used like data for merge layers for Sdef output signal.
-
-method::initLayers
-Prepare all new lists for layers.
-
-method::addLayer
-argument::data
-Any type of supported data type for creation signal for new layer
-argument::offset
-Start time offset of layer signal
-argument::type
-Type of operation for signal merge procedure
-
-method::mergeLayers
-Merge all signals from table of layers and store result like Sdef.signal. Update all references.
 
 subsection::References
+Chain of referces connection. Change of one child will change all his parent.
 
 code::
 Sdef(\x, 2).parents
 Sdef(\y, 8).parents
+
 Sdef(\z, 10, Sdef(\x), Sdef(\y)).children
 
 Sdef(\x).parents
@@ -194,8 +181,45 @@ Sdef(\y).parents
 ::
 
 method::parents
-
+Return list of all parents Sdef. All of them will be update after change of this child.
 method::children
+Return list of all children Sdef. If one of them will change, that change this parent too.
+
+
+subsection::Layers
+Table of layers keeping information about Sdef input sources. Each layer is defined by index and keeping information about signal, start time offset and merge operation type. This table is used like data for merge layers for Sdef output signal.
+
+method::initLayers
+Prepare new empty Table for storing layers.
+method::layer
+note:: tady dpolnit popis jak funfuje proces pri Sdef.new. Kazdy jde jako nova posledni vrstva, \add a offset = 0::
+code::
+Sdef(\x, 10, Env([0,0.9,0], 5, \sin))
+Sdef(\y, 1.5, 0.1)
+Sdef(\sin, 2, { SinOsc.kr(4, mul:0.1) })
+
+Sdef(\sum, 10).plot(true)
+Sdef(\sum).layer(0, \add, 0, Sdef(\x))
+Sdef(\sum).layer(1, \add, 1, Sdef(\y))
+Sdef(\sum).layer(2, \new, 6.5, Sdef(\y))
+Sdef(\sum).layer(3, \add, 4, Sdef(\sin))
+::
+argument::index
+Index of layer
+argument::type
+Type of operation for signal merge procedure
+argument::offset
+Start time offset of layer signal
+argument::data
+Any type of supported data type for creation signal for new layer
+
+
+method::mergeLayers
+Merge all signals from table of layers and store result like Sdef.signal. Update all references.
+
+subsection::Edit
+
+
 
 
 

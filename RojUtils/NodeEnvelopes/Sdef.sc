@@ -8,13 +8,12 @@ Sdef {
 	var <references;
 	var <parents, <children;
 
-	var <signal;
 	var <layers;
+	var <signal;
 
 	var <buffer;
 	var <isRendered;
 
-	// var <timeline;
 	var <updatePlot;
 
 	classvar <>library;
@@ -42,14 +41,13 @@ Sdef {
 				if(args.notEmpty)
 				{
 					sDef.initLayers;
-					args.do({|oneArg| sDef.addLayer(\add, 0, oneArg) });
-					// sDef.updateParents;
+					args.do({|oneArg| sDef.layer(sDef.layers.lines, \add, 0, oneArg) });
 				}
 				^sDef;
 			}
 			{
 				sDef = super.new.init(key, dur).initBus;
-				args.do({|oneArg| sDef.addLayer(\add, 0, oneArg) });
+				args.do({|oneArg| sDef.layer(sDef.layers.lines, \add, 0, oneArg) });
 				^sDef;
 			}
 		}
@@ -136,7 +134,7 @@ Sdef {
 	*level { |level = 1, dur = 1, offset = 0|
 		var sDef = Sdef(nil, dur + offset);
 		var levelSignal = Signal.newClear(this.frame(dur)).fill(level);
-		sDef.addLayer(\new, offset, levelSignal);
+		sDef.layer(0, \new, offset, levelSignal);
 		^sDef;
 	}
 
@@ -147,8 +145,7 @@ Sdef {
 	*env { |levels = #[0,1,0], times = #[0.15,0.85], curves = #[5,-3], offset = 0|
 		var envelope = Env(levels, times, curves);
 		var sDef = Sdef(nil, envelope.duration + offset);
-		// var envSignal = envelope.asSignal(this.frame(envelope.duration));
-		sDef.addLayer(\new, offset, envelope);
+		sDef.layer(0, \new, offset, envelope);
 		^sDef;
 	}
 
@@ -229,12 +226,6 @@ Sdef {
 	initLayers {
 		// "%.initLayers".format(this).warn;
 		layers = Table(\selector, \offset, \sdef);
-	}
-
-	addLayer {|type, offset, data|
-		// "%.addLayer from class: % | data: %".format(this, data.class, data).postln;
-		// "FIX! resend to layer".warn;
-		this.layer(layers.lines, type, offset, data);
 	}
 
 	layer {|index, type, offset, data|
