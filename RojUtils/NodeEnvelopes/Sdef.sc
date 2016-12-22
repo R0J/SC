@@ -9,7 +9,7 @@ Sdef {
 	var <parents, <children;
 
 	var <signal;
-	var <layers, <layers2;
+	var <layers;
 
 	var <buffer;
 	var <isRendered;
@@ -42,14 +42,14 @@ Sdef {
 				if(args.notEmpty)
 				{
 					sDef.initLayers;
-					args.do({|oneArg| sDef.addLayer(oneArg) });
+					args.do({|oneArg| sDef.addLayer(\add, 0, oneArg) });
 					// sDef.updateParents;
 				}
 				^sDef;
 			}
 			{
 				sDef = super.new.init(key, dur).initBus;
-				args.do({|oneArg| sDef.addLayer(oneArg) });
+				args.do({|oneArg| sDef.addLayer(\add, 0, oneArg) });
 				^sDef;
 			}
 		}
@@ -68,7 +68,6 @@ Sdef {
 		this.key = initKey;
 
 		this.updatePlot = false;
-		// layers = List.new;
 		this.initLayers;
 
 		if(initDur.isNil)
@@ -137,24 +136,19 @@ Sdef {
 	*level { |level = 1, dur = 1, offset = 0|
 		var sDef = Sdef(nil, dur + offset);
 		var levelSignal = Signal.newClear(this.frame(dur)).fill(level);
-		sDef.addLayer(levelSignal, offset, \new);
+		sDef.addLayer(\new, offset, levelSignal);
 		^sDef;
 	}
 
 	*ramp { |from = 1, to = 0, dur = 1, offset = 0|
-		// "ramp".warn;
 		^this.env([from, to], dur, \lin, offset);
 	}
 
 	*env { |levels = #[0,1,0], times = #[0.15,0.85], curves = #[5,-3], offset = 0|
 		var envelope = Env(levels, times, curves);
 		var sDef = Sdef(nil, envelope.duration + offset);
-		var envSignal = envelope.asSignal(this.frame(envelope.duration));
-		sDef.addLayer(envSignal, offset, \new);
-		// sDef.signal.overWrite(envSignal, this.frame(offset));
-		// sDef.signal.overDub(envSignal, this.frame(offset));
-		// "env".warn;
-		// sDef.update;
+		// var envSignal = envelope.asSignal(this.frame(envelope.duration));
+		sDef.addLayer(\new, offset, envelope);
 		^sDef;
 	}
 
@@ -228,35 +222,33 @@ Sdef {
 	update {
 		// "update".warn;
 		this.mergeLayers;
-
 	}
 
 	// layers //////////////////////////
 
 	initLayers {
 		// "%.initLayers".format(this).warn;
-		layers = List.new;
-		layers2 = Table(\selector, \offset, \signal);
+		layers = Table(\selector, \offset, \sdef);
 	}
 
-	addLayer {|data, offset = 0, type = \add|
-		"%.addLayer from class: % | val: %".format(this, data.class, data).postln;
-		"FIX! resend to layer".warn;
-		this.layer(layers2.lines, type, offset, data);
+	addLayer {|type, offset, data|
+		// "%.addLayer from class: % | data: %".format(this, data.class, data).postln;
+		// "FIX! resend to layer".warn;
+		this.layer(layers.lines, type, offset, data);
 	}
 
 	layer {|index, type, offset, data|
 		"Sdef.layer data class: %".format(data.class).postln;
 		case
-		{ data.isKindOf(Signal) }
-		{ layers2.putLine(index, type.asSymbol, offset, data.signal) }
+		{ data.isKindOf(Signal) || data.isKindOf(FloatArray)}
+		{ layers.putLine(index, type.asSymbol, offset, data) }
 		{ data.isKindOf(Env) }
-		{ layers2.putLine(index, type.asSymbol, offset, data.asSignal(super.class.frame(data.duration))) }
+		{ layers.putLine(index, type.asSymbol, offset, data.asSignal(super.class.frame(data.duration))) }
 		{ data.isKindOf(Integer) || data.isKindOf(Float)}
-		{ layers2.putLine(index, type.asSymbol, offset, Signal.newClear(super.class.frame(this.duration)).fill(data)) }
+		{ layers.putLine(index, type.asSymbol, offset, Signal.newClear(super.class.frame(this.duration)).fill(data)) }
 		{ data.isKindOf(Sdef) }
 		{
-			layers2.putLine(index, type.asSymbol, offset, data.signal);
+			layers.putLine(index, type.asSymbol, offset, data);
 			Sdef.connectRefs(key, data.key);
 		}
 		{ data.isKindOf(Function) } {
@@ -264,31 +256,35 @@ Sdef {
 				var condition = Condition.new;
 				"Rendering layer from function. Duration: %".format(this.duration).warn;
 				data.loadToFloatArray(this.duration, Server.default, {|array|
-					layers2.putLine(index, type.asSymbol, offset, array);
+					layers.putLine(index, type.asSymbol, offset, Signal.newFrom(array));
 					condition.test = true;
 					condition.signal;
 				});
 				condition.wait;
-				"render done".postln;
-			});
+				"render done".warn;
+				this.mergeLayers;
+			},clock: AppClock);
 			^nil;
 		};
 		this.mergeLayers;
 	}
 
 	mergeLayers {
-		signal = Signal.newClear(super.class.frame(duration));
-		layers2.lines.do({|i|
-			var oneLine = layers2.getLine(i);
+		signal = signal.fill(0); // Signal.newClear(super.class.frame(duration));
+		layers.lines.do({|i|
+			var oneLine = layers.getLine(i);
 			var type = oneLine[0];
 			var offset = oneLine[1];
 			var sig = oneLine[2];
 			"type: % || off: % || sig: %".format(type, offset, sig).postln;
+			if(sig.isKindOf(Sdef)) { sig = sig.signal };
+
 			case
-			{ type.asSymbol == \new } { signal.overWrite(sig, super.class.frame(offset));	}
-			{ type.asSymbol == \add } { signal.overDub(sig, super.class.frame(offset));	}
+			{ type.asSymbol == \new } { signal.overWrite(sig, super.class.frame(offset)) }
+			{ type.asSymbol == \add } { signal.overDub(sig, super.class.frame(offset));	};
 
 		});
+
 		if(updatePlot) { this.plot };
 		this.updateParents;
 	}
@@ -296,29 +292,10 @@ Sdef {
 
 	kr { ^BusPlug.for(bus);	}
 
-	copy {|...path|
-		/*
-		if(path.notEmpty)
-		{
-		var itemPath = path ++ \item;
-		if(super.class.exist(itemPath))
-		{
-		var sDef = super.class.library.atPath(itemPath);
-
-		duration = sDef.duration;
-		signal = sDef.signal;
-		size = sDef.size;
-		this.addRef(sDef);
-		}
-		{ "Sdef(%) not found".format(path).warn; };
-		}
-		*/
-	}
-
 	add {|... args|
 		args.pairsDo({|offset, data|
 			"Sdef.add offset: % | data: %".format(offset, data).postln;
-			this.addLayer(data, offset, \add);
+			this.addLayer(\add, offset, data);
 		});
 	}
 
@@ -331,31 +308,12 @@ Sdef {
 		// this.updateRefs;
 		// if(autoPlot) { this.plot };
 	}
-
 	clone {|targetDur, cloneDur|
+		/*
 		var dupSignal = signal;
 		var rest = targetDur % cloneDur;
 		var loopCnt = (targetDur-rest)/cloneDur;
 		var currentTime = 0;
-		/*
-		var temp = Timeline2.new;
-		// var sDef = Sdef.new.sig(signal);
-		// ("dupSize:" + dupSignal.size).postln;
-
-		signal = Signal.newClear(controlRate * targetDur);
-		loopCnt.do({|i|
-		signal.overWrite(dupSignal, controlRate * currentTime);
-		// var sDef = Sdef.new.sig(dupSignal);
-		// temp.put(currentTime, sDef, cloneDur);
-		currentTime = i * cloneDur;
-		});
-		temp.put(0, this, targetDur);
-		// size = signal.size;
-
-		this.prSetSignal(temp);
-		// this.updateRefs;
-		// this.prRender;
-		// if(autoPlot) { this.plot };
 		*/
 	}
 
