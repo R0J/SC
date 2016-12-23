@@ -66,7 +66,7 @@ s.options.numWireBufs = 256;
 
 
     s = Server.default;
-    
+
     {
       p = ProxySpace.push(s.boot);
       3.wait;
@@ -88,7 +88,7 @@ s.options.numWireBufs = 256;
         ~tick = { var imp = Impulse.kr(~tempo.kr * 4); SendTrig.kr(PulseDivider.kr(imp,16), 0, ~tempo.kr ); imp;  };
         ~counter = {PulseCount.kr(~tick.kr);};
     }.fork;
-
+/*
     // 3 /////////////////////////////////////////////////
     {
         5.wait;
@@ -109,7 +109,7 @@ s.options.numWireBufs = 256;
         },'/tr',s.addr);
         " OK".postln;
     }.fork;
-
+*/
 
 );
 

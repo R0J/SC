@@ -353,20 +353,20 @@ p.clock.queue.postln
     ~kick_one.fadeTime=0.02;
     ~kick_one={
         //         |       |       |       |       |
-        var mod = LFNoise2.kr(1/32*~tempo!2).range(2,20);
+        var mod = LFNoise2.kr(1/32*~tempo!2).range(20,80);
         var pat = [
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,1,0,
         ].rotate(1);
-        var len = LFNoise2.kr(~tempo/32).range(2.2,4.5);
-        var imp = PulseDivider.kr(~tick.kr,4);
+        var len = LFNoise2.kr(~tempo/32).range(3.2,4.5);
+        var imp = PulseDivider.kr(~tick.kr,1);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
 
         var env = {EnvGen.ar( Env([0,1,0],[0.005,len],curve: -1 * mod) ,imp * hit)};
-        var sig = SinOsc.ar(30.midicps+(env**0.8*20),env**mod*8pi);
-        sig = (LPF.ar(GrayNoise.ar(env/2),500) * (env**(0.4*mod))) + sig;
+        var sig = SinOsc.ar(50+(env**mod*50),env**mod*8pi);
+        sig = (LPF.ar(GrayNoise.ar(env/2),150) * (env**(mod*2)*0.2)) + sig;
         //sig = Normalizer.ar(sig);
         sig = sig * env;
         sig = NumChannels.ar(sig,2);

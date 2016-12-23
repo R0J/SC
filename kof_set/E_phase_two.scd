@@ -341,7 +341,7 @@ p.arProxyNames;
 (
     ~flute3.ar(2);
     ~flute3.clock = p.clock;
-    ~flute3.quant=[16];
+    ~flute3.quant=[1];
     ~flute3.fadeTime=10;
     ~flute3={
         var speed = 1/8/[1,2,4] * ~tempo;
@@ -361,6 +361,7 @@ p.arProxyNames;
         sig = LPF.ar(sig,3000);
         sig = HPF.ar(sig,100);
         //sig = sig * Pulse.ar(2*~tempo);
+
         Splay.ar(sig,0.65,0.15);
     };
     ~flute3.play;
@@ -382,7 +383,7 @@ p.arProxyNames;
 
 (
     ~flute2.ar(2);
-    ~flute2.quant=16;
+    ~flute2.quant=1;
     ~flute2.fadeTime=8;
     ~flute2={
         var speed = 1/8/[1,2,4] * ~tempo;
@@ -430,7 +431,7 @@ p.arProxyNames;
         sig = HPF.ar(sig,100) * (LFSaw.ar(4*~tempo)**2 * LFSaw.ar(1/16*~tempo/2));
         //sig = LPF.ar(sig,f*4);
         sig = CompanderD.ar(sig,1,1/2);
-        Splay.ar(sig,0.35,0.075);
+        Splay.ar(sig,0.35,0.175);
     };
     ~flute1.play;
     ~flute1[1] = \filter -> {|sig| DWGReverb.ar(HPF.ar(LPF.ar(sig,3500),150),[4020,4000],1/2)};

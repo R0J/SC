@@ -164,7 +164,7 @@ p.clock.tempo_(127/60);
         var pat = [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0].rotate(1);
         var imp = PulseDivider.kr(~tick.kr,1,~counter.kr%pat.size);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.0001],[16,0.05],[30,-10]),imp * hit);
+        var env = EnvGen.ar(Env([0.001,1,0.0001],[4,0.05],[30,-10]),imp * hit);
         var sig = [] ++ LFSaw.ar([60.midicps/4,72.midicps*8/mod],mul:[1,0.1,0.05]) ++ (SinOsc.ar(84.midicps*16,mul:0.1) * Pulse.ar(8*~tempo.kr));
         sig = sig.flat;
         sig = sig * env;
