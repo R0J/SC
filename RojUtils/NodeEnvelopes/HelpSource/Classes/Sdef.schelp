@@ -232,14 +232,12 @@ Select target layers by index
 method::unmuteAll
 Put back all layers to merge process.
 
-
-
 method::shift
-Shift by offset with target layer start time.
-argument::layer
-Select target layer for editing by index
+Shift by offset time target layers.
 argument::offset
-Start time offset of layer signal
+Start time offset of layers signal
+argument::indexs
+Select target layers by index
 
 
 

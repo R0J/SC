@@ -267,14 +267,9 @@ Sdef {
 			var oneLine = modifications.getLine(i);
 			var mute = oneLine[0];
 			var shift = oneLine[1];
-			// var value = oneLine[2];
 
 			if(mute.notNil) { layers.put(i, \mute, mute) };
 			if(shift.notNil) { layers.put(i, \offset, shift) };
-
-			// case
-			// { type.asSymbol == \mute } { layers.put(target, \mute, value) }
-			// { type.asSymbol == \shift } { layers.put(target, \offset, value) }
 		});
 
 		layers.lines.do({|i|
@@ -287,14 +282,17 @@ Sdef {
 			if(sig.isKindOf(Sdef)) { sig = sig.signal };
 			if(mute.not)
 			{
-				case
-				{ type.asSymbol == \new } { signal.overWrite(sig, super.class.frame(offset)) }
-				{ type.asSymbol == \add } { signal.overDub(sig, super.class.frame(offset));	};
+				offset.asArray.do({|oneTime|
+					case
+					{ type.asSymbol == \new } { signal.overWrite(sig, super.class.frame(oneTime)) }
+					{ type.asSymbol == \add } { signal.overDub(sig, super.class.frame(oneTime)) };
+				});
 			};
 		});
 
 		if(updatePlot) { this.plot };
 		this.updateParents;
+		this.render;
 	}
 
 	// edit //////////////////////////
@@ -312,13 +310,14 @@ Sdef {
 		this.mergeLayers;
 	}
 
-	shift { |layer, offset|
-		modifications.put(layer, \shift, offset);
+	shift { |offset ...indexs|
+		indexs.do({|layer| modifications.put(layer, \shift, offset) });
 		this.mergeLayers;
 	}
 
-	dup { |layer, times|
-
+	dup { |layer, targetDur, cloneDur|
+		var rest = targetDur % cloneDur;
+		var loopCnt = (targetDur-rest)/cloneDur;
 	}
 
 
