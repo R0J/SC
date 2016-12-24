@@ -8,7 +8,7 @@ Sdef {
 	var <references;
 	var <parents, <children;
 
-	var <layers;
+	var <layers, <modifications;
 	var <signal;
 
 	var <buffer;
@@ -216,30 +216,25 @@ Sdef {
 		});
 	}
 
-	update {
-		// "update".warn;
-		this.mergeLayers;
-	}
+	update { this.mergeLayers }
 
 	// layers //////////////////////////
 
-	initLayers {
-		// "%.initLayers".format(this).warn;
-		layers = Table(\selector, \offset, \sdef);
-	}
 
 	layer {|index, type, offset, data|
 		"Sdef.layer data class: %".format(data.class).postln;
 		case
 		{ data.isKindOf(Signal) || data.isKindOf(FloatArray)}
-		{ layers.putLine(index, type.asSymbol, offset, data) }
+		{
+			layers.putLine(index, type.asSymbol, offset, data, false)
+		}
 		{ data.isKindOf(Env) }
-		{ layers.putLine(index, type.asSymbol, offset, data.asSignal(super.class.frame(data.duration))) }
+		{ layers.putLine(index, type.asSymbol, offset, data.asSignal(super.class.frame(data.duration)), false) }
 		{ data.isKindOf(Integer) || data.isKindOf(Float)}
-		{ layers.putLine(index, type.asSymbol, offset, Signal.newClear(super.class.frame(this.duration)).fill(data)) }
+		{ layers.putLine(index, type.asSymbol, offset, Signal.newClear(super.class.frame(this.duration)).fill(data), false) }
 		{ data.isKindOf(Sdef) }
 		{
-			layers.putLine(index, type.asSymbol, offset, data);
+			layers.putLine(index, type.asSymbol, offset, data, false);
 			Sdef.connectRefs(key, data.key);
 		}
 		{ data.isKindOf(Function) } {
@@ -247,7 +242,7 @@ Sdef {
 				var condition = Condition.new;
 				"Rendering layer from function. Duration: %".format(this.duration).warn;
 				data.loadToFloatArray(this.duration, Server.default, {|array|
-					layers.putLine(index, type.asSymbol, offset, Signal.newFrom(array));
+					layers.putLine(index, type.asSymbol, offset, Signal.newFrom(array), false);
 					condition.test = true;
 					condition.signal;
 				});
@@ -259,25 +254,71 @@ Sdef {
 		};
 		this.mergeLayers;
 	}
+	initLayers {
+		// "%.initLayers".format(this).warn;
+		layers = Table(\selector, \offset, \sdef, \mute);
+		modifications = Table(\mute, \shift);
+	}
 
 	mergeLayers {
 		signal = signal.fill(0); // Signal.newClear(super.class.frame(duration));
+
+		modifications.lines.do({|i|
+			var oneLine = modifications.getLine(i);
+			var mute = oneLine[0];
+			var shift = oneLine[1];
+			// var value = oneLine[2];
+
+			if(mute.notNil) { layers.put(i, \mute, mute) };
+			if(shift.notNil) { layers.put(i, \offset, shift) };
+
+			// case
+			// { type.asSymbol == \mute } { layers.put(target, \mute, value) }
+			// { type.asSymbol == \shift } { layers.put(target, \offset, value) }
+		});
+
 		layers.lines.do({|i|
 			var oneLine = layers.getLine(i);
 			var type = oneLine[0];
 			var offset = oneLine[1];
 			var sig = oneLine[2];
-			"type: % || off: % || sig: %".format(type, offset, sig).postln;
+			var mute = oneLine[3];
+			// "type: % || off: % || sig: %".format(type, offset, sig).postln;
 			if(sig.isKindOf(Sdef)) { sig = sig.signal };
-
-			case
-			{ type.asSymbol == \new } { signal.overWrite(sig, super.class.frame(offset)) }
-			{ type.asSymbol == \add } { signal.overDub(sig, super.class.frame(offset));	};
-
+			if(mute.not)
+			{
+				case
+				{ type.asSymbol == \new } { signal.overWrite(sig, super.class.frame(offset)) }
+				{ type.asSymbol == \add } { signal.overDub(sig, super.class.frame(offset));	};
+			};
 		});
 
 		if(updatePlot) { this.plot };
 		this.updateParents;
+	}
+
+	// edit //////////////////////////
+
+	mute { |...indexs|
+		indexs.do({|layer| modifications.put(layer, \mute, true) });
+		this.mergeLayers;
+	}
+	unmute { |...indexs|
+		indexs.do({|layer| modifications.put(layer, \mute, false) });
+		this.mergeLayers;
+	}
+	unmuteAll {
+		modifications.lines.do({|i|	modifications.put(i, \mute, false) });
+		this.mergeLayers;
+	}
+
+	shift { |layer, offset|
+		modifications.put(layer, \shift, offset);
+		this.mergeLayers;
+	}
+
+	dup { |layer, times|
+
 	}
 
 
@@ -290,15 +331,7 @@ Sdef {
 		});
 	}
 
-	shift { |time|
-		// var originSignal = this.signal;
-		// offset = time;
-		// signal = this.emptySignal(duration);
-		// signal.overWrite(originSignal, this.frame(offset));
 
-		// this.updateRefs;
-		// if(autoPlot) { this.plot };
-	}
 	clone {|targetDur, cloneDur|
 		/*
 		var dupSignal = signal;

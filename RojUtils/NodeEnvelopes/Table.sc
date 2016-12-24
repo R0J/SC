@@ -18,7 +18,7 @@ Table {
 	lines { ^(cntColumns + 1) }
 	// names { ^columns.keys }
 
-	put { |name, line, data|
+	put { |line, name, data|
 		var order = columns.at(name.asSymbol);
 		order.put(line, data);
 		if(line > cntColumns) { cntColumns = line };
@@ -27,7 +27,7 @@ Table {
 	putLine { |line ... data|
 		names.do({|oneKey, i|
 			// "putLine line:% | oneKey: % | data: %".format(line, oneKey, data[i]).postln;
-			this.put(oneKey, line, data[i]);
+			this.put(line, oneKey, data[i]);
 		})
 	}
 
@@ -35,7 +35,7 @@ Table {
 		var line = cntColumns + 1;
 		names.do({|oneKey, i|
 			// "putLine line:% | oneKey: % | data: %".format(line, oneKey, data[i]).postln;
-			this.put(oneKey, line, data[i]);
+			this.put(line, oneKey, data[i]);
 		})
 	}
 
