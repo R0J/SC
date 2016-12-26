@@ -174,10 +174,7 @@ Sdef {
 		signal = Signal.newClear(super.class.frame(duration));
 		size = signal.size;
 
-		// if(layers.notEmpty) { this.prAdd(layers.array) };
-		// if(layers.notEmpty) { this.addLayer(layers.array) };
-
-		// this.updateParents;
+		this.mergeLayers;
 	}
 
 	// references //////////////////////////
@@ -257,7 +254,7 @@ Sdef {
 	initLayers {
 		// "%.initLayers".format(this).warn;
 		layers = Table(\selector, \offset, \sdef, \mute);
-		modifications = Table(\mute, \shift);
+		modifications = Table(\mute, \start, \shift);
 	}
 
 	mergeLayers {
@@ -266,10 +263,15 @@ Sdef {
 		modifications.lines.do({|i|
 			var oneLine = modifications.getLine(i);
 			var mute = oneLine[0];
-			var shift = oneLine[1];
+			var start = oneLine[1];
+			var shift = oneLine[2];
 
 			if(mute.notNil) { layers.put(i, \mute, mute) };
-			if(shift.notNil) { layers.put(i, \offset, shift) };
+			if(start.notNil) { layers.put(i, \offset, start) };
+			if(shift.notNil) {
+				var layerStart = layers.get(\offset, i);
+				layers.put(i, \offset, shift + layerStart)
+			};
 		});
 
 		layers.lines.do({|i|
@@ -292,7 +294,7 @@ Sdef {
 
 		if(updatePlot) { this.plot };
 		this.updateParents;
-		this.render;
+		// this.render;
 	}
 
 	// edit //////////////////////////
@@ -315,9 +317,23 @@ Sdef {
 		this.mergeLayers;
 	}
 
-	dup { |layer, targetDur, cloneDur|
+	dup { |index, targetDur, cloneDur|
 		var rest = targetDur % cloneDur;
 		var loopCnt = (targetDur-rest)/cloneDur;
+		// var currentTime = 0;
+		var offsets = List.new;
+
+		"rest: %; loopCnt: % ".format(rest, loopCnt).postln;
+
+		loopCnt.do({|loopNum|
+			// currentTime = cloneDur * loopNum;
+			offsets.add(cloneDur * loopNum);
+		});
+		offsets.asArray.postln;
+		// offsets.do({|offset|
+				modifications.put(index, \start, offsets.asArray);
+// });
+this.mergeLayers;
 	}
 
 
