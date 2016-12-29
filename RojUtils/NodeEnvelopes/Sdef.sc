@@ -97,7 +97,11 @@ Sdef {
 	}
 
 	*initSynthDefs{
-		Server.default.onBootAdd({
+		if(Server.default.serverRunning.not)
+		{
+			Server.default.onBootAdd({ this.initSynthDefs });
+		}
+		{
 			bufferSynthDef = { |bus, bufnum, freq = 440, startTime = 0|
 				var buf = PlayBuf.kr(
 					numChannels: 1,
@@ -125,7 +129,7 @@ Sdef {
 
 			controlRate = Server.default.sampleRate / Server.default.options.blockSize;
 			"\nSdef initialization of SynthDefs done. Control rate set on %".format(controlRate).postln;
-		});
+		};
 		hasInitSynthDefs = true;
 	}
 
@@ -251,6 +255,7 @@ Sdef {
 		};
 		this.mergeLayers;
 	}
+
 	initLayers {
 		// "%.initLayers".format(this).warn;
 		layers = Table(\selector, \offset, \sdef, \mute);
@@ -294,7 +299,7 @@ Sdef {
 
 		if(updatePlot) { this.plot };
 		this.updateParents;
-		// this.render;
+		this.render;
 	}
 
 	// edit //////////////////////////
@@ -320,22 +325,15 @@ Sdef {
 	dup { |index, targetDur, cloneDur|
 		var rest = targetDur % cloneDur;
 		var loopCnt = (targetDur-rest)/cloneDur;
-		// var currentTime = 0;
-		var offsets = List.new;
-
-		"rest: %; loopCnt: % ".format(rest, loopCnt).postln;
+		var offsets = Array.newClear(loopCnt);
+		// "rest: %; loopCnt: % ".format(rest, loopCnt).postln;
 
 		loopCnt.do({|loopNum|
-			// currentTime = cloneDur * loopNum;
-			offsets.add(cloneDur * loopNum);
+			offsets.put(loopNum, cloneDur * loopNum);
 		});
-		offsets.asArray.postln;
-		// offsets.do({|offset|
-				modifications.put(index, \start, offsets.asArray);
-// });
-this.mergeLayers;
+		modifications.put(index, \start, offsets);
+		this.mergeLayers;
 	}
-
 
 	kr { ^BusPlug.for(bus);	}
 
@@ -344,16 +342,6 @@ this.mergeLayers;
 			"Sdef.add offset: % | data: %".format(offset, data).postln;
 			this.addLayer(\add, offset, data);
 		});
-	}
-
-
-	clone {|targetDur, cloneDur|
-		/*
-		var dupSignal = signal;
-		var rest = targetDur % cloneDur;
-		var loopCnt = (targetDur-rest)/cloneDur;
-		var currentTime = 0;
-		*/
 	}
 
 	render {
@@ -376,14 +364,13 @@ this.mergeLayers;
 				var bufferFramesCnt = buff.numFrames;
 				isRendered = true;
 
-				/*
+
 				"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
-				bufferID,
-				this.duration,
-				(SystemClock.beats - startRenderTime),
-				bufferFramesCnt
+					bufferID,
+					this.duration,
+					(SystemClock.beats - startRenderTime),
+					bufferFramesCnt
 				).postln;
-				*/
 			}
 		);
 	}
@@ -396,6 +383,7 @@ this.mergeLayers;
 			var synth;
 			var group = RootNode(Server.default);
 			buffer.bufnum.postln;
+			bufferSynthDef.postln;
 			if(parentGroup.notNil) { group = parentGroup; };
 			bufferSynthDef.name_("Sdef(%)".format(this.path2txt));
 			synth =	bufferSynthDef.play(
@@ -416,6 +404,21 @@ this.mergeLayers;
 			}
 		}
 		{ "% buffer not found".format(this).warn; }
+	}
+
+	play { |clock = nil|
+		var time2quant;
+		if(clock.isNil) { clock = currentEnvironment.clock; };
+		time2quant = clock.timeToNextBeat(this.duration);
+		// time2quant.postln;
+		clock.sched( time2quant, {
+			time2quant = clock.timeToNextBeat(this.duration);
+			time2quant.postln;
+
+			this.trig;
+			this.duration;
+
+		});
 	}
 
 	test {|freq = 120, startTime = 0|
