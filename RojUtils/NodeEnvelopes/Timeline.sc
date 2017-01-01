@@ -18,7 +18,10 @@ Timeline {
 		});
 	}
 
-	setEnd {|endTime| this.put(endTime, nil, 0, \timeline_end); }
+	setEnd {|endTime|
+		this.removeKeys(\timeline_end);
+		this.put(endTime, nil, 0, \timeline_end);
+	}
 
 	atTime {|time|
 		var items = List.new();
@@ -69,8 +72,17 @@ Timeline {
 		this.times.do({|oneTime|
 			var arrTimebar = timeline[oneTime];
 			arrTimebar.asArray.do({|oneTimebar|
-				items.add([oneTimebar.from, oneTimebar.item]);
+				items.add([oneTimebar.from, oneTimebar.item, oneTimebar.duration, oneTimebar.key]);
 			});
+		});
+		^items.asArray;
+	}
+
+	timeBars {
+		var items = List.new();
+		this.times.do({|oneTime|
+			var arrTimebar = timeline[oneTime];
+			arrTimebar.asArray.do({|oneTimebar|	items.add(oneTimebar) });
 		});
 		^items.asArray;
 	}
@@ -100,12 +112,12 @@ Timeline {
 		txt.postln;
 	}
 
-	play {|function = nil, startQuant = 0|  // -> example of function -> {|item| item.postln; };
+	play {|function = nil, startTime = 0|  // -> example of function -> {|item| item.postln; };
+		// var timeToQuant = 0;
 		var clock = TempoClock.default;
-		var timeToQuant = 0;
 		if(currentEnvironment[\tempo].notNil) { clock = currentEnvironment.clock };
 		if(function.isNil) { function = {|item| item.postln }};
-		if(startQuant > 0) { timeToQuant = clock.timeToNextBeat(startQuant) };
+		// if(startQuant > 0) { timeToQuant = clock.timeToNextBeat(startQuant) };
 
 		timeline.array.do({|oneTime, no|
 			oneTime.asArray.do({|oneTimebar|
@@ -113,22 +125,57 @@ Timeline {
 				// ("at % -> item: %").format(oneTimebar.from, oneTimebar.item).postln;
 				if(oneTimebar.key.asSymbol != \timeline_end)
 				{
-					clock.sched((oneTimebar.from + timeToQuant), {
-						function.value(oneTimebar.item);
-						nil;
-					});
+					if((oneTimebar.from >= startTime))
+					{
+						clock.sched((oneTimebar.from - startTime), {
+							function.value(oneTimebar.item);
+							nil;
+						});
+					};
 				};
 			});
 		})
 	}
+
+	schedToClock { |clock, function = nil| // -> example of function -> timline.schedToClock( clock, {|time, duration, item, key| ... });
+		if(function.isNil) {
+			function = {|time, duration, item, key|
+				"\t- Timeline function call -> time: % || dur: % || key: % || item: %".format(time, duration, key, item).postln;
+			}
+		};
+
+		this.array.do({|bar|
+			var time = bar[0];
+			var item = bar[1];
+			var duration = bar[2];
+			var key = bar[3];
+			clock.sched(time, { function.value(time, duration, item, key); nil; });
+		});
+	}
+
+	items { |function = nil| // -> example of function -> timline.items({|time, duration, item, key| ... });
+		if(function.isNil) {
+			function = {|time, duration, item, key|
+				"\t- Timeline function call -> time: % || dur: % || key: % || item: %".format(time, duration, key, item).postln;
+			}
+		};
+
+		this.array.do({|bar|
+			var time = bar[0];
+			var item = bar[1];
+			var duration = bar[2];
+			var key = bar[3];
+			function.value(time, duration, item, key);
+		});
+	}
 }
 
 Timebar {
-	var <from, <duration;
+	var <from, <>duration;
 	var <key;
 	var <item;
 
-	*new {|from, duration, key, item| ^super.newCopyArgs(from, duration, key, item); }
+	*new {|from, duration, key, item| ^super.newCopyArgs(from, duration, key.asSymbol, item); }
 
 	isAtTime {|time|
 		case

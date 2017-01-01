@@ -1,0 +1,282 @@
+title:: Sdef
+summary:: named definition of signal
+categories:: Libraries>RojUtils
+related:: Classes/Signal
+
+description::
+tady bude komentar
+
+code::
+Sdef(\key, duration, items)	//store new signal definition
+Sdef(\key)	                // get the definition
+::
+
+tady bude komentar
+
+ClassMethods::
+
+private::initClass, initSynthDefs, library, frame
+
+subsection::Creation
+
+method::new
+Store new signal definition named by key to library and returns the instance of them. If there is already an Sdef there with same key, replace its object with the new one.
+
+argument::key
+name of signal definition. Key can be defined in multilevel form as array too.
+code::
+Sdef(\someName)
+Sdef([\someFolder, \someName_A])
+Sdef([\someFolder, \someName_B])
+::
+
+argument::dur
+new signal duration
+
+argument::... args
+Objects for derivation a signal. Supported forms are displayed below
+
+definitionList::
+## Sdef: || Other signal definitions
+code::
+Sdef(\x, 4, Sdef.ramp(0,1,3,0.5)).plot
+::
+
+## Env: || Signal from envelope
+code::
+Sdef(\x, 4, Env([0,1,0.65,0], [0.6,1.1,2.3], [4, \sin, -8])).plot
+::
+
+## Integer or Float: || Level of constant signal
+code::
+Sdef(\x, 4, 0.3).plot
+::
+
+## Function:  || Render result of function and use it like new signal. UGen allways use like .kr
+code::
+Sdef(\x, 4, { SinOsc.kr(1/2, mul:0.5) + SinOsc.kr(8, mul:0.1) })
+Sdef(\x).plot
+::
+note::FIRST TEST::
+
+## Pbind:  || note::NOT WORK YET::
+::
+
+subsection::Empty definitions
+
+If Sdef is defined without name, that definition is not stored in library.
+But this definition could be use like source of data for other Sdef.
+Empty named Sdef cannot be a target of reference chain directly.
+code::
+ // 3 equivalent way how get empty Sdef
+a = Sdef.new
+a = Sdef()
+a = Sdef(nil)
+::
+
+method::level
+Return new instance of signal definition and set signal by constat value. This definition is not stored in library.
+code::
+Sdef.level(0.2, 1.5, 0.5).plot;
+::
+argument::level
+value of signal level
+argument::dur
+duration of signal
+argument::offset
+offset of signal start
+
+method::env
+Return new instance of signal definition and set signal by envelope. This definition is not stored in library. Detail envelope description at link::Classes/Env#*new::
+code::
+Sdef.env([0,1,0.5,0], [0.2,0.5,0.3], [8, \sin, -5]).plot;
+::
+argument::levels
+an array of signal levels
+argument::times
+an array of signal segment duration
+argument::curves
+an array of signal segment curvature
+argument::offset
+offset of signal start
+
+method::ramp
+Return new instance of signal definition and set signal by start and end level. This definition is not stored in library.
+code::
+Sdef.ramp(0.6,0.2,1,0.5).plot;
+::
+argument::from
+value of signal level at start
+argument::to
+value of signal level at end
+argument::dur
+duration of signal
+argument::offset
+offset of signal start
+
+
+subsection::Information
+
+method::exist
+If signal definition named by key is store in library yet, return it. Else return nil.
+code::
+Sdef.exist(\x) // return nil
+Sdef(\x)
+Sdef.exist(\x) // return Sdef(\x)
+::
+argument::key
+the name of the instance (symbol or array)
+
+method::printAll
+Print all stored signals definition from library. Style like .postTree
+code::
+Sdef.printAll
+::
+
+
+
+InstanceMethods::
+private::prSetSignal, addRef, updateRefs, path
+
+method::key
+Rename instance and store new definition to library. Old definition is delete from library.
+code::
+a = Sdef.new
+a.key = \x
+Sdef.printAll
+::
+argument::name
+name of signal definition
+
+method::duration
+code::
+a = Sdef.new
+a.duration = 6
+a.plot
+::
+Set time limitation for this definition and prepare new signal with this time duration.
+argument::dur
+duration of signal definition
+
+method::size
+return nuber of frames in signal
+
+method::plot
+plot a preview of signal
+argument::update
+regenerate preview of signal when some reference was changed
+
+
+subsection::References
+Chain of referces connection. Change of one child will change all his parent.
+
+code::
+Sdef(\x, 2).parents
+Sdef(\y, 8).parents
+
+Sdef(\z, 10, Sdef(\x), Sdef(\y)).children
+
+Sdef(\x).parents
+Sdef(\y).parents
+::
+
+method::parents
+Return list of all parents Sdef. All of them will be update after change of this child.
+method::children
+Return list of all children Sdef. If one of them will change, that change this parent too.
+
+
+subsection::Layers
+Table of layers keeping information about Sdef input sources. Each layer is defined by index and keeping information about signal, start time offset and merge operation type. This table is used like data for merge layers for Sdef output signal.
+
+method::initLayers
+Prepare new empty Table for storing layers.
+method::layer
+note:: tady dpolnit popis jak funfuje proces pri Sdef.new. Kazdy jde jako nova posledni vrstva, \add a offset = 0::
+code::
+Sdef(\x, 10, Env([0,0.9,0], 5, \sin))
+Sdef(\y, 1.5, 0.1)
+Sdef(\sin, 2, { SinOsc.kr(4, mul:0.1) })
+
+Sdef(\sum, 10).plot(true)
+Sdef(\sum).layer(0, \add, 0, Sdef(\x))
+Sdef(\sum).layer(1, \add, 1, Sdef(\y))
+Sdef(\sum).layer(2, \new, 6.5, Sdef(\y))
+Sdef(\sum).layer(3, \add, 4, Sdef(\sin))
+::
+argument::index
+Index of layer
+argument::type
+Type of operation for signal merge procedure
+argument::offset
+Start time offset of layer signal
+argument::data
+Any type of supported data type for creation signal for new layer
+
+
+method::mergeLayers
+Merge all signals from table of layers and store result like Sdef.signal. Update all references.
+
+subsection::Edit
+
+method::mute
+Mute target layers from merge process.
+argument::indexs
+Select target layers by index
+
+method::unmute
+Put back target layers to merge process.
+argument::indexs
+Select target layers by index
+
+method::unmuteAll
+Put back all layers to merge process.
+
+method::shift
+Shift by offset time target layers.
+argument::offset
+Start time offset of layers signal
+argument::indexs
+Select target layers by index
+
+
+
+
+
+Examples::
+
+code::
+Sdef(\test1, \amp1).set(Env([0,2,0.5,0], [1,1,1], [5, -3, -3]))
+Sdef(\test1, \amp1).path
+Sdef(\test1, \amp1).plot
+
+Sdef(\test).updatePlot(true)
+(
+Sdef(\test).setn(
+	0, Env([0,1,0.3,0], [1,1,1], [5, -3, -3]).duplicate(35),
+	5, Env([0,0.5,0], [20,20], \sin),
+	40, Env([0,1.5,0.5,0], [1,5,1], [5, -3, -3]),
+)
+)
+
+Sdef(\e2).level(0.5, 2)
+Sdef(\e1).set(Env([0,1,0.5,0], [1,4,1], [5, -8, -3]))
+Sdef(\e3).set(Env([0,0.2,0], [5,5], \sin))
+
+Sdef(\cycle).updatePlot(true)
+(
+Sdef(\cycle).setn(
+	1, Sdef(\e1),
+	0.5, Sdef(\e3),
+	8, Sdef(\e1),
+	5.5, Sdef(\e2),
+)
+)
+Sdef.print
+Sdef(\root,\e1 , \amp1).set(Env([0,1,0.5,0], [1,4,1], [5, -8, -3]))
+Sdef(\root,\e2).set(Env([0,1,0.5,0], [1,4,1], [5, -8, -3]))
+Sdef(\root).fill(3, 0.3)
+Sdef.exist([\e3])
+Sdef(\e1).references
+Sdef(\cycle).references
+::
