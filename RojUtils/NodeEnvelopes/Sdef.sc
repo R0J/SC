@@ -222,8 +222,15 @@ Sdef {
 
 	// layers //////////////////////////
 
+	initLayers {
+		// "%.initLayers".format(this).warn;
+		layers = Table(\selector, \offset, \sdef, \mute);
+		modifications = Table(\mute, \start, \shift);
+	}
 
-	layer {|index, type, offset, data|
+	at { |index| ^layers.get(\sdef, index) }
+
+	layer { |index, type, offset, data|
 		"Sdef.layer data class: %".format(data.class).postln;
 		case
 		{ data.isKindOf(Signal) || data.isKindOf(FloatArray)}
@@ -255,12 +262,6 @@ Sdef {
 			^nil;
 		};
 		this.mergeLayers;
-	}
-
-	initLayers {
-		// "%.initLayers".format(this).warn;
-		layers = Table(\selector, \offset, \sdef, \mute);
-		modifications = Table(\mute, \start, \shift);
 	}
 
 	mergeLayers {
@@ -306,11 +307,11 @@ Sdef {
 	// edit //////////////////////////
 
 	mute { |...indexs|
-		indexs.do({|layer| modifications.put(layer, \mute, true) });
+		indexs.do({|oneLayer| modifications.put(oneLayer, \mute, true) });
 		this.mergeLayers;
 	}
 	unmute { |...indexs|
-		indexs.do({|layer| modifications.put(layer, \mute, false) });
+		indexs.do({|oneLayer| modifications.put(oneLayer, \mute, false) });
 		this.mergeLayers;
 	}
 	unmuteAll {
@@ -319,7 +320,7 @@ Sdef {
 	}
 
 	shift { |offset ...indexs|
-		indexs.do({|layer| modifications.put(layer, \shift, offset) });
+		indexs.do({|oneLayer| modifications.put(oneLayer, \shift, offset) });
 		this.mergeLayers;
 	}
 
@@ -365,7 +366,6 @@ Sdef {
 				var bufferFramesCnt = buff.numFrames;
 				isRendered = true;
 
-
 				"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
 					bufferID,
 					this.duration,
@@ -377,8 +377,14 @@ Sdef {
 				Routine.run({
 					var time2quant = currentEnvironment.clock.timeToNextBeat(this.duration);
 					// if(synth.notNil) { synth.free; synth = nil; };
+					// bufferSynthDef.name_("Sdef(%)".format(this.path2txt));
+					// synth = Synth.basicNew(bufferSynthDef.name.asSymbol,Server.default, Server.default.nextNodeID);
+
+					"synth: %".format(synth).warn;
 					if(synth.isNil)
 					{
+
+
 						time2quant.wait;
 						bufferSynthDef.name_("Sdef(%)".format(this.path2txt));
 						synth =	bufferSynthDef.play(
@@ -399,12 +405,6 @@ Sdef {
 						]);
 					}
 				});
-
-
-
-
-
-
 
 			}
 		);
@@ -488,12 +488,13 @@ Sdef {
 
 		if(signal.notEmpty)
 		{
+			var winName = "Sdef(%)".format(this.path2txt);
 			var windows = Window.allWindows;
 			var plotWin = nil;
 			var plotter;
 
 			windows.do({|oneW|
-				if(this.path2txt.asSymbol == oneW.name.asSymbol) { plotWin = oneW; };
+				if(winName.asSymbol == oneW.name.asSymbol) { plotWin = oneW; };
 			});
 
 			if(plotWin.isNil)
@@ -540,7 +541,7 @@ Sdef {
 			if(txtPath.isEmpty)
 			{ txtPath = "%%".format("\\", oneFolder); }
 			{
-				if(oneFolder != \item)
+				if(oneFolder != \def)
 				{ txtPath = "%%%".format(txtPath,"\\", oneFolder); }
 			}
 		});
