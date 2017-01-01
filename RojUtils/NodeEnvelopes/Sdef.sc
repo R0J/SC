@@ -46,7 +46,9 @@ Sdef {
 				^sDef;
 			}
 			{
-				sDef = super.new.init(key, dur).initBus;
+				sDef = super.new.init(key, dur);
+				sDef.initBus;
+				sDef.initSynth;
 				args.do({|oneArg| sDef.layer(sDef.layers.lines, \add, 0, oneArg) });
 				^sDef;
 			}
@@ -83,19 +85,6 @@ Sdef {
 
 	*frame { |time| ^controlRate * time; }
 
-	initBus {
-		if(Server.default.serverRunning.not)
-		{
-			Server.default.onBootAdd({
-				bus = Bus.control(Server.default, 1);
-				"\t- Sdef(%) alloc control bus at index %".format(this.key, bus.index).postln;
-			});
-		}
-		{
-			bus = Bus.control(Server.default, 1);
-			"busMade".warn;
-		}
-	}
 
 	*initSynthDefs{
 		if(Server.default.serverRunning.not)
@@ -132,6 +121,37 @@ Sdef {
 			"\nSdef initialization of SynthDefs done. Control rate set on %".format(controlRate).postln;
 		};
 		hasInitSynthDefs = true;
+	}
+
+	initSynth {
+		// if(Server.default.serverBooting) { "test".postln; this.initSynth };
+		if(Server.default.serverRunning.not)
+		{
+			Server.default.onBootAdd({
+				Routine.run({
+					1.wait;
+					bufferSynthDef.name_("Sdef(%)".format(this.path2txt));
+					synth =	bufferSynthDef.play( target: RootNode(Server.default));
+					// synth = Synth.basicNew(bufferSynthDef.name.asSymbol,Server.default, Server.default.nextNodeID);
+					"\t- Sdef(%) synth init with node ID %".format(this.key, synth.nodeID).postln;
+				});
+			});
+		}
+		{
+			bufferSynthDef.name_("Sdef(%)".format(this.path2txt));
+			synth =	bufferSynthDef.play( target: RootNode(Server.default));
+		}
+	}
+
+	initBus {
+		if(Server.default.serverRunning.not)
+		{
+			Server.default.onBootAdd({
+				bus = Bus.control(Server.default, 1);
+				"\t- Sdef(%) alloc control bus at index %".format(this.key, bus.index).postln;
+			});
+		}
+		{ bus = Bus.control(Server.default, 1) }
 	}
 
 	// empty defs //////////////////////////
@@ -178,7 +198,7 @@ Sdef {
 		duration = dur;
 		signal = Signal.newClear(super.class.frame(duration));
 		size = signal.size;
-
+		"duration set".warn;
 		this.mergeLayers;
 	}
 
@@ -377,33 +397,36 @@ Sdef {
 				Routine.run({
 					var time2quant = currentEnvironment.clock.timeToNextBeat(this.duration);
 					// if(synth.notNil) { synth.free; synth = nil; };
-					// bufferSynthDef.name_("Sdef(%)".format(this.path2txt));
-					// synth = Synth.basicNew(bufferSynthDef.name.asSymbol,Server.default, Server.default.nextNodeID);
 
 					"synth: %".format(synth).warn;
-					if(synth.isNil)
-					{
+					// if(synth.isNil)
+					// {
 
 
-						time2quant.wait;
-						bufferSynthDef.name_("Sdef(%)".format(this.path2txt));
-						synth =	bufferSynthDef.play(
-							target: RootNode(Server.default),
-							args:
-							[
-								\bus: bus,
-								\bufnum: buff.bufnum,
-								\startTime, 0,
-								\tempoClock, currentEnvironment.clock.tempo,
-								// \multiplicationBus, multBus.asMap
-							]
-						);
-					}
-					{
-						synth.set([
-							\tempoClock, currentEnvironment.clock.tempo,
-						]);
-					}
+					time2quant.wait;
+					/*
+					bufferSynthDef.name_("Sdef(%)".format(this.path2txt));
+					synth =	bufferSynthDef.play(
+					target: RootNode(Server.default),
+					args:
+					[
+					\bus: bus,
+					\bufnum: buff.bufnum,
+					\startTime, 0,
+					\tempoClock, currentEnvironment.clock.tempo,
+					// \multiplicationBus, multBus.asMap
+					]
+					);
+					*/
+					// }
+					// {
+					synth.set([
+						\bus: bus,
+						\bufnum: buff.bufnum,
+						\startTime, 0,
+						\tempoClock, currentEnvironment.clock.tempo,
+					]);
+					// }
 				});
 
 			}
