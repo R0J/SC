@@ -11,7 +11,7 @@ Sdef {
 	var <layers, <modifications;
 	var <signal;
 
-	var <buffer;
+	var <buffer, <synth;
 	var <isRendered;
 
 	var <updatePlot;
@@ -77,6 +77,7 @@ Sdef {
 
 		bus = nil;
 		buffer = nil;
+		synth = nil;
 		isRendered = false;
 	}
 
@@ -108,9 +109,9 @@ Sdef {
 					bufnum: bufnum,
 					startPos: startTime * controlRate,
 					rate: \tempoClock.kr(1),
-					loop: 0
+					loop: 1
 				);
-				FreeSelfWhenDone.kr(buf);
+				// FreeSelfWhenDone.kr(buf);
 				Out.kr(bus, buf);
 			}.asSynthDef;
 
@@ -371,8 +372,43 @@ Sdef {
 					(SystemClock.beats - startRenderTime),
 					bufferFramesCnt
 				).postln;
+
+
+				Routine.run({
+					var time2quant = currentEnvironment.clock.timeToNextBeat(this.duration);
+					// if(synth.notNil) { synth.free; synth = nil; };
+					if(synth.isNil)
+					{
+						time2quant.wait;
+						bufferSynthDef.name_("Sdef(%)".format(this.path2txt));
+						synth =	bufferSynthDef.play(
+							target: RootNode(Server.default),
+							args:
+							[
+								\bus: bus,
+								\bufnum: buff.bufnum,
+								\startTime, 0,
+								\tempoClock, currentEnvironment.clock.tempo,
+								// \multiplicationBus, multBus.asMap
+							]
+						);
+					}
+					{
+						synth.set([
+							\tempoClock, currentEnvironment.clock.tempo,
+						]);
+					}
+				});
+
+
+
+
+
+
+
 			}
 		);
+
 	}
 
 	trig { |startTime = 0, endTime = nil, parentGroup = nil, clock = nil, multBus = nil|
@@ -382,8 +418,8 @@ Sdef {
 		{
 			var synth;
 			var group = RootNode(Server.default);
-			buffer.bufnum.postln;
-			bufferSynthDef.postln;
+			// buffer.bufnum.postln;
+			// bufferSynthDef.postln;
 			if(parentGroup.notNil) { group = parentGroup; };
 			bufferSynthDef.name_("Sdef(%)".format(this.path2txt));
 			synth =	bufferSynthDef.play(
