@@ -48,7 +48,6 @@ Sdef {
 			{
 				sDef = super.new.init(key, dur);
 				sDef.initBus;
-				sDef.initSynth;
 				args.do({|oneArg| sDef.layer(sDef.layers.lines, \add, 0, oneArg) });
 				^sDef;
 			}
@@ -85,7 +84,6 @@ Sdef {
 
 	*frame { |time| ^controlRate * time; }
 
-
 	*initSynthDefs{
 		if(Server.default.serverRunning.not)
 		{
@@ -121,26 +119,6 @@ Sdef {
 			"\nSdef initialization of SynthDefs done. Control rate set on %".format(controlRate).postln;
 		};
 		hasInitSynthDefs = true;
-	}
-
-	initSynth {
-		// if(Server.default.serverBooting) { "test".postln; this.initSynth };
-		if(Server.default.serverRunning.not)
-		{
-			Server.default.onBootAdd({
-				Routine.run({
-					1.wait;
-					bufferSynthDef.name_("Sdef(%)".format(this.path2txt));
-					synth =	bufferSynthDef.play( target: RootNode(Server.default));
-					// synth = Synth.basicNew(bufferSynthDef.name.asSymbol,Server.default, Server.default.nextNodeID);
-					"\t- Sdef(%) synth init with node ID %".format(this.key, synth.nodeID).postln;
-				});
-			});
-		}
-		{
-			bufferSynthDef.name_("Sdef(%)".format(this.path2txt));
-			synth =	bufferSynthDef.play( target: RootNode(Server.default));
-		}
 	}
 
 	initBus {
@@ -199,7 +177,7 @@ Sdef {
 		signal = Signal.newClear(super.class.frame(duration));
 		size = signal.size;
 		"duration set".warn;
-		this.mergeLayers;
+		if(layers.lines.size > 0) { this.mergeLayers };
 	}
 
 	// references //////////////////////////
@@ -367,23 +345,26 @@ Sdef {
 	}
 
 	render {
+		var renderedBuffer;
 		var startRenderTime = SystemClock.beats;
 
 		if(hasInitSynthDefs.not) { this.initSynthDefs; };
 
-		if(buffer.notNil) { buffer.free; };
+		// if(buffer.notNil) { buffer.free; };
+		// if(synth.notNil) { synth.free; };
 		isRendered = false;
 
-		buffer = Buffer.alloc(
+		renderedBuffer = Buffer.alloc(
 			server: Server.default,
 			numFrames: size,
 			numChannels: 1,
 		);
-		buffer.loadCollection(
+		renderedBuffer.loadCollection(
 			collection: signal,
 			action: {|buff|
 				var bufferID = buff.bufnum;
 				var bufferFramesCnt = buff.numFrames;
+				var time2quant = currentEnvironment.clock.timeToNextBeat(this.duration);
 				isRendered = true;
 
 				"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
@@ -393,42 +374,28 @@ Sdef {
 					bufferFramesCnt
 				).postln;
 
-
-				Routine.run({
-					var time2quant = currentEnvironment.clock.timeToNextBeat(this.duration);
-					// if(synth.notNil) { synth.free; synth = nil; };
-
-					"synth: %".format(synth).warn;
-					// if(synth.isNil)
-					// {
-
-
-					time2quant.wait;
-					/*
-					bufferSynthDef.name_("Sdef(%)".format(this.path2txt));
-					synth =	bufferSynthDef.play(
+				if(buffer.notNil) { buffer.free; };
+				if(synth.notNil) { synth.free; };
+				buffer = renderedBuffer;
+				// "synth: %".format(synth).warn;
+				// if(synth.isNil) {
+				// this.play;
+				// /*
+				bufferSynthDef.name_("Sdef(%)".format(this.path2txt));
+				synth =	bufferSynthDef.play(
 					target: RootNode(Server.default),
 					args:
 					[
-					\bus: bus,
-					\bufnum: buff.bufnum,
-					\startTime, 0,
-					\tempoClock, currentEnvironment.clock.tempo,
-					// \multiplicationBus, multBus.asMap
-					]
-					);
-					*/
-					// }
-					// {
-					synth.set([
 						\bus: bus,
 						\bufnum: buff.bufnum,
-						\startTime, 0,
+						// \startTime, 0,
+						\startTime, this.duration - time2quant,
 						\tempoClock, currentEnvironment.clock.tempo,
-					]);
-					// }
-				});
-
+						// \multiplicationBus, multBus.asMap
+					]
+				);
+				// */
+				// };
 			}
 		);
 
@@ -439,7 +406,7 @@ Sdef {
 
 		if(buffer.notNil)
 		{
-			var synth;
+			// var synth;
 			var group = RootNode(Server.default);
 			// buffer.bufnum.postln;
 			// bufferSynthDef.postln;
@@ -471,11 +438,11 @@ Sdef {
 		time2quant = clock.timeToNextBeat(this.duration);
 		// time2quant.postln;
 		clock.sched( time2quant, {
-			time2quant = clock.timeToNextBeat(this.duration);
-			time2quant.postln;
+			// time2quant = clock.timeToNextBeat(this.duration);
+			// time2quant.postln;
 
 			this.trig;
-			this.duration;
+			// this.duration;
 
 		});
 	}
