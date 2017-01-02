@@ -350,16 +350,16 @@ Sdef {
 
 		if(hasInitSynthDefs.not) { this.initSynthDefs; };
 
-		// if(buffer.notNil) { buffer.free; };
+		if(buffer.notNil) { buffer.free; };
 		// if(synth.notNil) { synth.free; };
 		isRendered = false;
 
-		renderedBuffer = Buffer.alloc(
+		buffer = Buffer.alloc(
 			server: Server.default,
 			numFrames: size,
 			numChannels: 1,
 		);
-		renderedBuffer.loadCollection(
+		buffer.loadCollection(
 			collection: signal,
 			action: {|buff|
 				var bufferID = buff.bufnum;
@@ -374,10 +374,10 @@ Sdef {
 					bufferFramesCnt
 				).postln;
 
-				if(buffer.notNil) { buffer.free; };
+				// if(buffer.notNil) { buffer.free; };
 				if(synth.notNil) { synth.free; };
-				buffer = renderedBuffer;
-				// "synth: %".format(synth).warn;
+				// buffer = renderedBuffer;
+				"synth: %".format(synth).warn;
 				// if(synth.isNil) {
 				// this.play;
 				// /*
@@ -388,7 +388,6 @@ Sdef {
 					[
 						\bus: bus,
 						\bufnum: buff.bufnum,
-						// \startTime, 0,
 						\startTime, this.duration - time2quant,
 						\tempoClock, currentEnvironment.clock.tempo,
 						// \multiplicationBus, multBus.asMap
@@ -490,7 +489,7 @@ Sdef {
 			if(plotWin.isNil)
 			{
 				plotter = signal.plot(
-					name: this.path2txt.asSymbol,
+					name: winName.asSymbol,
 					bounds: Rect(700,680,500,300)
 				);
 				plotter.parent.alwaysOnTop_(true);
@@ -499,7 +498,7 @@ Sdef {
 			{
 				plotWin.view.children[0].close;
 				plotter = Plotter(
-					name: this.path2txt.asSymbol,
+					name: winName.asSymbol,
 					parent: plotWin
 				);
 				plotWin.view.children[0].bounds_(Rect(8,8,plotWin.view.bounds.width-16,plotWin.view.bounds.height-16));
