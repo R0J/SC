@@ -21,6 +21,7 @@ Sdef {
 
 	classvar hasInitSynthDefs;
 	classvar bufferSynthDef, testSynthDef;
+	classvar playBuf;
 
 	*initClass {
 		library = MultiLevelIdentityDictionary.new;
@@ -46,8 +47,11 @@ Sdef {
 				^sDef;
 			}
 			{
-				sDef = super.new.init(key, dur);
+				// sDef = super.new.init(key, dur);
+				sDef = super.new.init(key);
 				sDef.initBus;
+				sDef.duration_(dur);
+				// sDef.initSynth;
 				args.do({|oneArg| sDef.layer(sDef.layers.lines, \add, 0, oneArg) });
 				^sDef;
 			}
@@ -68,11 +72,11 @@ Sdef {
 
 		this.updatePlot = false;
 		this.initLayers;
-
+/*
 		if(initDur.isNil)
 		{ this.duration = 0 }
 		{ this.duration = initDur };
-
+*/
 		parents = Set.new;
 		children = Set.new;
 
@@ -90,6 +94,16 @@ Sdef {
 			Server.default.onBootAdd({ this.initSynthDefs });
 		}
 		{
+			playBuf = {|bufnum, startTime = 0|
+				PlayBuf.kr(
+					numChannels: 1,
+					bufnum: bufnum,
+					startPos: startTime * controlRate,
+					rate: \tempoClock.kr(1),
+					loop: 1
+				);
+			}.asSynthDef;
+
 			bufferSynthDef = { |bus, bufnum, freq = 440, startTime = 0|
 				var buf = PlayBuf.kr(
 					numChannels: 1,
@@ -173,11 +187,40 @@ Sdef {
 	}
 
 	duration_ {|dur|
-		duration = dur;
-		signal = Signal.newClear(super.class.frame(duration));
-		size = signal.size;
-		"duration set".warn;
-		if(layers.lines.size > 0) { this.mergeLayers };
+		if(duration != dur)
+		{
+			if(buffer.notNil) { buffer.free; };
+			duration = dur;
+			signal = Signal.newClear(super.class.frame(duration));
+			size = signal.size;
+			buffer = Buffer.alloc(
+				server: Server.default,
+				numFrames: size,
+				numChannels: 1,
+			);
+			"new buffer init (%)".format(buffer).warn;
+			if(layers.lines.size > 0) { this.mergeLayers };
+			this.playBuffer;
+		}
+	}
+
+	playBuffer {
+		var time2quant = currentEnvironment.clock.timeToNextBeat(this.duration);
+		if(synth.notNil) { synth.free };
+		"play buffer: % || bus: % || t2q: %".format(buffer, bus, time2quant).warn;
+		bufferSynthDef.name_("Sdef(%)".format(this.path2txt));
+		synth =	bufferSynthDef.play(
+			target: RootNode(Server.default),
+			args:
+			[
+				\bus: bus,
+				\bufnum: buffer.bufnum,
+				\startTime, this.duration - time2quant,
+				\tempoClock, currentEnvironment.clock.tempo,
+				// \multiplicationBus, multBus.asMap
+			]
+		);
+		"play buffer init (%)".format(synth).warn;
 	}
 
 	// references //////////////////////////
@@ -345,59 +388,61 @@ Sdef {
 	}
 
 	render {
-		var renderedBuffer;
-		var startRenderTime = SystemClock.beats;
+		if(buffer.notNil)
+		{
+			var renderedBuffer;
+			var startRenderTime = SystemClock.beats;
 
-		if(hasInitSynthDefs.not) { this.initSynthDefs; };
+			// if(hasInitSynthDefs.not) { this.initSynthDefs; };
 
-		if(buffer.notNil) { buffer.free; };
-		// if(synth.notNil) { synth.free; };
-		isRendered = false;
-
-		buffer = Buffer.alloc(
+			// if(buffer.notNil) { buffer.free; };
+			// if(synth.notNil) { synth.free; };
+			isRendered = false;
+			/*
+			buffer = Buffer.alloc(
 			server: Server.default,
 			numFrames: size,
 			numChannels: 1,
-		);
-		buffer.loadCollection(
-			collection: signal,
-			action: {|buff|
-				var bufferID = buff.bufnum;
-				var bufferFramesCnt = buff.numFrames;
-				var time2quant = currentEnvironment.clock.timeToNextBeat(this.duration);
-				isRendered = true;
+			);
+			*/
+			"render buffer: %".format(buffer).warn;
+			buffer.loadCollection(
+				collection: signal,
+				action: {|buff|
+					var bufferID = buff.bufnum;
+					var bufferFramesCnt = buff.numFrames;
+					var time2quant = currentEnvironment.clock.timeToNextBeat(this.duration);
+					isRendered = true;
 
-				"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
-					bufferID,
-					this.duration,
-					(SystemClock.beats - startRenderTime),
-					bufferFramesCnt
-				).postln;
+					"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
+						bufferID,
+						this.duration,
+						(SystemClock.beats - startRenderTime),
+						bufferFramesCnt
+					).postln;
 
-				// if(buffer.notNil) { buffer.free; };
-				if(synth.notNil) { synth.free; };
-				// buffer = renderedBuffer;
-				"synth: %".format(synth).warn;
-				// if(synth.isNil) {
-				// this.play;
-				// /*
-				bufferSynthDef.name_("Sdef(%)".format(this.path2txt));
-				synth =	bufferSynthDef.play(
+					// if(buffer.notNil) { buffer.free; };
+					// if(synth.notNil) { synth.free; };
+
+					// "synth: %".format(synth).warn;
+					/*
+					bufferSynthDef.name_("Sdef(%)".format(this.path2txt));
+					synth =	bufferSynthDef.play(
 					target: RootNode(Server.default),
 					args:
 					[
-						\bus: bus,
-						\bufnum: buff.bufnum,
-						\startTime, this.duration - time2quant,
-						\tempoClock, currentEnvironment.clock.tempo,
-						// \multiplicationBus, multBus.asMap
+					\bus: bus,
+					\bufnum: buff.bufnum,
+					\startTime, this.duration - time2quant,
+					\tempoClock, currentEnvironment.clock.tempo,
+					// \multiplicationBus, multBus.asMap
 					]
-				);
-				// */
-				// };
-			}
-		);
+					);
+					*/
 
+				}
+			);
+		};
 	}
 
 	trig { |startTime = 0, endTime = nil, parentGroup = nil, clock = nil, multBus = nil|
