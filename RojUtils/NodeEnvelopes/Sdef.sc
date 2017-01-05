@@ -47,11 +47,9 @@ Sdef {
 				^sDef;
 			}
 			{
-				// sDef = super.new.init(key, dur);
 				sDef = super.new.init(key);
 				sDef.initBus;
 				sDef.duration_(dur);
-				// sDef.initSynth;
 				args.do({|oneArg| sDef.layer(sDef.layers.lines, \add, 0, oneArg) });
 				^sDef;
 			}
@@ -67,16 +65,18 @@ Sdef {
 
 	*printAll { this.library.postTree; ^nil; }
 
+	*frame { |time| ^controlRate * time; }
+
 	init { |initKey, initDur|
 		this.key = initKey;
 
 		this.updatePlot = false;
 		this.initLayers;
-/*
+		/*
 		if(initDur.isNil)
 		{ this.duration = 0 }
 		{ this.duration = initDur };
-*/
+		*/
 		parents = Set.new;
 		children = Set.new;
 
@@ -86,25 +86,10 @@ Sdef {
 		isRendered = false;
 	}
 
-	*frame { |time| ^controlRate * time; }
-
 	*initSynthDefs{
-		if(Server.default.serverRunning.not)
+		if(Server.default.serverRunning.not) { Server.default.onBootAdd({ this.initSynthDefs }) }
 		{
-			Server.default.onBootAdd({ this.initSynthDefs });
-		}
-		{
-			playBuf = {|bufnum, startTime = 0|
-				PlayBuf.kr(
-					numChannels: 1,
-					bufnum: bufnum,
-					startPos: startTime * controlRate,
-					rate: \tempoClock.kr(1),
-					loop: 1
-				);
-			}.asSynthDef;
-
-			bufferSynthDef = { |bus, bufnum, freq = 440, startTime = 0|
+			bufferSynthDef = { |bus, bufnum, startTime = 0|
 				var buf = PlayBuf.kr(
 					numChannels: 1,
 					bufnum: bufnum,
@@ -112,7 +97,6 @@ Sdef {
 					rate: \tempoClock.kr(1),
 					loop: 1
 				);
-				// FreeSelfWhenDone.kr(buf);
 				Out.kr(bus, buf);
 			}.asSynthDef;
 
@@ -200,14 +184,18 @@ Sdef {
 			);
 			"new buffer init (%)".format(buffer).warn;
 			if(layers.lines.size > 0) { this.mergeLayers };
-			this.playBuffer;
+			this.play;
 		}
 	}
 
-	playBuffer {
-		var time2quant = currentEnvironment.clock.timeToNextBeat(this.duration);
+	play { |clock = nil|
+		var time2quant;
+		if(clock.isNil) { clock = currentEnvironment.clock; };
+		time2quant = clock.timeToNextBeat(this.duration);
+
 		if(synth.notNil) { synth.free };
-		"play buffer: % || bus: % || t2q: %".format(buffer, bus, time2quant).warn;
+		// "play buffer: % || bus: % || t2q: %".format(buffer, bus, time2quant).warn;
+
 		bufferSynthDef.name_("Sdef(%)".format(this.path2txt));
 		synth =	bufferSynthDef.play(
 			target: RootNode(Server.default),
@@ -220,10 +208,12 @@ Sdef {
 				// \multiplicationBus, multBus.asMap
 			]
 		);
-		"play buffer init (%)".format(synth).warn;
+		// "play buffer init (%)".format(synth).warn;
 	}
 
-	// references //////////////////////////
+	stop { synth.free; synth = nil; bus.set(0); }
+
+		// references //////////////////////////
 
 	*connectRefs {|parentKey, childKey|
 		var parentDef = this.exist(parentKey);
@@ -393,18 +383,8 @@ Sdef {
 			var renderedBuffer;
 			var startRenderTime = SystemClock.beats;
 
-			// if(hasInitSynthDefs.not) { this.initSynthDefs; };
-
-			// if(buffer.notNil) { buffer.free; };
-			// if(synth.notNil) { synth.free; };
 			isRendered = false;
-			/*
-			buffer = Buffer.alloc(
-			server: Server.default,
-			numFrames: size,
-			numChannels: 1,
-			);
-			*/
+
 			"render buffer: %".format(buffer).warn;
 			buffer.loadCollection(
 				collection: signal,
@@ -420,26 +400,6 @@ Sdef {
 						(SystemClock.beats - startRenderTime),
 						bufferFramesCnt
 					).postln;
-
-					// if(buffer.notNil) { buffer.free; };
-					// if(synth.notNil) { synth.free; };
-
-					// "synth: %".format(synth).warn;
-					/*
-					bufferSynthDef.name_("Sdef(%)".format(this.path2txt));
-					synth =	bufferSynthDef.play(
-					target: RootNode(Server.default),
-					args:
-					[
-					\bus: bus,
-					\bufnum: buff.bufnum,
-					\startTime, this.duration - time2quant,
-					\tempoClock, currentEnvironment.clock.tempo,
-					// \multiplicationBus, multBus.asMap
-					]
-					);
-					*/
-
 				}
 			);
 		};
@@ -476,20 +436,7 @@ Sdef {
 		{ "% buffer not found".format(this).warn; }
 	}
 
-	play { |clock = nil|
-		var time2quant;
-		if(clock.isNil) { clock = currentEnvironment.clock; };
-		time2quant = clock.timeToNextBeat(this.duration);
-		// time2quant.postln;
-		clock.sched( time2quant, {
-			// time2quant = clock.timeToNextBeat(this.duration);
-			// time2quant.postln;
 
-			this.trig;
-			// this.duration;
-
-		});
-	}
 
 	test {|freq = 120, startTime = 0|
 		{
