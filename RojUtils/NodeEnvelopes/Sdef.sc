@@ -10,6 +10,7 @@ Sdef {
 
 	var <layers, <modifications;
 	var <signal;
+	var peak;
 
 	var <buffer, <synth;
 	var <isRendered;
@@ -72,11 +73,7 @@ Sdef {
 
 		this.updatePlot = false;
 		this.initLayers;
-		/*
-		if(initDur.isNil)
-		{ this.duration = 0 }
-		{ this.duration = initDur };
-		*/
+
 		parents = Set.new;
 		children = Set.new;
 
@@ -208,12 +205,17 @@ Sdef {
 				// \multiplicationBus, multBus.asMap
 			]
 		);
+		// if(loop.not, FreeSelfWhenDone.kr(synth));
 		// "play buffer init (%)".format(synth).warn;
 	}
 
-	stop { synth.free; synth = nil; bus.set(0); }
+	stop {
+		synth.free;
+		synth = nil;
+		bus.set(0);
+	}
 
-		// references //////////////////////////
+	// references //////////////////////////
 
 	*connectRefs {|parentKey, childKey|
 		var parentDef = this.exist(parentKey);
@@ -330,6 +332,9 @@ Sdef {
 			};
 		});
 
+		peak = signal.peak;
+		// signal = signal.normalize;
+
 		if(updatePlot) { this.plot };
 		this.updateParents;
 		this.render;
@@ -368,7 +373,7 @@ Sdef {
 		this.mergeLayers;
 	}
 
-	kr { ^BusPlug.for(bus);	}
+	kr { ^BusPlug.for(bus); }
 
 	add {|... args|
 		args.pairsDo({|offset, data|
@@ -400,6 +405,9 @@ Sdef {
 						(SystemClock.beats - startRenderTime),
 						bufferFramesCnt
 					).postln;
+							// peak = signal.peak;
+					signal = signal.normalize;
+
 				}
 			);
 		};
