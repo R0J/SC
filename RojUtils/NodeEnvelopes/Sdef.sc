@@ -13,7 +13,7 @@ Sdef {
 	var peak;
 
 	var <buffer, <synth;
-	var <isRendered;
+	// var <isRendered;
 
 	var <updatePlot;
 
@@ -80,7 +80,7 @@ Sdef {
 		bus = nil;
 		buffer = nil;
 		synth = nil;
-		isRendered = false;
+		// isRendered = false;
 	}
 
 	*initSynthDefs{
@@ -145,6 +145,14 @@ Sdef {
 		var sDef = Sdef(nil, envelope.duration + offset);
 		sDef.layer(0, \new, offset, envelope);
 		^sDef;
+	}
+
+	*copy { |name, target|
+		var sDef = this.exist(target).copy;
+		if(sDef.notNil)	{
+			sDef.key = name;
+			^sDef;
+		} { ^nil };
 	}
 
 	// instance //////////////////////////
@@ -261,8 +269,6 @@ Sdef {
 		modifications = Table(\mute, \start, \shift);
 	}
 
-	at { |index| ^layers.get(\sdef, index) }
-
 	layer { |index, type, offset, data|
 		"Sdef.layer data class: %".format(data.class).postln;
 		case
@@ -295,6 +301,16 @@ Sdef {
 			^nil;
 		};
 		this.mergeLayers;
+	}
+
+	at { |index| ^layers.get(\sdef, index) }
+
+	add { |index, data|
+
+	}
+
+	over { |index, data|
+
 	}
 
 	mergeLayers {
@@ -374,21 +390,21 @@ Sdef {
 	}
 
 	kr { ^BusPlug.for(bus); }
-
+/*
 	add {|... args|
 		args.pairsDo({|offset, data|
 			"Sdef.add offset: % | data: %".format(offset, data).postln;
 			this.addLayer(\add, offset, data);
 		});
 	}
-
+*/
 	render {
 		if(buffer.notNil)
 		{
 			var renderedBuffer;
 			var startRenderTime = SystemClock.beats;
 
-			isRendered = false;
+			// isRendered = false;
 
 			"render buffer: %".format(buffer).warn;
 			buffer.loadCollection(
@@ -397,7 +413,7 @@ Sdef {
 					var bufferID = buff.bufnum;
 					var bufferFramesCnt = buff.numFrames;
 					var time2quant = currentEnvironment.clock.timeToNextBeat(this.duration);
-					isRendered = true;
+					// isRendered = true;
 
 					"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
 						bufferID,
@@ -405,9 +421,8 @@ Sdef {
 						(SystemClock.beats - startRenderTime),
 						bufferFramesCnt
 					).postln;
-							// peak = signal.peak;
-					signal = signal.normalize;
 
+					// signal = signal.normalize;
 				}
 			);
 		};
@@ -418,10 +433,8 @@ Sdef {
 
 		if(buffer.notNil)
 		{
-			// var synth;
 			var group = RootNode(Server.default);
-			// buffer.bufnum.postln;
-			// bufferSynthDef.postln;
+
 			if(parentGroup.notNil) { group = parentGroup; };
 			bufferSynthDef.name_("Sdef(%)".format(this.path2txt));
 			synth =	bufferSynthDef.play(
@@ -443,8 +456,6 @@ Sdef {
 		}
 		{ "% buffer not found".format(this).warn; }
 	}
-
-
 
 	test {|freq = 120, startTime = 0|
 		{
@@ -522,7 +533,6 @@ Sdef {
 	updatePlot_ {|bool|	if(bool.isKindOf(Boolean)) { updatePlot = bool } }
 
 	printOn { |stream|	stream << this.class.name << "('" << this.key << "' | dur: " << this.duration << ")"; }
-	// printOn { |stream|	stream << this.class.name << " (dur: " << duration << ")"; }
 
 	path2txt {
 		var txtPath = "";
