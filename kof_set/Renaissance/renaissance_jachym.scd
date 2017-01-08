@@ -74,13 +74,9 @@ p.players;
     ~hh3={
         //         |       |       |       |       |
         var pat = [
-            1,0,1,0, 1,0,1,0, 1,0,1,0, 0,0,0,0,
-            1,0,1,0, 1,0,1,0, 1,0,1,0, 0,1,0,1,
-            1,0,1,0, 1,0,1,0, 1,0,1,0, 0,0,0,0,
-            1,0,1,0, 1,0,1,0, 1,0,1,0, 1,1,1,1,
-
+            1,1,1,1
         ].rotate(1);
-        var imp = PulseDivider.kr(~tick.kr,[1,2,4,8,16,32].nthPrime%4);
+        var imp = PulseDivider.kr(~tick.kr,(1..16).nthPrime%10);
         var hit = Select.kr(PulseCount.kr(imp)/[1,2,3,4]%pat.size,pat);
         var env = EnvGen.ar(Env([0.01,1,0.0001],[0.005,1/16*[1,2,3]],[80,-5]),imp * hit);
         var sig = LFNoise1.ar(22000*LFNoise0.kr(1/4*~tempo/2!4).range(0.5,1)) * Crackle.ar([0.1,0.7,0.4]+env);
