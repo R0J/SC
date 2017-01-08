@@ -101,7 +101,7 @@ String.help
     ~master.quant=16;
     ~master.play;
     ~master.fadeTime = 0.01;
-    ~master = {|wet=0.35,lp=4500,hp=250,len=4,rev = 2,duckLo = 150|
+    ~master = {|wet=0.55,lp=4500,hp=250,len=4,rev = 2,duckLo = 150|
         var sig = In.ar([0,1]);
         var orig = sig;
         var fx,low,high,mid;
@@ -361,10 +361,10 @@ p.clock.queue.postln
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,1,0,
         ].rotate(1);
         var len = LFNoise2.kr(~tempo/32).range(3.2,4.5);
-        var imp = PulseDivider.kr(~tick.kr,1);
+        var imp = PulseDivider.kr(~tick.kr,2);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
 
-        var env = {EnvGen.ar( Env([0,1,0],[0.005,len],curve: -1 * mod) ,imp * hit)};
+        var env = {EnvGen.ar( Env([0,1,0],[0.05,len],curve: -1 * mod) ,imp * hit)};
         var sig = SinOsc.ar(50+(env**mod*50),env**mod*8pi);
         sig = (LPF.ar(GrayNoise.ar(env/2),150) * (env**(mod*2)*0.2)) + sig;
         //sig = Normalizer.ar(sig);
@@ -400,7 +400,7 @@ p.clock.queue.postln
             1,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
             1,0,0,0, 0,0,0,0, 1,0,0,0, 1,0,1,0,
         ].rotate(1);
-        var imp = PulseDivider.kr(~tick.kr,1);
+        var imp = PulseDivider.kr(~tick.kr,[1,2,3,4].nthPrime);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = Decay.kr(imp * hit,[0.7,0.2,1]*1);
         var sig = BrownNoise.ar(0.4**4*env) + SinOsc.ar([30,36].midicps+(env**5*5),env**4*8pi);
@@ -467,6 +467,20 @@ Env.adsr(0.1,1,1,0.2,0.9,4).plot;
     }.fork;
 )
 
+
+(
+  s.latency=0.0;
+  //p.clock.tempo_(120/60);
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
+  ~tick.kr(1);
+  ~tick.clock = p.clock;
+  ~tick.quant = 16;
+  ~counter.clock = p.clock;
+  ~counter.quant = 16;
+  ~counter = {PulseCount.kr(~tick.kr);};
+  ~tick = { Impulse.kr( ~tempo * 4 ); };
+);
+
 // hh synth /////////////////////////////////////// ***
 
 (
@@ -483,7 +497,7 @@ Env.adsr(0.1,1,1,0.2,0.9,4).plot;
             1,0,1,0, 1,0,1,0, 1,0,1,0, 1,1,1,1,
 
         ].rotate(1);
-        var imp = PulseDivider.kr(~tick.kr,[1,2,4,8,16,32]);
+        var imp = PulseDivider.kr(~tick.kr,[1,2,4,8,16,32].nthPrime%4);
         var hit = Select.kr(PulseCount.kr(imp)/[1,2,3,4]%pat.size,pat);
         var env = EnvGen.ar(Env([0.01,1,0.0001],[0.005,1/16*[1,2,3]],[80,-5]),imp * hit);
         var sig = LFNoise1.ar(22000*LFNoise0.kr(1/4*~tempo/2!4).range(0.5,1)) * Crackle.ar([0.1,0.7,0.4]+env);
@@ -846,6 +860,19 @@ p.restartClock;
 ~mel_tick.resume;
 
 
+(
+  //s.latency=0.2;
+  //p.clock.tempo_(120/60);
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
+  ~tick.kr(1);
+  ~tick.clock = p.clock;
+  ~tick.quant = 16;
+  ~counter.clock = p.clock;
+  ~counter.quant = 16;
+  ~counter = {PulseCount.kr(~tick.kr);};
+  ~tick = { Impulse.kr( ~tempo * 4 ); };
+);
+
 // crack synth ///////////////////////////////////////
 
 (
@@ -907,7 +934,7 @@ p.restartClock;
     };
     ~chaos.play;
 );
-~chaos.clear;
+~chaos.clear(20);
 
 
 // shuttles synth ///////////////////////////////////////
@@ -937,6 +964,12 @@ p.restartClock;
 ~shuttles.pause;
 ~shuttles.resume;
 
+(
+//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+{
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+}.fork;  
+)
 
 // perlin synth ///////////////////////////////////////
 
@@ -961,7 +994,7 @@ p.restartClock;
         sig = sig + LFNoise2.ar(1600/16*(1..16),mul:0.00001);
         sig = Resonz.ar(sig,(16*60.midicps)/16*(1..16),LFNoise2.ar(1/4!4).range(0.02,0.2),mul:LFNoise2.kr(4!16).exprange(0.001,1/(1..16)) );
         sig = CompanderD.ar(sig,1/2,1/4,1/200);
-        Splay.ar(sig,0.15,0.85);
+        Splay.ar(sig,0.15,0.15);
     };
     ~perlin.play;
 );
