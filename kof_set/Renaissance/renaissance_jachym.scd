@@ -15,7 +15,7 @@ p.players;
 // soft reset
 (
     //for now
-    s.latency = 0;
+    s.latency = 0.5;
 
     ~tick.kr(1);
     ~tick.clock = p.clock;
@@ -81,7 +81,7 @@ p.players;
         var env = EnvGen.ar(Env([0.01,1,0.0001],[0.005,1/16*[1,2,3]],[80,-5]),imp * hit);
         var sig = LFNoise1.ar(22000*LFNoise0.kr(1/4*~tempo/2!4).range(0.5,1)) * Crackle.ar([0.1,0.7,0.4]+env);
         sig = sig * env;
-        Splay.ar(sig,0.75,0.5);
+        Splay.ar(sig,0.75,0.15);
     };
     ~primal_ritual_dance_jachym.play;
 );
@@ -90,7 +90,40 @@ p.players;
 ~primal_ritual_dance_jachym.pause;
 ~primal_ritual_dance_jachym.resume;
 
-// primal ritual dance ** /////////////////////////////////////// jachym
+
+
+
+
+
+// primal ritual dance FAST /////////////////////////////////////// jachym
+
+(
+    ~primal_ritual_dance_jachym.ar(2);
+    ~primal_ritual_dance_jachym.clock = p.clock;
+    ~primal_ritual_dance_jachym.quant=[4,0];
+    ~primal_ritual_dance_jachym.fadeTime=1.2;
+    ~primal_ritual_dance_jachym={
+        //         |       |       |       |       |
+        var pat = [
+            1,1,1,1
+        ].rotate(1);
+        var imp = PulseDivider.kr(~tick.kr,(1..10).nthPrime%[1,2,3,4]) + Impulse.kr(~tempo*[2,1,3,2]*4);
+        var hit = Select.kr(PulseCount.kr(imp)/[1,2,3,4]%pat.size,pat);
+        var env = {EnvGen.ar(Env([0.01,1,0.0001],[0.005,1/16*[1,2,3]*LFNoise2.kr(4!4)],[80,-5]),imp * hit)}!2;
+        var sig = LFNoise1.ar(22000*LFNoise0.kr(1/4*~tempo/2!4).range(0.5,1)) * Crackle.ar([0.8,0.7,0.4]+env);
+        sig = sig * env;
+        sig = RHPF.ar(sig,LFNoise2.kr(1/16!2).range(1500,16000),LFNoise2.kr(4!4).range(0.01,0.2));
+        Splay.ar(sig,0.75,0.95,SinOsc.ar(1/16.01)*0.75);
+    };
+    ~primal_ritual_dance_jachym.play;
+);
+~primal_ritual_dance_jachym.stop(4);
+~primal_ritual_dance_jachym.clear(16);
+~primal_ritual_dance_jachym.pause;
+~primal_ritual_dance_jachym.resume;
+
+
+// primal ritual dance FAST /////////////////////////////////////// jachym
 
 (
     ~primal_ritual_dance_jachym.ar(2);
@@ -102,13 +135,13 @@ p.players;
         var pat = [
             1,1,1,1
         ].rotate(1);
-        var imp = PulseDivider.kr(~tick.kr,(1..10).nthPrime%10) + Impulse.kr(~tempo*[2,1,3,2]/32);
+        var imp = PulseDivider.kr(~tick.kr,(1..10).nthPrime%10) + Impulse.kr(~tempo*[2,1,3,2]/2);
         var hit = Select.kr(PulseCount.kr(imp)/[1,2,3,4]%pat.size,pat);
-        var env = EnvGen.ar(Env([0.01,1,0.0001],[0.005,1/16*[1,2,3]],[80,-5]),imp * hit);
-        var sig = LFNoise1.ar(22000*LFNoise0.kr(1/4*~tempo/2!4).range(0.5,1)) * Crackle.ar([0.1,0.7,0.4]+env);
+        var env = {EnvGen.ar(Env([0.01,1,0.0001],[0.005,1/16*[1,2,3]*LFNoise2.kr(4!4)],[80,-5]),imp * hit)}!2;
+        var sig = LFNoise1.ar(22000*LFNoise0.kr(1/4*~tempo/2!4).range(0.5,1)) * Crackle.ar([0.8,0.7,0.4]+env);
         sig = sig * env;
-        sig = HPF.ar(sig,LFNoise2.kr(1/16!2).range(1500,16000));
-        Splay.ar(sig,0.75,0.25,SinOsc.ar(2.01));
+        sig = RHPF.ar(sig,LFNoise2.kr(1/16!2).range(1500,16000),LFNoise2.kr(4!4).range(0.01,0.2));
+        Splay.ar(sig,0.75,0.95,SinOsc.ar(1/16.01)*0.75);
     };
     ~primal_ritual_dance_jachym.play;
 );
@@ -124,7 +157,7 @@ p.players;
     ~primal_ritual_dance_jachym_2.ar(2);
     ~primal_ritual_dance_jachym_2.clock = p.clock;
     ~primal_ritual_dance_jachym_2.quant=[16,0];
-    ~primal_ritual_dance_jachym_2.fadeTime=16.2;
+    ~primal_ritual_dance_jachym_2.fadeTime=1.2;
     ~primal_ritual_dance_jachym_2={
         //         |       |       |       |       |
         var pat = [
@@ -133,9 +166,9 @@ p.players;
         var imp = PulseDivider.kr(~tick.kr,(1..10).nthPrime%10);
         var hit = Select.kr(PulseCount.kr(imp)/[1,2,3,4]%pat.size,pat);
         var env = EnvGen.ar(Env([0.01,1,0.0001],[0.005,1/16*[1,2,3]],[80,-5]),imp * hit);
-        var sig = LFNoise1.ar(22000*LFNoise0.kr(1/4*~tempo/2!4).range(0.5,1)) * Crackle.ar([0.1,0.7,0.4]+env);
+        var sig = LFNoise1.ar(22000*LFNoise0.kr(1/4*~tempo/2!4).range(0.5,1)) * Crackle.ar([0.9,0.7,0.4]+env);
         sig = sig * env;
-        Splay.ar(sig,0.75,0.25);
+        Splay.ar(sig,0.75,0.15);
     };
     ~primal_ritual_dance_jachym_2.play;
 );
