@@ -120,7 +120,7 @@ p.makeTempoClock;
         var hit2 = Select.kr(PulseCount.kr(imp2)%pat.size,pat);
         var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,0.5],[10,-3],curve:'exp'),imp * hit);
         var env2 = EnvGen.ar(Env([0.001,1,0.0001],[0.02,1.15],[10,-3],curve:'exp'),imp2 * hit2);
-        var sig = SinOsc.ar(55 + (env**55*500));
+        var sig = SinOsc.ar(55 + (env**55*500)) ;
 
         //sig = LFSaw.ar([60,67,64].midicps*64+(env2**20*1500),mul:0.7)**LFNoise2.kr(1/16!2 * ~tempo).range(0.4,4)/1.5+sig;
         sig = LPF.ar(sig,LFSaw.kr([1,2,3,4]/16*~tempo).range(190,9000));

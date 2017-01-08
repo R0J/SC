@@ -7,7 +7,7 @@ p.disconnect;
 p = NetProxy.connect(\kof);
 TempoClock.default = p.clock;
 
-p.bpm(127);
+p.bpm(120);
 
 p.bpm;
 p.metro(4,1800);
