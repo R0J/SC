@@ -1,38 +1,19 @@
 + NodeProxy {
 
-	env { |controlName, envelopeName = nil|
-		var nEnv;
-		NodeComposition.addNode(this);
-
-		if(controlName.notNil)
-		{
-			if(envelopeName.isNil,
-				{ nEnv = NodeEnv(this.envirKey, controlName.asSymbol, \default); },
-				{ nEnv = NodeEnv(this.envirKey, controlName.asSymbol, envelopeName.asSymbol); }
-			);
-			NodeComposition.addEnvelope(nEnv);
-		};
-		^nEnv;
+	env { |envelopeName, envelope = nil, duration = nil|
+		^EnvDef.newForNode(this, envelopeName, envelope, duration);
 	}
 
-	cycle { |cycleName = nil|
-		var nCycle;
-		if(cycleName.isNil,
-			{ nCycle = NodeCycle(this.envirKey, \default); },
-			{ nCycle = NodeCycle(this.envirKey, cycleName.asSymbol); }
-		);
-		NodeComposition.addCycle(nCycle);
-		^nCycle;
+	mapEnv { |controlName ... envDefKeys|
+		envDefKeys.do({|oneArg|
+			if(EnvDef.exist(oneArg, this))
+			{ this.env(oneArg).map(this.envirKey, controlName); }
+			// { EnvDef.get(oneArg, this.envirKey).map(this.envirKey, controlName); }
+			{ "EnvDef ('%') in NodeProxy('%') not found".format(oneArg, this.envirKey).warn; }
+		});
 	}
 
-	stage { |stageName = nil|
-		var nStage;
-		if(stageName.isNil,
-			{ nStage = NodeStage(this.envirKey, \default); },
-			{ nStage = NodeStage(this.envirKey, stageName.asSymbol); }
-		);
-		NodeComposition.addStage(nStage);
-		^nStage;
-	}
+	cycle { |cycleName, quant ... args| ^CycleDef.newForNode(this, cycleName, quant, args); }
 
 }
+
