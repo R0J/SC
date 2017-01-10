@@ -57,7 +57,7 @@ p.players;
     };
 
     ~master_wet.quant = 4;
-    ~master_wet = {LFDNoise1.kr(~tempo/1600!2).exprange(0.15,0.35);};
+    ~master_wet = {LFDNoise1.kr(~tempo/1600!2).exprange(0.15,0.65);};
     // ~master_wet = {|sig| sig-(1-LFSaw.ar(~tempo*1)).range(0,1)**4};
     ~master.map(\wet,~master_wet);
     p.moveNodeToTail(\master);
