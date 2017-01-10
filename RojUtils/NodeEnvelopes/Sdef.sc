@@ -9,6 +9,7 @@ Sdef {
 	var <parents, <children;
 
 	var <layers, <modifications;
+	var <sigLayers;
 	var <signal;
 	var peak;
 
@@ -129,6 +130,15 @@ Sdef {
 
 	// empty defs //////////////////////////
 
+	*prGetSignal { |data|
+		var sig;
+		"Sdef.prConvert2Signal data class: %".format(data.class).postln;
+		case
+		{ data.isKindOf(Env) } { sig = data.asSignal(this.frame(data.duration)); }
+
+		^sig;
+	}
+
 	*level { |level = 1, dur = 1, offset = 0|
 		var sDef = Sdef(nil, dur + offset);
 		var levelSignal = Signal.newClear(this.frame(dur)).fill(level);
@@ -142,8 +152,11 @@ Sdef {
 
 	*env { |levels = #[0,1,0], times = #[0.15,0.85], curves = #[5,-3], offset = 0|
 		var envelope = Env(levels, times, curves);
-		var sDef = Sdef(nil, envelope.duration + offset);
-		sDef.layer(0, \new, offset, envelope);
+		var sig = Sdef.prGetSignal(envelope);
+		var sDef = Sdef.new;
+		sDef.duration = envelope.duration + offset;
+		sDef.sigLayers.put(0,sig);
+		// sDef.layer(0, \new, offset, envelope);
 		^sDef;
 	}
 
@@ -267,7 +280,10 @@ Sdef {
 		// "%.initLayers".format(this).warn;
 		layers = Table(\selector, \offset, \sdef, \mute);
 		modifications = Table(\mute, \start, \shift);
+		sigLayers = Order.new; // order of signals
 	}
+
+
 
 	layer { |index, type, offset, data|
 		"Sdef.layer data class: %".format(data.class).postln;
@@ -355,6 +371,8 @@ Sdef {
 		this.updateParents;
 		this.render;
 	}
+
+
 
 	// edit //////////////////////////
 
@@ -481,7 +499,6 @@ Sdef {
 			{ "% is shorter than arg startTime(%)".format(this, startTime).warn; }
 		}.defer(0.01);
 	}
-
 
 	plot {|update|
 		this.updatePlot = update;
