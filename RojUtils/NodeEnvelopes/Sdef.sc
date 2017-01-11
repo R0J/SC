@@ -9,7 +9,7 @@ Sdef {
 	var <parents, <children;
 
 	var <layers, <modifications;
-	var <sigLayers;
+	var <layers2;
 	var <signal;
 	var peak;
 
@@ -31,32 +31,26 @@ Sdef {
 		hasInitSynthDefs = false;
 	}
 
-	*new { |key, dur = nil ... args|
+	*new { |key = nil, index = 0|
 		if(hasInitSynthDefs.not) { this.initSynthDefs; };
 
 		if(key.asArray.notEmpty)
 		{
 			var sDef = this.exist(key);
-			if(sDef.notNil)
-			{
-				// "new sdef: %, key: %, dur: %, args: %".format(sDef, key, dur, args).postln;
-				if(dur.notNil) { sDef.duration_(dur) };
-				if(args.notEmpty)
-				{
-					sDef.initLayers;
-					args.do({|oneArg| sDef.layer(sDef.layers.lines, \add, 0, oneArg) });
-				}
-				^sDef;
-			}
+			if(sDef.isNil)
 			{
 				sDef = super.new.init(key);
 				sDef.initBus;
-				sDef.duration_(dur);
-				args.do({|oneArg| sDef.layer(sDef.layers.lines, \add, 0, oneArg) });
-				^sDef;
+			};
+
+			if(index.isNil)
+			{ ^sDef }
+			{
+				^sDef.layer(index)
+				// ^sDef.at(index)
 			}
 		}
-		{ ^super.new.init(nil, dur)	}
+		{ ^super.new.init(nil)	}
 	}
 
 	*exist { |key|
@@ -130,15 +124,6 @@ Sdef {
 
 	// empty defs //////////////////////////
 
-	*prGetSignal { |data|
-		var sig;
-		"Sdef.prConvert2Signal data class: %".format(data.class).postln;
-		case
-		{ data.isKindOf(Env) } { sig = data.asSignal(this.frame(data.duration)); }
-
-		^sig;
-	}
-
 	*level { |level = 1, dur = 1, offset = 0|
 		var sDef = Sdef(nil, dur + offset);
 		var levelSignal = Signal.newClear(this.frame(dur)).fill(level);
@@ -172,20 +157,23 @@ Sdef {
 
 	key_ {|name|
 		// "rename def from % to %".format(key, name).postln;
-		var tempParents = parents.copy;
-		var tempChildren = children.copy;
+		if(name.notNil)
+		{
+			var tempParents = parents.copy;
+			var tempChildren = children.copy;
 
-		parents.do({|parentKey| Sdef.disconnectRefs(parentKey, key); });
-		children.do({|childKey| Sdef.disconnectRefs(key, childKey); });
+			parents.do({|parentKey| Sdef.disconnectRefs(parentKey, key); });
+			children.do({|childKey| Sdef.disconnectRefs(key, childKey); });
 
-		key = name;
-		if(path.notNil) { library.removeEmptyAtPath(path) };
-		path = key.asArray ++ \def;
+			key = name;
+			if(path.notNil) { library.removeEmptyAtPath(path) };
+			path = key.asArray ++ \def;
 
-		library.putAtPath(path, this);
+			library.putAtPath(path, this);
 
-		tempParents.do({|parentKey| Sdef.connectRefs(parentKey, key); });
-		tempChildren.do({|childKey| Sdef.connectRefs(key, childKey); });
+			tempParents.do({|parentKey| Sdef.connectRefs(parentKey, key); });
+			tempChildren.do({|childKey| Sdef.connectRefs(key, childKey); });
+		}
 	}
 
 	duration_ {|dur|
@@ -201,7 +189,7 @@ Sdef {
 				numChannels: 1,
 			);
 			"new buffer init (%)".format(buffer).warn;
-			if(layers.lines.size > 0) { this.mergeLayers };
+			// if(layers.lines.size > 0) { this.mergeLayers };
 			this.play;
 		}
 	}
@@ -236,43 +224,7 @@ Sdef {
 		bus.set(0);
 	}
 
-	// references //////////////////////////
 
-	*connectRefs {|parentKey, childKey|
-		var parentDef = this.exist(parentKey);
-		var childDef = this.exist(childKey);
-		// "Sdef.connectRefs(parent:% | child:%)".format(parentDef, childDef).warn;
-		if(parentDef.key.notNil && childDef.key.notNil)
-		{
-			parentDef.addChild(childDef);
-			childDef.addParent(parentDef);
-		}
-	}
-
-	*disconnectRefs {|parentKey, childKey|
-		var parentDef = this.exist(parentKey);
-		var childDef = this.exist(childKey);
-		if(parentDef.key.notNil) { parentDef.removeChild(childDef) };
-		if(childDef.key.notNil) { childDef.removeParent(parentDef) };
-	}
-
-	addChild { |target| children.add(target.key); }
-	addParent { |target| parents.add(target.key); }
-
-	removeChild { |target| children.remove(target.key); }
-	removeParent { |target| parents.remove(target.key); }
-
-	updateParents {
-		parents.do({|parentKey|
-			var sDef = Sdef.exist(parentKey);
-			if(sDef.notNil) {
-				"%.updateParents -> %".format(this, sDef).warn;
-				sDef.update;
-			};
-		});
-	}
-
-	update { this.mergeLayers }
 
 	// layers //////////////////////////
 
@@ -280,45 +232,67 @@ Sdef {
 		// "%.initLayers".format(this).warn;
 		layers = Table(\selector, \offset, \sdef, \mute);
 		modifications = Table(\mute, \start, \shift);
-		sigLayers = Order.new; // order of signals
+		layers2 = Order.new; // order of signals
 	}
 
+	layer { |index|
+		var sDef = layers2.at(index);
+		if(sDef.isNil)
+		{
+			sDef = Sdef.new;
+			layers2.put(index, sDef);
+			// "Sdef.layer new index: %".format(index).warn;
+		}
+		^sDef;
+	}
 
+	// at { |index| ^layers2.at(index) }
 
+	env { |levels = #[0,1,0], times = #[0.15,0.85], curves = #[5,-3]|
+		var envelope = Env(levels, times, curves);
+		var sig = envelope.asSignal(super.class.frame(envelope.duration));
+		this.duration = envelope.duration;
+		this.layers2.put(0,sig);
+		// ^sig;
+	}
+
+	/*
 	layer { |index, type, offset, data|
-		"Sdef.layer data class: %".format(data.class).postln;
-		case
-		{ data.isKindOf(Signal) || data.isKindOf(FloatArray)}
-		{
-			layers.putLine(index, type.asSymbol, offset, data, false)
-		}
-		{ data.isKindOf(Env) }
-		{ layers.putLine(index, type.asSymbol, offset, data.asSignal(super.class.frame(data.duration)), false) }
-		{ data.isKindOf(Integer) || data.isKindOf(Float)}
-		{ layers.putLine(index, type.asSymbol, offset, Signal.newClear(super.class.frame(this.duration)).fill(data), false) }
-		{ data.isKindOf(Sdef) }
-		{
-			layers.putLine(index, type.asSymbol, offset, data, false);
-			Sdef.connectRefs(key, data.key);
-		}
-		{ data.isKindOf(Function) } {
-			Routine.run({
-				var condition = Condition.new;
-				"Rendering layer from function. Duration: %".format(this.duration).warn;
-				data.loadToFloatArray(this.duration, Server.default, {|array|
-					layers.putLine(index, type.asSymbol, offset, Signal.newFrom(array), false);
-					condition.test = true;
-					condition.signal;
-				});
-				condition.wait;
-				"render done".warn;
-				this.mergeLayers;
-			},clock: AppClock);
-			^nil;
-		};
-		this.mergeLayers;
+	"Sdef.layer data class: %".format(data.class).postln;
+	case
+	{ data.isKindOf(Signal) || data.isKindOf(FloatArray)}
+	{
+	layers.putLine(index, type.asSymbol, offset, data, false)
 	}
+	{ data.isKindOf(Env) }
+	{ layers.putLine(index, type.asSymbol, offset, data.asSignal(super.class.frame(data.duration)), false) }
+	{ data.isKindOf(Integer) || data.isKindOf(Float)}
+	{ layers.putLine(index, type.asSymbol, offset, Signal.newClear(super.class.frame(this.duration)).fill(data), false) }
+	{ data.isKindOf(Sdef) }
+	{
+	layers.putLine(index, type.asSymbol, offset, data, false);
+	Sdef.connectRefs(key, data.key);
+	}
+	{ data.isKindOf(Function) } {
+	Routine.run({
+	var condition = Condition.new;
+	"Rendering layer from function. Duration: %".format(this.duration).warn;
+	data.loadToFloatArray(this.duration, Server.default, {|array|
+	layers.putLine(index, type.asSymbol, offset, Signal.newFrom(array), false);
+	condition.test = true;
+	condition.signal;
+	});
+	condition.wait;
+	"render done".warn;
+	this.mergeLayers;
+	},clock: AppClock);
+	^nil;
+	};
+	this.mergeLayers;
+	}
+	*/
 
+	// at { |index| ^layers2.at(index) }
 	at { |index| ^layers.get(\sdef, index) }
 
 	add { |index, data|
@@ -372,6 +346,43 @@ Sdef {
 		this.render;
 	}
 
+	// references //////////////////////////
+
+	*connectRefs {|parentKey, childKey|
+		var parentDef = this.exist(parentKey);
+		var childDef = this.exist(childKey);
+		// "Sdef.connectRefs(parent:% | child:%)".format(parentDef, childDef).warn;
+		if(parentDef.key.notNil && childDef.key.notNil)
+		{
+			parentDef.addChild(childDef);
+			childDef.addParent(parentDef);
+		}
+	}
+
+	*disconnectRefs {|parentKey, childKey|
+		var parentDef = this.exist(parentKey);
+		var childDef = this.exist(childKey);
+		if(parentDef.key.notNil) { parentDef.removeChild(childDef) };
+		if(childDef.key.notNil) { childDef.removeParent(parentDef) };
+	}
+
+	addChild { |target| children.add(target.key); }
+	addParent { |target| parents.add(target.key); }
+
+	removeChild { |target| children.remove(target.key); }
+	removeParent { |target| parents.remove(target.key); }
+
+	updateParents {
+		parents.do({|parentKey|
+			var sDef = Sdef.exist(parentKey);
+			if(sDef.notNil) {
+				"%.updateParents -> %".format(this, sDef).warn;
+				sDef.update;
+			};
+		});
+	}
+
+	update { this.mergeLayers }
 
 
 	// edit //////////////////////////
@@ -408,14 +419,14 @@ Sdef {
 	}
 
 	kr { ^BusPlug.for(bus); }
-/*
+	/*
 	add {|... args|
-		args.pairsDo({|offset, data|
-			"Sdef.add offset: % | data: %".format(offset, data).postln;
-			this.addLayer(\add, offset, data);
-		});
+	args.pairsDo({|offset, data|
+	"Sdef.add offset: % | data: %".format(offset, data).postln;
+	this.addLayer(\add, offset, data);
+	});
 	}
-*/
+	*/
 	render {
 		if(buffer.notNil)
 		{
