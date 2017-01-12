@@ -146,41 +146,58 @@ Sdef2 {
 
 	layerDuration { ^super.class.time(layers.at(this.currentLayer).size) }
 
+	signal {
+		var lastIndex = layers.lastIndex;
+		if(lastIndex.isNil) { ^nil } { ^layers.at(lastIndex) };
+	}
+
+	update {
+
+		if(updatePlot) { this.plot };
+	}
+
 	delete {
 		layers.removeAt(this.currentLayer);
-		if(updatePlot) { this.plot };
+		this.update;
 	}
 
 	env { |levels = #[0,1,0], times = #[0.15,0.85], curves = #[5,-3]|
 		var envelope = Env(levels, times, curves);
 		this.duration = envelope.duration;
 		layers.put(this.currentLayer, envelope.asSignal(size));
-		if(updatePlot) { this.plot };
+		this.update;
 	}
 
-	signal {
-		var lastIndex = layers.lastIndex;
-		if(lastIndex.isNil) { ^nil } { ^layers.at(lastIndex) };
+	// editing //////////////////////////
+
+	shift { |target, offset|
+		var source = layers.at(target);
+		var srcSize = source.size;
+		var offSize = super.class.frame(offset);
+		var shiftSignal = Signal.newClear(srcSize + offSize);
+		shiftSignal.overWrite(source, offSize);
+		layers.put(this.currentLayer, shiftSignal);
+		this.update;
 	}
 
 	// references //////////////////////////
-
+	/*
 	*connectRefs {|parentKey, childKey|
-		var parentDef = this.exist(parentKey);
-		var childDef = this.exist(childKey);
-		// "Sdef.connectRefs(parent:% | child:%)".format(parentDef, childDef).warn;
-		if(parentDef.key.notNil && childDef.key.notNil)
-		{
-			parentDef.addChild(childDef);
-			childDef.addParent(parentDef);
-		}
+	var parentDef = this.exist(parentKey);
+	var childDef = this.exist(childKey);
+	// "Sdef.connectRefs(parent:% | child:%)".format(parentDef, childDef).warn;
+	if(parentDef.key.notNil && childDef.key.notNil)
+	{
+	parentDef.addChild(childDef);
+	childDef.addParent(parentDef);
+	}
 	}
 
 	*disconnectRefs {|parentKey, childKey|
-		var parentDef = this.exist(parentKey);
-		var childDef = this.exist(childKey);
-		if(parentDef.key.notNil) { parentDef.removeChild(childDef) };
-		if(childDef.key.notNil) { childDef.removeParent(parentDef) };
+	var parentDef = this.exist(parentKey);
+	var childDef = this.exist(childKey);
+	if(parentDef.key.notNil) { parentDef.removeChild(childDef) };
+	if(childDef.key.notNil) { childDef.removeParent(parentDef) };
 	}
 
 	addChild { |target| children.add(target.key); }
@@ -190,16 +207,17 @@ Sdef2 {
 	removeParent { |target| parents.remove(target.key); }
 
 	updateParents {
-		parents.do({|parentKey|
-			var sDef = this.exist(parentKey);
-			if(sDef.notNil) {
-				"%.updateParents -> %".format(this, sDef).warn;
-				sDef.update;
-			};
-		});
+	parents.do({|parentKey|
+	var sDef = this.exist(parentKey);
+	if(sDef.notNil) {
+	"%.updateParents -> %".format(this, sDef).warn;
+	sDef.update;
+	};
+	});
 	}
 
 	update { this.mergeLayers }
+	*/
 
 	// info //////////////////////////
 

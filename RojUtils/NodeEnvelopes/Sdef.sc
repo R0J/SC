@@ -45,10 +45,7 @@ Sdef {
 
 			if(index.isNil)
 			{ ^sDef }
-			{
-				^sDef.layer(index)
-				// ^sDef.at(index)
-			}
+			{ ^sDef.layer(index) }
 		}
 		{ ^super.new.init(nil)	}
 	}
@@ -62,21 +59,6 @@ Sdef {
 	*printAll { this.library.postTree; ^nil; }
 
 	*frame { |time| ^controlRate * time; }
-
-	init { |initKey, initDur|
-		this.key = initKey;
-
-		this.updatePlot = false;
-		this.initLayers;
-
-		parents = Set.new;
-		children = Set.new;
-
-		bus = nil;
-		buffer = nil;
-		synth = nil;
-		// isRendered = false;
-	}
 
 	*initSynthDefs{
 		if(Server.default.serverRunning.not) { Server.default.onBootAdd({ this.initSynthDefs }) }
@@ -109,6 +91,21 @@ Sdef {
 			"\nSdef initialization of SynthDefs done. Control rate set on %".format(controlRate).postln;
 		};
 		hasInitSynthDefs = true;
+	}
+
+	init { |initKey, initDur|
+		this.key = initKey;
+
+		this.updatePlot = false;
+		this.initLayers;
+
+		parents = Set.new;
+		children = Set.new;
+
+		bus = nil;
+		buffer = nil;
+		synth = nil;
+		// isRendered = false;
 	}
 
 	initBus {
@@ -246,14 +243,18 @@ Sdef {
 		^sDef;
 	}
 
+	signal {
+		// layers2
+	}
+
 	// at { |index| ^layers2.at(index) }
+	// put { |index|
 
 	env { |levels = #[0,1,0], times = #[0.15,0.85], curves = #[5,-3]|
 		var envelope = Env(levels, times, curves);
 		var sig = envelope.asSignal(super.class.frame(envelope.duration));
 		this.duration = envelope.duration;
 		this.layers2.put(0,sig);
-		// ^sig;
 	}
 
 	/*
