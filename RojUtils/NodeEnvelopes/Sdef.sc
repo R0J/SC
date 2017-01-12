@@ -243,10 +243,6 @@ Sdef {
 		^sDef;
 	}
 
-	signal {
-		// layers2
-	}
-
 	// at { |index| ^layers2.at(index) }
 	// put { |index|
 

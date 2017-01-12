@@ -9,6 +9,7 @@ Sdef2 {
 	var <bus, <buffer, <synth;
 	var <parents, <children;
 	var <layers, <>currentLayer;
+	var <sigLayers;
 	var <updatePlot;
 
 	*initClass {
@@ -31,6 +32,8 @@ Sdef2 {
 
 		sDef.currentLayer = index;
 		if(index.isNil) { sDef.currentLayer = sDef.layerCount };
+
+		if(index.notNil) { ^sDef.sigLayers.at(index) };
 
 		^sDef;
 	}
@@ -81,6 +84,7 @@ Sdef2 {
 
 		layers = Order.new;
 		currentLayer = 0;
+		sigLayers = SignalLayer.new;
 	}
 
 	initBus {
@@ -170,8 +174,30 @@ Sdef2 {
 
 	// editing //////////////////////////
 
-	shift { |target, offset|
-		var source = layers.at(target);
+	add { |...targets|
+		var addSize = 0;
+		var addSignal;
+		targets.do({|index|
+			if(layers.at(index).notNil)
+			{
+				var srcSize = layers.at(index).size;
+				if(addSize < srcSize) { addSize = srcSize };
+			}
+		});
+		addSignal = Signal.newClear(addSize);
+		targets.do({|index|
+			if(layers.at(index).notNil)
+			{
+				var source = layers.at(index);
+				addSignal.overDub(source, 0);
+			}
+		});
+		layers.put(this.currentLayer, addSignal);
+		this.update;
+	}
+
+	shift { |layer, offset|
+		var source = layers.at(layer);
 		var srcSize = source.size;
 		var offSize = super.class.frame(offset);
 		var shiftSignal = Signal.newClear(srcSize + offSize);
