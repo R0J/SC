@@ -82,7 +82,7 @@ thisThread.clock_(currentEnvironment.clock)
 
 ////////////////////////////
 
-~panBrownTone.play(vol:0.1, fadeTime:22)
+~panBrownTone.play(vol:0.5, fadeTime:22)
 // ~panBrownTone.clock = currentEnvironment.clock;
 ~panBrownTone.quant_(16);
 (

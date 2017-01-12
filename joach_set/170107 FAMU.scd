@@ -49,7 +49,7 @@ Sdef([\drum, \fplus]).plot(true)
 (
 ~panBrownTone[0] = {
 	var panEnv = EnvGen.ar( Env([0,-0.8,0.8,-1,1,0], [0.125,0.125,0.125,0.125,1.5], \sin), \panTrig.tr);
-	Pan2.ar(SinOsc.ar(\freq.kr(60,2)) * BrownNoise.ar(0.4, 0.6), panEnv)
+	Pan2.ar(SinOsc.ar(\freq.kr(60,2)) * BrownNoise.ar(0.3, 0.7), panEnv)
 };
 ~panBrownTone[2] = \set -> Pbind(\args, [\panTrig], \dur, 0.5, \panTrig, Pseq([1,0,Pwhite(0,1),1], inf));
 ~panBrownTone[3] = \set -> Pbind(\args, [\freq],
