@@ -5,18 +5,19 @@ p.disconnect;
 p = NetProxy.connect(\kof);
 TempoClock.default = p.clock;
 
+p.push();
 p.bpm(120);
 
 p.bpm;
 p.metro(4,1800);
 p.players;
 
-~mod = { LFNoise0.kr(4).range(1,16).round(2)  };
 
 // soft reset
 (
     //for now
     s.latency = 0.5;
+    ~mod ={ LFNoise0.kr(4).range(1,16).round(2)  };
 
     ~tick.kr(1);
     ~tick.clock = p.clock;
@@ -30,13 +31,12 @@ p.players;
     ~master.quant=16;
     ~master.play;
     ~master.fadeTime = 0.01;
-    ~master = {|wet=0.55,lp=4500,hp=250,len=4,rev = 2,duckLo = 150|
+    ~master = {|wet=0.85,lp=4500,hp=250,len=8,rev = 8,duckLo = 150|
         var sig = In.ar([0,1]);
         var orig = sig;
         var fx,low,high,mid;
         var duck;
 
-        duck = LPF.ar(LPF.ar(sig,duckLo),duckLo);
         low = CompanderD.ar(LPF.ar(sig,LFNoise2.kr(1/4!2*~tempo).range(100,800)),9/10,1,1/2);
         mid = CompanderD.ar(BPF.ar(sig,LFNoise2.kr(1/8!2*~tempo).range(500,4500),1/2),9/10,1,1/2);
         high = CompanderD.ar(HPF.ar(sig,LFNoise2.kr(1/16!2*~tempo).range(3000,10000)),9/10,1,1/2);
@@ -46,7 +46,7 @@ p.players;
         fx = LPF.ar(fx,lp);
         fx = HPF.ar(fx,hp);
         fx = HPF.ar(fx,hp);
-        fx = AllpassN.ar(fx,1/1600*~tempo,1/4*~tempo,len);
+        //        fx = {AllpassN.ar(fx,1/1600*~tempo/~mod,1/8*~tempo/~mod,len)};
 
         fx = DWGReverb.ar(NumChannels.ar(fx,2),[5000,5100],1/len)/rev + fx;
 
@@ -332,3 +332,49 @@ p.players;
 ~primal_ritual_dance_jachym_2.clear(40);
 ~primal_ritual_dance_jachym_2.pause;
 ~primal_ritual_dance_jachym_2.resume;
+
+
+
+p.push();
+// puls synth ///////////////////////////////////////
+
+(
+    ~puls.ar(2);
+    ~puls.clock = p.clock;
+    ~puls.quant=2;
+    ~puls.fadeTime=4;
+    ~puls={
+        var sig = Pulse.ar((1..8)/4) * SinOsc.ar(50,Pulse.ar((1..8)/4));
+        Splay.ar(sig,0.5,0.25);
+    };
+    ~puls.play;
+);
+~puls.stop(4);
+~puls.clear;
+~puls.pause;
+~puls.resume;
+
+
+
+
+// pulsKick synth ///////////////////////////////////////
+
+(
+~pulsKick.ar(2);
+~pulsKick.clock = p.clock;
+~pulsKick.quant=16;
+~pulsKick.fadeTime=4;
+~pulsKick={
+  var sig = SinOsc.ar(50!2,Pulse.ar(2));
+  sig = sig + VarSaw.ar([50.01,50.02],SinOsc.ar(4),Pulse.ar(2),mul:LFNoise2.kr(1/16!2));
+  sig = BPF.ar(sig,LFNoise2.kr(1/4!2).range(50,900));
+  sig = CompanderD.ar(sig,3/4,1/2,1/2);
+  Splay.ar(sig,0.5,0.45);
+};
+~pulsKick.play;
+);
+~pulsKick.stop(4);
+~pulsKick.clear;
+~pulsKick.pause;
+~pulsKick.resume;
+
