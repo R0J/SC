@@ -18,7 +18,7 @@ p.makeTempoClock;
 );    
 
 (
-    s.latency=0;
+    s.latency=0.5;
     //p.clock.tempo_(120/60);
     p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
     ~tick.kr(1);
@@ -114,9 +114,9 @@ p.arProxyNames;
         ].rotate(1);
         var mod2 = LFNoise2.kr(~tempo/160).range(20,80);
         var mod = LFDNoise1.kr(~tempo/160).range(20,80);
-        var imp = PulseDivider.kr(~tick.kr,8);
+        var imp = PulseDivider.kr(~tick.kr,2);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
-        var env = EnvGen.ar(Env([0.001,1,0.0001],[0.002,2.5],[mod,-3.3]), imp * hit);
+        var env = {EnvGen.ar(Env([0.001,1,0.0001],[0.002,2.5],[mod,-3.3]), imp * hit)};
         var sig;
         var hum = LFDNoise1.kr(~tempo).range(0.0,0.01);
 
@@ -124,7 +124,7 @@ p.arProxyNames;
 
         sig = Mix.fill(4,{|i|SinOsc.ar(33.midicps+(env**mod2*33.midicps),env**(mod2+i)*8pi)})/3.5;
         sig = sig * env;
-        Splay.ar(sig,0.75,0.25);
+        Splay.ar(sig,0.05,0.5);
     };
     ~kick.play;
 );

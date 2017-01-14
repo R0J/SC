@@ -389,11 +389,11 @@ p.push();
 ~pulsKick.quant=16;
 ~pulsKick.fadeTime=4;
 ~pulsKick={
-  var sig = SinOsc.ar(50!2,Pulse.ar([2,1]++(1/[1,2,3,4].nthPrime)));
-  sig = VarSaw.ar([50.01,50.02],SinOsc.ar(1/4),Pulse.ar([2,1]),mul:LFNoise2.kr(1/16!2)) ** LFNoise2.kr(1/64!2).range(0.2,8) * 0.5 + sig;
-  sig = BPF.ar(sig,LFNoise2.kr(1/16!2).range(50,1900),LFNoise2.kr(1/4).range(0.01,0.4));
-  sig = CompanderD.ar(sig,3/4,1/2,1/2);
-  Splay.ar(sig,0.05,0.65);
+  var sig = SinOsc.ar(50!2,Pulse.ar([2,1])) * Pulse.ar([2,1]);
+  sig = VarSaw.ar([50.01,50.02],SinOsc.ar(1/4),Pulse.ar([2,1]),mul:LFNoise2.kr(1/16!2)) ** LFNoise0.kr([2,1]).range(0.2,2) * 0.75 + sig;
+  sig = BPF.ar(sig,LFNoise2.kr(1/16!2).range(50,1900),LFNoise2.kr(1/4).range(0.01,0.4)) + sig;
+  sig = CompanderD.ar(sig,3/4,1/2,1);
+  Splay.ar(sig,0.05,0.25);
 };
 ~pulsKick.play;
 );
