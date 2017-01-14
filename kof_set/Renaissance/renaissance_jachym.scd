@@ -65,9 +65,36 @@ p.players;
 );
 
 
-// primal ritual dance FAST ..tady se neco deje fuck/////////////////////////////////////// jachym
 //codeBelow
 
+// primal ritual dance * /////////////////////////////////////// jachym
+
+(
+    ~primal_ritual_dance_jachym.ar(2);
+    ~primal_ritual_dance_jachym.clock = p.clock;
+    ~primal_ritual_dance_jachym.quant=[16,0];
+    ~primal_ritual_dance_jachym.fadeTime=16.2;
+    ~primal_ritual_dance_jachym={
+        //         |       |       |       |       |
+        var pat = [
+            1,1,1,1
+        ].rotate(1);
+        var imp = PulseDivider.kr(~tick.kr,(1..10).nthPrime%10) + Impulse.kr(~tempo*4);
+        var hit = Select.kr(PulseCount.kr(imp)/[1,2,3,4]%pat.size,pat);
+        var env = EnvGen.ar(Env([0.01,1,0.0001],[0.005,1/16*[1,2,3]],[80,-5]),imp * hit);
+        var sig = LFNoise1.ar(22000*LFNoise0.kr(1/4*~tempo/2!4).range(0.5,1)) * Crackle.ar([0.1,0.7,0.4]+env);
+        sig = sig * env;
+        Splay.ar(sig,0.75,0.05);
+    };
+    ~primal_ritual_dance_jachym.play;
+);
+~primal_ritual_dance_jachym.stop(4);
+~primal_ritual_dance_jachym.clear(40);
+~primal_ritual_dance_jachym.pause;
+~primal_ritual_dance_jachym.resume;
+
+
+// primal ritual dance FAST ..tady se neco deje fuck/////////////////////////////////////// jachym
 (
     ~primal_ritual_dance_jachym.ar(2);
     ~primal_ritual_dance_jachym.clock = p.clock;
@@ -96,33 +123,6 @@ p.players;
 ~primal_ritual_dance_jachym.pause;
 ~primal_ritual_dance_jachym.resume;
 
-
-
-// primal ritual dance * /////////////////////////////////////// jachym
-
-(
-    ~primal_ritual_dance_jachym.ar(2);
-    ~primal_ritual_dance_jachym.clock = p.clock;
-    ~primal_ritual_dance_jachym.quant=[16,0];
-    ~primal_ritual_dance_jachym.fadeTime=16.2;
-    ~primal_ritual_dance_jachym={
-        //         |       |       |       |       |
-        var pat = [
-            1,1,1,1
-        ].rotate(1);
-        var imp = PulseDivider.kr(~tick.kr,(1..10).nthPrime%10) + Impulse.kr(~tempo*4);
-        var hit = Select.kr(PulseCount.kr(imp)/[1,2,3,4]%pat.size,pat);
-        var env = EnvGen.ar(Env([0.01,1,0.0001],[0.005,1/16*[1,2,3]],[80,-5]),imp * hit);
-        var sig = LFNoise1.ar(22000*LFNoise0.kr(1/4*~tempo/2!4).range(0.5,1)) * Crackle.ar([0.1,0.7,0.4]+env);
-        sig = sig * env;
-        Splay.ar(sig,0.75,0.05);
-    };
-    ~primal_ritual_dance_jachym.play;
-);
-~primal_ritual_dance_jachym.stop(4);
-~primal_ritual_dance_jachym.clear(40);
-~primal_ritual_dance_jachym.pause;
-~primal_ritual_dance_jachym.resume;
 
 
 
@@ -333,6 +333,18 @@ p.players;
 ~primal_ritual_dance_jachym_2.pause;
 ~primal_ritual_dance_jachym_2.resume;
 
+(
+  //s.latency=0.2;
+  //p.clock.tempo_(120/60);
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
+  ~tick.kr(1);
+  ~tick.clock = p.clock;
+  ~tick.quant = 16;
+  ~counter.clock = p.clock;
+  ~counter.quant = 16;
+  ~counter = {PulseCount.kr(~tick.kr);};
+  ~tick = { Impulse.kr( ~tempo * 4 ); };
+);
 
 
 p.push();
@@ -342,7 +354,7 @@ p.push();
     ~puls.ar(2);
     ~puls.clock = p.clock;
     ~puls.quant=2;
-    ~puls.fadeTime=4;
+    ~puls.fadeTime=16;
     ~puls={
         var sig = Pulse.ar((1..8)/4) * SinOsc.ar(50,Pulse.ar((1..8)/4));
         Splay.ar(sig,0.5,0.25);
@@ -355,6 +367,18 @@ p.push();
 ~puls.resume;
 
 
+(
+  //s.latency=0.2;
+  //p.clock.tempo_(120/60);
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
+  ~tick.kr(1);
+  ~tick.clock = p.clock;
+  ~tick.quant = 16;
+  ~counter.clock = p.clock;
+  ~counter.quant = 16;
+  ~counter = {PulseCount.kr(~tick.kr);};
+  ~tick = { Impulse.kr( ~tempo * 4 ); };
+);
 
 
 // pulsKick synth ///////////////////////////////////////
@@ -365,11 +389,11 @@ p.push();
 ~pulsKick.quant=16;
 ~pulsKick.fadeTime=4;
 ~pulsKick={
-  var sig = SinOsc.ar(50!2,Pulse.ar(2));
-  sig = sig + VarSaw.ar([50.01,50.02],SinOsc.ar(4),Pulse.ar(2),mul:LFNoise2.kr(1/16!2));
-  sig = BPF.ar(sig,LFNoise2.kr(1/4!2).range(50,900));
+  var sig = SinOsc.ar(50!2,Pulse.ar([2,1]++(1/[1,2,3,4].nthPrime)));
+  sig = VarSaw.ar([50.01,50.02],SinOsc.ar(1/4),Pulse.ar([2,1]),mul:LFNoise2.kr(1/16!2)) ** LFNoise2.kr(1/64!2).range(0.2,8) * 0.5 + sig;
+  sig = BPF.ar(sig,LFNoise2.kr(1/16!2).range(50,1900),LFNoise2.kr(1/4).range(0.01,0.4));
   sig = CompanderD.ar(sig,3/4,1/2,1/2);
-  Splay.ar(sig,0.5,0.45);
+  Splay.ar(sig,0.05,0.65);
 };
 ~pulsKick.play;
 );
