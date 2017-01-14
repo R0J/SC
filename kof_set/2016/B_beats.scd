@@ -353,20 +353,20 @@ p.clock.queue.postln
     ~kick_one.fadeTime=0.02;
     ~kick_one={
         //         |       |       |       |       |
-        var mod = LFNoise2.kr(1/32*~tempo!2).range(20,80);
         var pat = [
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
-            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
-            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
             1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,1,0,
+            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0,
+            1,0,0,0, 1,0,0,0, 1,0,0,0, 1,1,1,1,
         ].rotate(1);
-        var len = LFNoise2.kr(~tempo/32).range(3.2,4.5);
-        var imp = PulseDivider.kr(~tick.kr,2);
+        var mod = LFNoise2.kr(1/64*~tempo!4).range(10,40);
+        var len = LFNoise2.kr(~tempo/64!4).range(3.2,4.5);
+        var imp = PulseDivider.kr(~tick.kr,1);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
 
-        var env = {EnvGen.ar( Env([0,1,0],[0.05,len],curve: -1 * mod) ,imp * hit)};
-        var sig = SinOsc.ar(50+(env**mod*50),env**mod*8pi);
-        sig = (LPF.ar(GrayNoise.ar(env/2),150) * (env**(mod*2)*0.2)) + sig;
+        var env = {EnvGen.ar( Env([0,1,0],[0.005,len],curve: [1,-1] * mod) ,imp * hit)};
+        var sig = SinOsc.ar(50+(env**mod*2),env**mod*8pi) + VarSaw.ar(50,0,env**LFNoise2.kr(1/16!4).range(0.1,2),mul:env**0.04/[1,2,3,4]);
+        sig = (RLPF.ar(GrayNoise.ar(env**4),150+(env**0.2*150),0.4) * (env**(mod*0.12)*0.12)) + sig;
         //sig = Normalizer.ar(sig);
         sig = sig * env;
         sig = NumChannels.ar(sig,2);
@@ -467,9 +467,9 @@ Env.adsr(0.1,1,1,0.2,0.9,4).plot;
     }.fork;
 )
 
-
+p.push()
 (
-  s.latency=0.0;
+  s.latency=0.5;
   //p.clock.tempo_(120/60);
   p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].rebuild;};});
   ~tick.kr(1);
@@ -478,7 +478,7 @@ Env.adsr(0.1,1,1,0.2,0.9,4).plot;
   ~counter.clock = p.clock;
   ~counter.quant = 16;
   ~counter = {PulseCount.kr(~tick.kr);};
-  ~tick = { Impulse.kr( ~tempo * 4 ); };
+  ~tick = { Impulse.kr( ~tempo * 2 ); };
 );
 
 // hh synth /////////////////////////////////////// ***
@@ -511,7 +511,7 @@ Env.adsr(0.1,1,1,0.2,0.9,4).plot;
 ~hh3.pause;
 ~hh3.resume;
 
-
+p.bpm(240)
 
 // SWITCH WHISPERING /////////////////////////////////////// ***
 
@@ -936,6 +936,12 @@ p.restartClock;
 );
 ~chaos.clear(20);
 
+(
+//////////////////////////  FADE -> OUT ///////////////////////////////////////////////////////
+{
+  p.arProxyNames.do({|synth| if(synth.asSymbol!=\master){p[synth.asSymbol].clear(20);};});
+}.fork;  
+)
 
 // shuttles synth ///////////////////////////////////////
 

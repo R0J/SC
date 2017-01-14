@@ -114,7 +114,7 @@ p.arProxyNames;
         ].rotate(1);
         var mod2 = LFNoise2.kr(~tempo/160).range(20,80);
         var mod = LFDNoise1.kr(~tempo/160).range(20,80);
-        var imp = PulseDivider.kr(~tick.kr,2);
+        var imp = PulseDivider.kr(~tick.kr,1);
         var hit = Select.kr(PulseCount.kr(imp)%pat.size,pat);
         var env = {EnvGen.ar(Env([0.001,1,0.0001],[0.002,2.5],[mod,-3.3]), imp * hit)};
         var sig;
@@ -122,9 +122,9 @@ p.arProxyNames;
 
         // env = DelayN.ar(env,hum,hum);
 
-        sig = Mix.fill(4,{|i|SinOsc.ar(33.midicps+(env**mod2*33.midicps),env**(mod2+i)*8pi)})/3.5;
+        sig = Mix.fill(4,{|i|SinOsc.ar(36.midicps+(env**mod2*36.midicps),env**(mod2+i)*8pi)})/3.5;
         sig = sig * env;
-        Splay.ar(sig,0.05,0.5);
+        Splay.ar(sig,0.05,0.65);
     };
     ~kick.play;
 );
