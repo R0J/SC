@@ -30,7 +30,40 @@ SignalLayer {
 		this.update;
 	}
 
+	level { |level = 1, time = 1|
+		signal = Signal.newClear(time * rate).fill(level);
+		this.storeArguments(thisMethod, level, time);
+		this.update;
+	}
+
+	ramp { |from = 1, to = 0, time = 1|
+		this.env([from, to], time, \lin);
+	}
+
 	// editing //////////////////////////
+
+	add {|...targets|
+		var layer;
+		var addSize = 0;
+		// "targets: %".format(targets.flatten).postln;
+
+		targets.flatten.do({|index|
+			layer = sDef.layers.at(index);
+			if(layer.notNil) { if(addSize < layer.size) { addSize = layer.size }}
+		});
+		signal = Signal.newClear(addSize);
+		targets.flatten.do({|index|
+			layer = sDef.layers.at(index);
+			if(layer.notNil)
+			{
+				signal.overDub(layer.signal, 0);
+				layer.addParent(this);
+				// "ADD".warn;
+			}
+		});
+		this.storeArguments(thisMethod, targets.flatten);
+		this.update;
+	}
 
 	shift {|target, offset|
 		var layer = sDef.layers.at(target);
@@ -42,7 +75,7 @@ SignalLayer {
 			signal.overWrite(layer.signal, offSize);
 
 			layer.addParent(this);
-			"SHIFT".warn;
+			// "SHIFT".warn;
 		};
 
 		this.storeArguments(thisMethod, target, offset);
