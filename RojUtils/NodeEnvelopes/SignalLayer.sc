@@ -1,12 +1,11 @@
 SignalLayer {
 
 	classvar rate;
-	classvar <>library;
 
 	var sDef, index;
 
-	var parents, reference;
-	var editType, editArgs;
+	var parents;
+	var selector, arguments;
 	var <signal;
 
 	*new {|sDef, index| ^super.newCopyArgs(sDef, index).init }
@@ -15,17 +14,19 @@ SignalLayer {
 
 	init {
 		parents = Set.new;
-		editArgs = IdentityDictionary.new;
 	}
 
-	duration { ^signal.size / rate }
-	size { ^signal.size }
+	storeArguments { |method ... args|
+		selector = method.name.asSymbol;
+		arguments = args;
+	}
 
 	// sources //////////////////////////
 
 	env { |levels = #[0,1,0], times = #[0.15,0.85], curves = #[5,-3]|
 		var envelope = Env(levels, times, curves);
 		signal = envelope.asSignal(envelope.duration * rate);
+		this.storeArguments(thisMethod, levels, times, curves);
 		this.update;
 	}
 
@@ -33,31 +34,29 @@ SignalLayer {
 
 	shift {|target, offset|
 		var layer = sDef.layers.at(target);
+
 		if(layer.notNil)
 		{
+			var offSize = offset * rate;
+			signal = Signal.newClear(layer.size + (offset * rate));
+			signal.overWrite(layer.signal, offSize);
+
 			layer.addParent(this);
-			editType = \shift;
-			reference = RefCopy(layer);
-			editArgs.put(\offset, offset);
+			"SHIFT".warn;
 		};
+
+		this.storeArguments(thisMethod, target, offset);
 		this.update;
 	}
 
 	// references //////////////////////////
 
-	update {
-		case
-		{ editType == \shift } {
-			var	source = reference.next.signal;
-			var srcSize = source.size;
-			var offSize = editArgs.at(\offset) * rate;
-			signal = Signal.newClear(srcSize + offSize);
-			signal.overWrite(source, offSize);
-			// "type: shift".warn;
-		};
+	perform { this.performList(selector, arguments)	}
 
+	update {
 		parents.do({|parentLayer|
 			"%.updateParents -> %".format(this, parentLayer).warn;
+			parentLayer.perform;
 			parentLayer.update;
 		});
 		sDef.update;
@@ -66,43 +65,10 @@ SignalLayer {
 	addParent { |target| parents.add(target); }
 	removeParent { |target| parents.remove(target); }
 
-	/*
-	*connectRefs {|parentKey, childKey|
-	var parentDef = this.exist(parentKey);
-	var childDef = this.exist(childKey);
-	// "Sdef.connectRefs(parent:% | child:%)".format(parentDef, childDef).warn;
-	if(parentDef.key.notNil && childDef.key.notNil)
-	{
-	parentDef.addChild(childDef);
-	childDef.addParent(parentDef);
-	}
-	}
+	// informations //////////////////////////
 
-	*disconnectRefs {|parentKey, childKey|
-	var parentDef = this.exist(parentKey);
-	var childDef = this.exist(childKey);
-	if(parentDef.key.notNil) { parentDef.removeChild(childDef) };
-	if(childDef.key.notNil) { childDef.removeParent(parentDef) };
-	}
-
-	addChild { |target| children.add(target.key); }
-	addParent { |target| parents.add(target.key); }
-
-	removeChild { |target| children.remove(target.key); }
-	removeParent { |target| parents.remove(target.key); }
-
-	updateParents {
-	parents.do({|parentKey|
-	var sDef = Sdef.exist(parentKey);
-	if(sDef.notNil) {
-	"%.updateParents -> %".format(this, sDef).warn;
-	sDef.update;
-	};
-	});
-	}
-
-	update { this.mergeLayers }
-	*/
+	duration { ^signal.size / rate }
+	size { ^signal.size }
 
 	printOn { |stream|	stream << this.class.name << "(id: " << index << " | dur: " << this.duration << ")"; }
 
