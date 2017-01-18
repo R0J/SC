@@ -131,7 +131,10 @@ Sdef3 {
 		^txtPath;
 	}
 
-	update { if(updatePlot) { this.plot } }
+	update {
+		"%.UPDATE".format(this).postln;
+		if(updatePlot) { this.plot }
+	}
 
 	plot {|update|
 		this.updatePlot = update;

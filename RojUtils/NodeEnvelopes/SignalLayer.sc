@@ -2,7 +2,7 @@ SignalLayer {
 
 	classvar rate;
 
-	var sDef, index;
+	var sDef, <index;
 
 	var parents;
 	var selector, arguments;
@@ -104,6 +104,7 @@ SignalLayer {
 
 	shift {|target, offset|
 		var layer = sDef.layers.at(target);
+		// this.init;
 		if(layer.notNil)
 		{
 			var offSize = offset * rate;
@@ -117,7 +118,7 @@ SignalLayer {
 
 	dup { |target, n|
 		var layer = sDef.layers.at(target);
-
+		// this.init;
 		if(layer.notNil)
 		{
 			signal = Signal.new;
@@ -134,11 +135,10 @@ SignalLayer {
 
 	update {
 		parents.do({|parentLayer|
-			// "%.updateParents -> %".format(this, parentLayer).warn;
+			"SignalLayer.update [% -> %]".format(this.index, parentLayer.index).warn;
 			parentLayer.perform;
-			parentLayer.update;
 		});
-		sDef.update;
+		if(parents.isEmpty) { sDef.update };
 	}
 
 	addParent { |target| parents.add(target); }
