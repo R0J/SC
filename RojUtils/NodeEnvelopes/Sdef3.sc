@@ -75,16 +75,12 @@ Sdef3 {
 		this.key = name;
 		this.updatePlot = false;
 
-		// parents = Set.new;
-		// children = Set.new;
-
 		bus = nil;
 		buffer = nil;
 		synth = nil;
 
 		layers = Order.new;
-		// currentLayer = 0;
-		// sigLayers = SignalLayer.new;
+		layers.put(0, SignalLayer(this, 0));
 	}
 
 	initBus {

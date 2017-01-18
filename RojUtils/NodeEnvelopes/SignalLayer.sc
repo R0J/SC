@@ -10,10 +10,14 @@ SignalLayer {
 
 	*new {|sDef, index| ^super.newCopyArgs(sDef, index).init }
 
-	*initClass { rate = 44100 / 64 }
+	*initClass {
+		rate = 44100 / 64;
+		// rate = 44100;
+	}
 
 	init {
 		parents = Set.new;
+		signal = Signal.newClear(rate);
 	}
 
 	storeArguments { |method ... args|
@@ -40,26 +44,59 @@ SignalLayer {
 		this.env([from, to], time, \lin);
 	}
 
+	delete {
+		parents.do({|parentLayer|
+			parentLayer.removeParent(this);
+		});
+
+		if(index == 0)
+		{ signal = Signal.newClear(rate) }
+		{ sDef.layers.removeAt(index) };
+
+		this.update;
+	}
+
 	// editing //////////////////////////
 
-	add {|...targets|
-		var layer;
-		var addSize = 0;
-		// "targets: %".format(targets.flatten).postln;
-
+	add { |...targets|
+		signal = Signal.new;
 		targets.flatten.do({|index|
-			layer = sDef.layers.at(index);
-			if(layer.notNil) { if(addSize < layer.size) { addSize = layer.size }}
-		});
-		signal = Signal.newClear(addSize);
-		targets.flatten.do({|index|
-			layer = sDef.layers.at(index);
+			var layer = sDef.layers.at(index);
 			if(layer.notNil)
 			{
+				if(layer.signal.size > signal.size) { signal = signal.extend(layer.signal.size, 0) };
 				signal.overDub(layer.signal, 0);
 				layer.addParent(this);
-				// "ADD".warn;
 			}
+		});
+		this.storeArguments(thisMethod, targets.flatten);
+		this.update;
+	}
+
+	over { |...targets|
+		signal = Signal.new;
+		targets.flatten.do({|index|
+			var layer = sDef.layers.at(index);
+			if(layer.notNil)
+			{
+				if(layer.signal.size > signal.size) { signal = signal.extend(layer.signal.size, 0) };
+				signal.overWrite(layer.signal, 0);
+				layer.addParent(this);
+			}
+		});
+		this.storeArguments(thisMethod, targets.flatten);
+		this.update;
+	}
+
+	chain { |...targets|
+		signal = Signal.new;
+		targets.flatten.do({|index|
+			var layer = sDef.layers.at(index);
+			if(layer.notNil)
+			{
+				signal = signal ++ layer.signal;
+				layer.addParent(this);
+			};
 		});
 		this.storeArguments(thisMethod, targets.flatten);
 		this.update;
@@ -67,18 +104,27 @@ SignalLayer {
 
 	shift {|target, offset|
 		var layer = sDef.layers.at(target);
-
 		if(layer.notNil)
 		{
 			var offSize = offset * rate;
-			signal = Signal.newClear(layer.size + (offset * rate));
+			signal = Signal.newClear(layer.size + offSize);
 			signal.overWrite(layer.signal, offSize);
-
 			layer.addParent(this);
-			// "SHIFT".warn;
 		};
-
 		this.storeArguments(thisMethod, target, offset);
+		this.update;
+	}
+
+	dup { |target, n|
+		var layer = sDef.layers.at(target);
+
+		if(layer.notNil)
+		{
+			signal = Signal.new;
+			n.do({ signal = signal ++ layer.signal });
+			layer.addParent(this);
+		};
+		this.storeArguments(thisMethod, target, n);
 		this.update;
 	}
 
@@ -88,7 +134,7 @@ SignalLayer {
 
 	update {
 		parents.do({|parentLayer|
-			"%.updateParents -> %".format(this, parentLayer).warn;
+			// "%.updateParents -> %".format(this, parentLayer).warn;
 			parentLayer.perform;
 			parentLayer.update;
 		});
