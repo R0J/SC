@@ -3,7 +3,6 @@ SignalLayer {
 	classvar rate;
 
 	var sDef, <index;
-
 	var parents;
 	var selector, arguments;
 	var <signal;
@@ -104,7 +103,6 @@ SignalLayer {
 
 	shift {|target, offset|
 		var layer = sDef.layers.at(target);
-		// this.init;
 		if(layer.notNil)
 		{
 			var offSize = offset * rate;
@@ -118,7 +116,6 @@ SignalLayer {
 
 	dup { |target, n|
 		var layer = sDef.layers.at(target);
-		// this.init;
 		if(layer.notNil)
 		{
 			signal = Signal.new;
@@ -126,6 +123,21 @@ SignalLayer {
 			layer.addParent(this);
 		};
 		this.storeArguments(thisMethod, target, n);
+		this.update;
+	}
+
+	dupTime { |target, time, targetDur|
+		var rest = time % targetDur;
+		var loopCnt = (time-rest)/targetDur;
+		var layer = sDef.layers.at(target);
+		if(layer.notNil)
+		{
+			signal = Signal.newClear(time * rate);
+			loopCnt.do({|noLoop| signal.overWrite(layer.signal, noLoop * targetDur * rate) });
+			if(rest != 0) { signal.overWrite(layer.signal, loopCnt * targetDur * rate) };
+			layer.addParent(this);
+		};
+		this.storeArguments(thisMethod, target, time, targetDur);
 		this.update;
 	}
 
