@@ -141,6 +141,18 @@ SignalLayer {
 		this.update;
 	}
 
+	fixTime { |target, time|
+		var layer = sDef.layers.at(target);
+		if(layer.notNil)
+		{
+			signal = Signal.newClear(time * rate);
+			signal.overWrite(layer.signal);
+			layer.addParent(this);
+		};
+		this.storeArguments(thisMethod, target, time);
+		this.update;
+	}
+
 	// references //////////////////////////
 
 	perform { this.performList(selector, arguments)	}

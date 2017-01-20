@@ -5,7 +5,7 @@ Sdef3 {
 	classvar hasInitSynthDefs, bufferSynthDef;
 
 	var <key, <path;
-	var <bus, <buffer, <synth;
+	var <bus, <buffer, bufferID, <synth;
 	var <layers;
 	var <updatePlot;
 
@@ -76,7 +76,8 @@ Sdef3 {
 		this.updatePlot = false;
 
 		bus = nil;
-		buffer = nil;
+		buffer = Buffer.alloc( Server.default, 1 );
+		bufferID = buffer.bufnum;
 		synth = nil;
 
 		layers = Order.new;
@@ -114,6 +115,80 @@ Sdef3 {
 		if(lastIndex.isNil) { ^nil } { ^layers.at(lastIndex).signal };
 	}
 
+	update {
+		"%.UPDATE".format(this).postln;
+		this.render;
+		if(updatePlot) { this.plot }
+	}
+
+	render {
+		var startRenderTime = SystemClock.beats;
+
+		buffer = Buffer.alloc(
+			server: Server.default,
+			numFrames: this.signal.size,
+			numChannels: 1,
+			bufnum: bufferID
+		);
+
+		"render buffer: % , frames: %".format(buffer, buffer.numFrames).warn;
+		buffer.loadCollection(
+			collection: this.signal,
+			startFrame: 0,
+			action: {|buff|
+				// var bufferID = buff.bufnum;
+				var bufferFramesCnt = buff.numFrames;
+				var dur = super.class.time(bufferFramesCnt);
+				// var time2quant = currentEnvironment.clock.timeToNextBeat(this.duration);
+
+				"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
+					bufferID,
+					dur,
+					(SystemClock.beats - startRenderTime),
+					bufferFramesCnt
+				).postln;
+
+				// signal = signal.normalize;
+			}
+		);
+		// };
+	}
+
+	kr { ^BusPlug.for(bus); }
+
+	play { |clock = nil|
+		var bufferFramesCnt = buffer.numFrames;
+		var dur = super.class.time(bufferFramesCnt);
+
+		var time2quant;
+		if(clock.isNil) { clock = currentEnvironment.clock; };
+		time2quant = clock.timeToNextBeat(dur);
+
+		if(synth.notNil) { synth.free };
+		// "play buffer: % || bus: % || t2q: %".format(buffer, bus, time2quant).warn;
+
+		bufferSynthDef.name_("Sdef(%)".format(this.printName));
+		synth =	bufferSynthDef.play(
+			target: RootNode(Server.default),
+			args:
+			[
+				\bus: bus,
+				\bufnum: buffer.bufnum,
+				\startTime, dur - time2quant,
+				\tempoClock, currentEnvironment.clock.tempo,
+				// \multiplicationBus, multBus.asMap
+			]
+		);
+		// if(loop.not, FreeSelfWhenDone.kr(synth));
+		// "play buffer init (%)".format(synth).warn;
+	}
+
+	stop {
+		synth.free;
+		synth = nil;
+		bus.set(0);
+	}
+
 	// informations //////////////////////////
 
 	printOn { |stream|	stream << this.class.name << "('" << this.key << "' | cnt: " << this.layerCount << ")"; }
@@ -129,11 +204,6 @@ Sdef3 {
 			}
 		});
 		^txtPath;
-	}
-
-	update {
-		"%.UPDATE".format(this).postln;
-		if(updatePlot) { this.plot }
 	}
 
 	plot {|update|
