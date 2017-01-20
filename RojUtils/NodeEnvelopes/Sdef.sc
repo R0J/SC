@@ -1,29 +1,13 @@
 Sdef {
-	var <key, <path;
-
-	var <duration;
-	var <size;
-	var <bus;
-
-	var <references;
-	var <parents, <children;
-
-	var <layers, <modifications;
-	var <layers2;
-	var <signal;
-	var peak;
-
-	var <buffer, <synth;
-	// var <isRendered;
-
-	var <updatePlot;
 
 	classvar <>library;
 	classvar controlRate;
+	classvar hasInitSynthDefs, bufferSynthDef;
 
-	classvar hasInitSynthDefs;
-	classvar bufferSynthDef, testSynthDef;
-	classvar playBuf;
+	var <key, <path;
+	var <bus, <buffer, bufferID, <synth;
+	var <layers;
+	var <updatePlot;
 
 	*initClass {
 		library = MultiLevelIdentityDictionary.new;
@@ -31,34 +15,41 @@ Sdef {
 		hasInitSynthDefs = false;
 	}
 
-	*new { |key = nil, index = 0|
+	*new { |name = nil, index = nil|
+		var sDef;
 		if(hasInitSynthDefs.not) { this.initSynthDefs; };
 
-		if(key.asArray.notEmpty)
+		if(name.asArray.notEmpty)
 		{
-			var sDef = this.exist(key);
-			if(sDef.isNil)
-			{
-				sDef = super.new.init(key);
-				sDef.initBus;
-			};
-
-			if(index.isNil)
-			{ ^sDef }
-			{ ^sDef.layer(index) }
+			sDef = this.exist(name);
+			if(sDef.isNil) { sDef = super.new.init(name).initBus };
 		}
-		{ ^super.new.init(nil)	}
+		{ sDef = super.new.init(nil) };
+
+		if(index.notNil)
+		{
+			var layer =	sDef.layers.at(index);
+			if(layer.isNil) {
+				layer = SdefLayer(sDef, index);
+				sDef.layers.put(index, layer);
+			}
+			^layer;
+		}
+		{ ^sDef }
 	}
 
-	*exist { |key|
-		var path = key.asArray ++ \def;
+	*exist { |name|
+		var path = name.asArray ++ \def;
 		var sDef = this.library.atPath(path);
 		if(sDef.notNil) { ^sDef; } { ^nil; }
 	}
 
 	*printAll { this.library.postTree; ^nil; }
 
-	*frame { |time| ^controlRate * time; }
+	*frame { |time| ^controlRate * time }
+	*time { |frame| ^frame / controlRate }
+
+	// init //////////////////////////
 
 	*initSynthDefs{
 		if(Server.default.serverRunning.not) { Server.default.onBootAdd({ this.initSynthDefs }) }
@@ -74,38 +65,23 @@ Sdef {
 				Out.kr(bus, buf);
 			}.asSynthDef;
 
-			testSynthDef = { |bufnum, freq = 440, startTime = 0|
-				var buf = PlayBuf.kr(
-					numChannels: 1,
-					bufnum: bufnum,
-					startPos: startTime * controlRate,
-					rate: \tempoClock.kr(1),
-					loop: 0
-				);
-				var sig = SinOsc.ar(freq!2, 0, mul: buf);
-				FreeSelfWhenDone.kr(buf);
-				Out.ar(0, sig);
-			}.asSynthDef;
-
 			controlRate = Server.default.sampleRate / Server.default.options.blockSize;
 			"\nSdef initialization of SynthDefs done. Control rate set on %".format(controlRate).postln;
 		};
 		hasInitSynthDefs = true;
 	}
 
-	init { |initKey, initDur|
-		this.key = initKey;
-
+	init { |name|
+		this.key = name;
 		this.updatePlot = false;
-		this.initLayers;
-
-		parents = Set.new;
-		children = Set.new;
 
 		bus = nil;
-		buffer = nil;
+		buffer = Buffer.alloc( Server.default, 1 );
+		bufferID = buffer.bufnum;
 		synth = nil;
-		// isRendered = false;
+
+		layers = Order.new;
+		layers.put(0, SdefLayer(this, 0));
 	}
 
 	initBus {
@@ -119,95 +95,91 @@ Sdef {
 		{ bus = Bus.control(Server.default, 1) }
 	}
 
-	// empty defs //////////////////////////
-
-	*level { |level = 1, dur = 1, offset = 0|
-		var sDef = Sdef(nil, dur + offset);
-		var levelSignal = Signal.newClear(this.frame(dur)).fill(level);
-		sDef.layer(0, \new, offset, levelSignal);
-		^sDef;
-	}
-
-	*ramp { |from = 1, to = 0, dur = 1, offset = 0|
-		^this.env([from, to], dur, \lin, offset);
-	}
-
-	*env { |levels = #[0,1,0], times = #[0.15,0.85], curves = #[5,-3], offset = 0|
-		var envelope = Env(levels, times, curves);
-		var sig = Sdef.prGetSignal(envelope);
-		var sDef = Sdef.new;
-		sDef.duration = envelope.duration + offset;
-		sDef.sigLayers.put(0,sig);
-		// sDef.layer(0, \new, offset, envelope);
-		^sDef;
-	}
-
-	*copy { |name, target|
-		var sDef = this.exist(target).copy;
-		if(sDef.notNil)	{
-			sDef.key = name;
-			^sDef;
-		} { ^nil };
-	}
-
 	// instance //////////////////////////
 
 	key_ {|name|
-		// "rename def from % to %".format(key, name).postln;
+		"rename def from % to %".format(key, name).postln;
 		if(name.notNil)
 		{
-			var tempParents = parents.copy;
-			var tempChildren = children.copy;
-
-			parents.do({|parentKey| Sdef.disconnectRefs(parentKey, key); });
-			children.do({|childKey| Sdef.disconnectRefs(key, childKey); });
-
 			key = name;
 			if(path.notNil) { library.removeEmptyAtPath(path) };
 			path = key.asArray ++ \def;
-
 			library.putAtPath(path, this);
-
-			tempParents.do({|parentKey| Sdef.connectRefs(parentKey, key); });
-			tempChildren.do({|childKey| Sdef.connectRefs(key, childKey); });
 		}
 	}
 
-	duration_ {|dur|
-		if(duration != dur)
-		{
-			if(buffer.notNil) { buffer.free; };
-			duration = dur;
-			signal = Signal.newClear(super.class.frame(duration));
-			size = signal.size;
-			buffer = Buffer.alloc(
-				server: Server.default,
-				numFrames: size,
-				numChannels: 1,
-			);
-			"new buffer init (%)".format(buffer).warn;
-			// if(layers.lines.size > 0) { this.mergeLayers };
-			this.play;
-		}
+	layerCount { ^layers.lastIndex }
+
+	signal {
+		var lastIndex = layers.lastIndex;
+		if(lastIndex.isNil) { ^nil } { ^layers.at(lastIndex).signal };
+	}
+
+	update {
+		// "%.UPDATE".format(this).postln;
+		this.render;
+		if(updatePlot) { this.plot }
+	}
+
+	render {
+		var startRenderTime = SystemClock.beats;
+
+		buffer = Buffer.alloc(
+			server: Server.default,
+			numFrames: this.signal.size,
+			numChannels: 1,
+			bufnum: bufferID
+		);
+
+		"render buffer: % , frames: %".format(buffer, buffer.numFrames).warn;
+		buffer.loadCollection(
+			collection: this.signal,
+			startFrame: 0,
+			action: {|buff|
+				var bufferFramesCnt = buff.numFrames;
+				var dur = super.class.time(bufferFramesCnt);
+				"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
+					bufferID,
+					dur,
+					(SystemClock.beats - startRenderTime),
+					bufferFramesCnt
+				).postln;
+			}
+		);
+	}
+
+	kr {
+		/*
+		thisProcess.interpreter.cmdLine.postln;
+		thisProcess.getCurrentSelection.postln;
+		thisProcess.argv.postln;
+		thisMethod.selectors.postln;
+		thisMethod.prototypeFrame.postln;
+		thisMethod.prototypeFrame.postln;
+		*/
+		^BusPlug.for(bus);
 	}
 
 	play { |clock = nil|
+		var bufferFramesCnt = buffer.numFrames;
+		var dur = super.class.time(bufferFramesCnt);
+
 		var time2quant;
 		if(clock.isNil) { clock = currentEnvironment.clock; };
-		time2quant = clock.timeToNextBeat(this.duration);
+		time2quant = clock.timeToNextBeat(dur);
 
 		if(synth.notNil) { synth.free };
 		// "play buffer: % || bus: % || t2q: %".format(buffer, bus, time2quant).warn;
 
-		bufferSynthDef.name_("Sdef(%)".format(this.path2txt));
+		bufferSynthDef.name_("Sdef(%)".format(this.printName));
 		synth =	bufferSynthDef.play(
 			target: RootNode(Server.default),
 			args:
 			[
 				\bus: bus,
 				\bufnum: buffer.bufnum,
-				\startTime, this.duration - time2quant,
-				\tempoClock, currentEnvironment.clock.tempo,
+				\startTime, dur - time2quant,
+				\tempoClock, currentEnvironment.clock.tempo
 				// \multiplicationBus, multBus.asMap
 			]
 		);
@@ -221,299 +193,29 @@ Sdef {
 		bus.set(0);
 	}
 
+	// informations //////////////////////////
 
+	printOn { |stream|	stream << this.class.name << "('" << this.key << "' | cnt: " << this.layerCount << ")"; }
 
-	// layers //////////////////////////
-
-	initLayers {
-		// "%.initLayers".format(this).warn;
-		layers = Table(\selector, \offset, \sdef, \mute);
-		modifications = Table(\mute, \start, \shift);
-		layers2 = Order.new; // order of signals
-	}
-
-	layer { |index|
-		var sDef = layers2.at(index);
-		if(sDef.isNil)
-		{
-			sDef = Sdef.new;
-			layers2.put(index, sDef);
-			// "Sdef.layer new index: %".format(index).warn;
-		}
-		^sDef;
-	}
-
-	// at { |index| ^layers2.at(index) }
-	// put { |index|
-
-	env { |levels = #[0,1,0], times = #[0.15,0.85], curves = #[5,-3]|
-		var envelope = Env(levels, times, curves);
-		var sig = envelope.asSignal(super.class.frame(envelope.duration));
-		this.duration = envelope.duration;
-		this.layers2.put(0,sig);
-	}
-
-	/*
-	layer { |index, type, offset, data|
-	"Sdef.layer data class: %".format(data.class).postln;
-	case
-	{ data.isKindOf(Signal) || data.isKindOf(FloatArray)}
-	{
-	layers.putLine(index, type.asSymbol, offset, data, false)
-	}
-	{ data.isKindOf(Env) }
-	{ layers.putLine(index, type.asSymbol, offset, data.asSignal(super.class.frame(data.duration)), false) }
-	{ data.isKindOf(Integer) || data.isKindOf(Float)}
-	{ layers.putLine(index, type.asSymbol, offset, Signal.newClear(super.class.frame(this.duration)).fill(data), false) }
-	{ data.isKindOf(Sdef) }
-	{
-	layers.putLine(index, type.asSymbol, offset, data, false);
-	Sdef.connectRefs(key, data.key);
-	}
-	{ data.isKindOf(Function) } {
-	Routine.run({
-	var condition = Condition.new;
-	"Rendering layer from function. Duration: %".format(this.duration).warn;
-	data.loadToFloatArray(this.duration, Server.default, {|array|
-	layers.putLine(index, type.asSymbol, offset, Signal.newFrom(array), false);
-	condition.test = true;
-	condition.signal;
-	});
-	condition.wait;
-	"render done".warn;
-	this.mergeLayers;
-	},clock: AppClock);
-	^nil;
-	};
-	this.mergeLayers;
-	}
-	*/
-
-	// at { |index| ^layers2.at(index) }
-	at { |index| ^layers.get(\sdef, index) }
-
-	add { |index, data|
-
-	}
-
-	over { |index, data|
-
-	}
-
-	mergeLayers {
-		signal = signal.fill(0); // Signal.newClear(super.class.frame(duration));
-
-		modifications.lines.do({|i|
-			var oneLine = modifications.getLine(i);
-			var mute = oneLine[0];
-			var start = oneLine[1];
-			var shift = oneLine[2];
-
-			if(mute.notNil) { layers.put(i, \mute, mute) };
-			if(start.notNil) { layers.put(i, \offset, start) };
-			if(shift.notNil) {
-				var layerStart = layers.get(\offset, i);
-				layers.put(i, \offset, shift + layerStart)
-			};
-		});
-
-		layers.lines.do({|i|
-			var oneLine = layers.getLine(i);
-			var type = oneLine[0];
-			var offset = oneLine[1];
-			var sig = oneLine[2];
-			var mute = oneLine[3];
-			// "type: % || off: % || sig: %".format(type, offset, sig).postln;
-			if(sig.isKindOf(Sdef)) { sig = sig.signal };
-			if(mute.not)
+	printName {
+		var txtPath = "";
+		path.do({|oneFolder|
+			if(txtPath.isEmpty)
+			{ txtPath = "%%".format("\\", oneFolder); }
 			{
-				offset.asArray.do({|oneTime|
-					case
-					{ type.asSymbol == \new } { signal.overWrite(sig, super.class.frame(oneTime)) }
-					{ type.asSymbol == \add } { signal.overDub(sig, super.class.frame(oneTime)) };
-				});
-			};
-		});
-
-		peak = signal.peak;
-		// signal = signal.normalize;
-
-		if(updatePlot) { this.plot };
-		this.updateParents;
-		this.render;
-	}
-
-	// references //////////////////////////
-
-	*connectRefs {|parentKey, childKey|
-		var parentDef = this.exist(parentKey);
-		var childDef = this.exist(childKey);
-		// "Sdef.connectRefs(parent:% | child:%)".format(parentDef, childDef).warn;
-		if(parentDef.key.notNil && childDef.key.notNil)
-		{
-			parentDef.addChild(childDef);
-			childDef.addParent(parentDef);
-		}
-	}
-
-	*disconnectRefs {|parentKey, childKey|
-		var parentDef = this.exist(parentKey);
-		var childDef = this.exist(childKey);
-		if(parentDef.key.notNil) { parentDef.removeChild(childDef) };
-		if(childDef.key.notNil) { childDef.removeParent(parentDef) };
-	}
-
-	addChild { |target| children.add(target.key); }
-	addParent { |target| parents.add(target.key); }
-
-	removeChild { |target| children.remove(target.key); }
-	removeParent { |target| parents.remove(target.key); }
-
-	updateParents {
-		parents.do({|parentKey|
-			var sDef = Sdef.exist(parentKey);
-			if(sDef.notNil) {
-				"%.updateParents -> %".format(this, sDef).warn;
-				sDef.update;
-			};
-		});
-	}
-
-	update { this.mergeLayers }
-
-
-	// edit //////////////////////////
-
-	mute { |...indexs|
-		indexs.do({|oneLayer| modifications.put(oneLayer, \mute, true) });
-		this.mergeLayers;
-	}
-	unmute { |...indexs|
-		indexs.do({|oneLayer| modifications.put(oneLayer, \mute, false) });
-		this.mergeLayers;
-	}
-	unmuteAll {
-		modifications.lines.do({|i|	modifications.put(i, \mute, false) });
-		this.mergeLayers;
-	}
-
-	shift { |offset ...indexs|
-		indexs.do({|oneLayer| modifications.put(oneLayer, \shift, offset) });
-		this.mergeLayers;
-	}
-
-	dup { |index, targetDur, cloneDur|
-		var rest = targetDur % cloneDur;
-		var loopCnt = (targetDur-rest)/cloneDur;
-		var offsets = Array.newClear(loopCnt);
-		// "rest: %; loopCnt: % ".format(rest, loopCnt).postln;
-
-		loopCnt.do({|loopNum|
-			offsets.put(loopNum, cloneDur * loopNum);
-		});
-		modifications.put(index, \start, offsets);
-		this.mergeLayers;
-	}
-
-	kr { ^BusPlug.for(bus); }
-	/*
-	add {|... args|
-	args.pairsDo({|offset, data|
-	"Sdef.add offset: % | data: %".format(offset, data).postln;
-	this.addLayer(\add, offset, data);
-	});
-	}
-	*/
-	render {
-		if(buffer.notNil)
-		{
-			var renderedBuffer;
-			var startRenderTime = SystemClock.beats;
-
-			// isRendered = false;
-
-			"render buffer: %".format(buffer).warn;
-			buffer.loadCollection(
-				collection: signal,
-				action: {|buff|
-					var bufferID = buff.bufnum;
-					var bufferFramesCnt = buff.numFrames;
-					var time2quant = currentEnvironment.clock.timeToNextBeat(this.duration);
-					// isRendered = true;
-
-					"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
-						bufferID,
-						this.duration,
-						(SystemClock.beats - startRenderTime),
-						bufferFramesCnt
-					).postln;
-
-					// signal = signal.normalize;
-				}
-			);
-		};
-	}
-
-	trig { |startTime = 0, endTime = nil, parentGroup = nil, clock = nil, multBus = nil|
-		if(clock.isNil) { clock = currentEnvironment.clock; };
-
-		if(buffer.notNil)
-		{
-			var group = RootNode(Server.default);
-
-			if(parentGroup.notNil) { group = parentGroup; };
-			bufferSynthDef.name_("Sdef(%)".format(this.path2txt));
-			synth =	bufferSynthDef.play(
-				target: group,
-				args:
-				[
-					\bus: bus,
-					\bufnum: buffer.bufnum,
-					\startTime, startTime,
-					\tempoClock, currentEnvironment.clock.tempo,
-					// \multiplicationBus, multBus.asMap
-				]
-			);
-			// synth.set(\multiplicationBus, multBus);
-			if(endTime.notNil)
-			{
-				clock.sched((endTime - startTime), { synth.free; nil; });
+				if(oneFolder != \def)
+				{ txtPath = "%%%".format(txtPath,"\\", oneFolder); }
 			}
-		}
-		{ "% buffer not found".format(this).warn; }
-	}
-
-	test {|freq = 120, startTime = 0|
-		{
-			var clock;
-			if(currentEnvironment[\tempo].notNil)
-			{ clock = currentEnvironment.clock }
-			{ clock = TempoClock.default };
-
-			if(this.duration - startTime > 0)
-			{
-				var testSynth;
-				testSynthDef.name_("Sdef_test_%".format(this.path2txt));
-				testSynth = testSynthDef.play(
-					target: RootNode(Server.default),
-					args:[
-						\bufnum: buffer.bufnum,
-						\freq: freq,
-						\tempoClock, clock.tempo,
-					]
-				);
-				// ^testSynth;
-			}
-			{ "% is shorter than arg startTime(%)".format(this, startTime).warn; }
-		}.defer(0.01);
+		});
+		^txtPath;
 	}
 
 	plot {|update|
 		this.updatePlot = update;
 
-		if(signal.notEmpty)
+		if(this.signal.notNil)
 		{
-			var winName = "Sdef(%)".format(this.path2txt);
+			var winName = "Sdef(%)".format(this.printName);
 			var windows = Window.allWindows;
 			var plotWin = nil;
 			var plotter;
@@ -524,7 +226,7 @@ Sdef {
 
 			if(plotWin.isNil)
 			{
-				plotter = signal.plot(
+				plotter = this.signal.plot(
 					name: winName.asSymbol,
 					bounds: Rect(700,680,500,300)
 				);
@@ -538,10 +240,10 @@ Sdef {
 					parent: plotWin
 				);
 				plotWin.view.children[0].bounds_(Rect(8,8,plotWin.view.bounds.width-16,plotWin.view.bounds.height-16));
-				plotter.value = signal;
+				plotter.value = this.signal;
 			};
 
-			plotter.domainSpecs = [[0, this.duration, 0, 0, "", " s"]];
+			plotter.domainSpecs = [[0,  super.class.time(this.signal.size), 0, 0, "", " s"]];
 			plotter.setProperties (
 				\backgroundColor, Color.new255(30,30,30),
 				\plotColor, Color.new255(30,190,230),
@@ -556,20 +258,4 @@ Sdef {
 	}
 
 	updatePlot_ {|bool|	if(bool.isKindOf(Boolean)) { updatePlot = bool } }
-
-	printOn { |stream|	stream << this.class.name << "('" << this.key << "' | dur: " << this.duration << ")"; }
-
-	path2txt {
-		var txtPath = "";
-		path.do({|oneFolder|
-			if(txtPath.isEmpty)
-			{ txtPath = "%%".format("\\", oneFolder); }
-			{
-				if(oneFolder != \def)
-				{ txtPath = "%%%".format(txtPath,"\\", oneFolder); }
-			}
-		});
-		^txtPath;
-	}
-
 }

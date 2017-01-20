@@ -1,4 +1,4 @@
-SignalLayer {
+SdefLayer {
 
 	classvar rate;
 
@@ -43,6 +43,10 @@ SignalLayer {
 		this.env([from, to], time, \lin);
 	}
 
+	freq { |octave, degree|
+
+	}
+
 	delete {
 		parents.do({|parentLayer|
 			parentLayer.removeParent(this);
@@ -56,50 +60,6 @@ SignalLayer {
 	}
 
 	// editing //////////////////////////
-
-	add { |...targets|
-		signal = Signal.new;
-		targets.flatten.do({|index|
-			var layer = sDef.layers.at(index);
-			if(layer.notNil)
-			{
-				if(layer.signal.size > signal.size) { signal = signal.extend(layer.signal.size, 0) };
-				signal.overDub(layer.signal, 0);
-				layer.addParent(this);
-			}
-		});
-		this.storeArguments(thisMethod, targets.flatten);
-		this.update;
-	}
-
-	over { |...targets|
-		signal = Signal.new;
-		targets.flatten.do({|index|
-			var layer = sDef.layers.at(index);
-			if(layer.notNil)
-			{
-				if(layer.signal.size > signal.size) { signal = signal.extend(layer.signal.size, 0) };
-				signal.overWrite(layer.signal, 0);
-				layer.addParent(this);
-			}
-		});
-		this.storeArguments(thisMethod, targets.flatten);
-		this.update;
-	}
-
-	chain { |...targets|
-		signal = Signal.new;
-		targets.flatten.do({|index|
-			var layer = sDef.layers.at(index);
-			if(layer.notNil)
-			{
-				signal = signal ++ layer.signal;
-				layer.addParent(this);
-			};
-		});
-		this.storeArguments(thisMethod, targets.flatten);
-		this.update;
-	}
 
 	shift {|target, offset|
 		var layer = sDef.layers.at(target);
@@ -153,6 +113,60 @@ SignalLayer {
 		this.update;
 	}
 
+	// merge //////////////////////////
+
+	add { |...targets|
+		signal = Signal.new;
+		targets.flatten.do({|index|
+			var layer = sDef.layers.at(index);
+			if(layer.notNil)
+			{
+				if(layer.signal.size > signal.size) { signal = signal.extend(layer.signal.size, 0) };
+				signal.overDub(layer.signal, 0);
+				layer.addParent(this);
+			}
+		});
+		this.storeArguments(thisMethod, targets.flatten);
+		this.update;
+	}
+
+	over { |...targets|
+		signal = Signal.new;
+		targets.flatten.do({|index|
+			var layer = sDef.layers.at(index);
+			if(layer.notNil)
+			{
+				if(layer.signal.size > signal.size) { signal = signal.extend(layer.signal.size, 0) };
+				signal.overWrite(layer.signal, 0);
+				layer.addParent(this);
+			}
+		});
+		this.storeArguments(thisMethod, targets.flatten);
+		this.update;
+	}
+
+	chain { |...targets|
+		signal = Signal.new;
+		targets.flatten.do({|index|
+			var layer = sDef.layers.at(index);
+			if(layer.notNil)
+			{
+				signal = signal ++ layer.signal;
+				layer.addParent(this);
+			};
+		});
+		this.storeArguments(thisMethod, targets.flatten);
+		this.update;
+	}
+
+	stutter { |pattern ... targets|
+
+	}
+
+	fade { |fromTarget, toTarget|
+
+	}
+
 	// references //////////////////////////
 
 	perform { this.performList(selector, arguments)	}
@@ -174,5 +188,7 @@ SignalLayer {
 	size { ^signal.size }
 
 	printOn { |stream|	stream << this.class.name << "(id: " << index << " | dur: " << this.duration << ")"; }
+
+	plot { sDef.plot }
 
 }
