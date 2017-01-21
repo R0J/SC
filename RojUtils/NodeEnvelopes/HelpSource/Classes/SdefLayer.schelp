@@ -1,0 +1,115 @@
+title:: SdefLayer
+summary:: indexed layer of signal
+categories:: Libraries>RojUtils
+related:: Classes/Signal
+
+description::
+SdefLayer is a one layer of Sdef. Each layer store one signal.
+code::
+Sdef(\key, index)
+::
+This example show how to get access to SdefLayer instance stored at index of Sdef.
+
+
+ClassMethods::
+
+private::initClass, new, rate
+
+InstanceMethods::
+private::prSetSignal, addRef, updateRefs, path
+
+subsection::Sources
+
+method::level
+Create a new instance of layer and set signal by constat value.
+code::
+Sdef(\key, 0).level(0.2, 1.5).plot;
+::
+argument::level
+value of signal level
+argument::dur
+duration of signal
+
+method::env
+Create new instance of layer definition and set signal by envelope. Detail envelope description at link::Classes/Env#*new::
+code::
+Sdef(\key, 0).env([0,1,0.5,0], [0.2,0.5,0.3], [8, \sin, -5]).plot;
+::
+argument::levels
+an array of signal levels
+argument::times
+an array of signal segment duration
+argument::curves
+an array of signal segment curvature
+
+method::ramp
+Create new instance of layer definition and set signal by start and end level.
+code::
+Sdef(\key, 0).ramp(0.6,0.2,2).plot;
+::
+argument::from
+value of signal level at start
+argument::to
+value of signal level at end
+argument::time
+duration of signal
+
+method::freq
+
+method::delete
+
+
+subsection::Editing
+
+method::shift
+Shift target layer define by index and by offset time.
+argument::target
+Index of source layer for edit
+argument::offset
+Start time offset of layer
+
+method::dupTime
+argument::target
+Index of source layer for edit
+argument::time
+argument::timeDur
+
+method::fixTime
+argument::target
+Index of source layer for edit
+argument::time
+
+method::dup
+argument::target
+Index of source layer for edit
+argument::n
+
+method::fade
+
+subsection::Multi-layers editing
+
+method::add
+
+method::over
+
+method::chain
+
+method::stutter
+
+
+
+subsection::Informations
+method::duration
+duration of signal definition
+
+method::size
+return nuber of frames in signal
+
+subsection::Output
+method::signal
+
+
+
+
+
+
