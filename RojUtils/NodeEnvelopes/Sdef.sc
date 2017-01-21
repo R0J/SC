@@ -149,23 +149,13 @@ Sdef {
 		);
 	}
 
-	kr {
-		currentEnvironment.postln;
-		/*
-		thisProcess.interpreter.cmdLine.postln;
-		thisProcess.getCurrentSelection.postln;
-		thisProcess.argv.postln;
-		thisMethod.selectors.postln;
-		thisMethod.prototypeFrame.postln;
-		thisMethod.prototypeFrame.postln;
-		*/
-		^BusPlug.for(bus);
-	}
+	kr { ^BusPlug.for(bus)	}
 
 	map { |nodeProxy|
+		node = nodeProxy;
+		/*
 		nodeProxy.postln;
 		nodeProxy.envirKey.postln;
-		node = nodeProxy;
 		nodeProxy.controlNames.postln;
 
 		nodeProxy.objects.do({ |synthDefControl, i|
@@ -173,8 +163,8 @@ Sdef {
 			"synthDef: %".format(synthDefControl.synthDef).postln;
 			"asDefName: %".format(synthDefControl.asDefName).postln;
 			"ProxySynthDef: %".format(synthDefControl.synthDef).postln;
-
 		})
+		*/
 	}
 
 	play { |clock = nil|
