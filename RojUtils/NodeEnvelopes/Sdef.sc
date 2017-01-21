@@ -7,6 +7,7 @@ Sdef {
 	var <key, <path;
 	var <bus, <buffer, bufferID, <synth;
 	var <layers;
+	var node;
 	var <updatePlot;
 
 	*initClass {
@@ -149,6 +150,7 @@ Sdef {
 	}
 
 	kr {
+		currentEnvironment.postln;
 		/*
 		thisProcess.interpreter.cmdLine.postln;
 		thisProcess.getCurrentSelection.postln;
@@ -160,6 +162,21 @@ Sdef {
 		^BusPlug.for(bus);
 	}
 
+	map { |nodeProxy|
+		nodeProxy.postln;
+		nodeProxy.envirKey.postln;
+		node = nodeProxy;
+		nodeProxy.controlNames.postln;
+
+		nodeProxy.objects.do({ |synthDefControl, i|
+			"synthDefControl: %, i: %".format(synthDefControl, i).postln;
+			"synthDef: %".format(synthDefControl.synthDef).postln;
+			"asDefName: %".format(synthDefControl.asDefName).postln;
+			"ProxySynthDef: %".format(synthDefControl.synthDef).postln;
+
+		})
+	}
+
 	play { |clock = nil|
 		var bufferFramesCnt = buffer.numFrames;
 		var dur = super.class.time(bufferFramesCnt);
@@ -169,6 +186,12 @@ Sdef {
 		time2quant = clock.timeToNextBeat(dur);
 
 		if(synth.notNil) { synth.free };
+
+		// ("nodePlay: " + node).postln;
+		if(node.notNil) {
+			node.initMonitor(1);
+			node.play
+		};
 		// "play buffer: % || bus: % || t2q: %".format(buffer, bus, time2quant).warn;
 
 		bufferSynthDef.name_("Sdef(%)".format(this.printName));
@@ -190,6 +213,7 @@ Sdef {
 	stop {
 		synth.free;
 		synth = nil;
+		if(node.notNil) { node.free };
 		bus.set(0);
 	}
 
