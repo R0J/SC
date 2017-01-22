@@ -176,7 +176,7 @@ SdefLayer {
 			"SignalLayer.update [% -> %]".format(this.index, parentLayer.index).warn;
 			parentLayer.perform;
 		});
-		if(parents.isEmpty) { sDef.update };
+		if(parents.isEmpty) { sDef.render };
 	}
 
 	addParent { |target| parents.add(target); }

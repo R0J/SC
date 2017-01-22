@@ -120,11 +120,6 @@ Sdef {
 		if(lastIndex.isNil) { ^nil } { ^layers.at(lastIndex).signal };
 	}
 
-	update {
-		this.render;
-		if(updatePlot) { this.plot }
-	}
-
 	render {
 		var startRenderTime = SystemClock.beats;
 
@@ -161,25 +156,25 @@ Sdef {
 				*/
 			}
 		);
-
-
+		if(updatePlot) { this.plot };
 	}
 
 	kr { ^BusPlug.for(bus)	}
 
 	setNode { |nodeProxy, controlName|
-		if(parentNode.isNil) {
-			parentNode = nodeProxy;
-			parentNode.addDependant({this.nodeChanged});
-			parentNode.map(controlName.asSymbol, BusPlug.for(bus));
+		if(nodeProxy.dependants.matchItem(this).notNil) {
+			nodeProxy.addDependant(this);
+			nodeProxy.map(controlName.asSymbol, BusPlug.for(bus));
 		};
+		if(nodeProxy.monitor.isPlaying) { this.play };
 	}
 
-	nodeChanged {
+	update { |from, what, args| // object dependency -> this is target when object.changed is called
+		// "\nSdef.update \n\tfrom:% \n\twhat:% \n\targs:%".format(from, what, args).postln;
 		case
-		{ parentNode.monitor.isPlaying == true} { this.play }
-		{ parentNode.monitor.isPlaying == false } { this.stop };
-		// "Sdef parentNode monitor isPlaying: %".format(parentNode.monitor.isPlaying).postln;
+		{ what.asSymbol == \play } { this.play }
+		{ what.asSymbol == \stop } { this.stop(args[0]) }
+		{ what.asSymbol == \free } { this.stop(args[0]) };
 	}
 
 	play { |clock = nil|
@@ -206,12 +201,15 @@ Sdef {
 		);
 	}
 
-	stop {
-		if(synth.notNil) {
-			synth.free;
-			synth = nil;
-		};
-		bus.set(0);
+	stop { |time = 0|
+		{
+			(time * currentEnvironment.clock.tempo).wait;
+			if(synth.notNil) {
+				synth.free;
+				synth = nil;
+			};
+			bus.set(0);
+		}.fork;
 	}
 
 	// informations //////////////////////////
