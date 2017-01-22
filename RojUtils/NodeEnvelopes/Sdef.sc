@@ -7,7 +7,8 @@ Sdef {
 	var <key, <path;
 	var <bus, <buffer, bufferID, <synth;
 	var <layers;
-	var node;
+	var parentNode;
+	var <duration;
 	var <updatePlot;
 
 	*initClass {
@@ -61,6 +62,7 @@ Sdef {
 					bufnum: bufnum,
 					startPos: startTime * controlRate,
 					rate: \tempoClock.kr(1),
+					trigger: \reset.tr,
 					loop: 1
 				);
 				Out.kr(bus, buf);
@@ -83,6 +85,9 @@ Sdef {
 
 		layers = Order.new;
 		layers.put(0, SdefLayer(this, 0));
+
+		parentNode = nil;
+		duration = nil;
 	}
 
 	initBus {
@@ -99,7 +104,6 @@ Sdef {
 	// instance //////////////////////////
 
 	key_ {|name|
-		"rename def from % to %".format(key, name).postln;
 		if(name.notNil)
 		{
 			key = name;
@@ -117,13 +121,14 @@ Sdef {
 	}
 
 	update {
-		// "%.UPDATE".format(this).postln;
 		this.render;
 		if(updatePlot) { this.plot }
 	}
 
 	render {
 		var startRenderTime = SystemClock.beats;
+
+		duration = super.class.time(this.signal.size);
 
 		buffer = Buffer.alloc(
 			server: Server.default,
@@ -132,78 +137,80 @@ Sdef {
 			bufnum: bufferID
 		);
 
-		"render buffer: % , frames: %".format(buffer, buffer.numFrames).warn;
 		buffer.loadCollection(
 			collection: this.signal,
 			startFrame: 0,
 			action: {|buff|
-				var bufferFramesCnt = buff.numFrames;
-				var dur = super.class.time(bufferFramesCnt);
+				var clock = currentEnvironment.clock;
+				var time2quant = clock.timeToNextBeat(duration);
+				if(synth.notNil)
+				{
+					synth.set(
+						\startTime, duration - time2quant,
+						\reset, 1
+					);
+				};
+
+				/*
 				"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
-					bufferID,
-					dur,
-					(SystemClock.beats - startRenderTime),
-					bufferFramesCnt
+				bufferID,
+				dur,
+				(SystemClock.beats - startRenderTime),
+				bufferFramesCnt
 				).postln;
+				*/
 			}
 		);
+
+
 	}
 
 	kr { ^BusPlug.for(bus)	}
 
-	map { |nodeProxy|
-		node = nodeProxy;
-		/*
-		nodeProxy.postln;
-		nodeProxy.envirKey.postln;
-		nodeProxy.controlNames.postln;
+	setNode { |nodeProxy, controlName|
+		if(parentNode.isNil) {
+			parentNode = nodeProxy;
+			parentNode.addDependant({this.nodeChanged});
+			parentNode.map(controlName.asSymbol, BusPlug.for(bus));
+		};
+	}
 
-		nodeProxy.objects.do({ |synthDefControl, i|
-			"synthDefControl: %, i: %".format(synthDefControl, i).postln;
-			"synthDef: %".format(synthDefControl.synthDef).postln;
-			"asDefName: %".format(synthDefControl.asDefName).postln;
-			"ProxySynthDef: %".format(synthDefControl.synthDef).postln;
-		})
-		*/
+	nodeChanged {
+		case
+		{ parentNode.monitor.isPlaying == true} { this.play }
+		{ parentNode.monitor.isPlaying == false } { this.stop };
+		// "Sdef parentNode monitor isPlaying: %".format(parentNode.monitor.isPlaying).postln;
 	}
 
 	play { |clock = nil|
 		var bufferFramesCnt = buffer.numFrames;
 		var dur = super.class.time(bufferFramesCnt);
-
+		var group = RootNode(Server.default);
 		var time2quant;
 		if(clock.isNil) { clock = currentEnvironment.clock; };
-		time2quant = clock.timeToNextBeat(dur);
+		time2quant = clock.timeToNextBeat(duration);
+		if(parentNode.notNil) { group = parentNode.group };
 
 		if(synth.notNil) { synth.free };
 
-		// ("nodePlay: " + node).postln;
-		if(node.notNil) {
-			node.initMonitor(1);
-			node.play
-		};
-		// "play buffer: % || bus: % || t2q: %".format(buffer, bus, time2quant).warn;
-
 		bufferSynthDef.name_("Sdef(%)".format(this.printName));
 		synth =	bufferSynthDef.play(
-			target: RootNode(Server.default),
+			target: group,
 			args:
 			[
 				\bus: bus,
 				\bufnum: buffer.bufnum,
-				\startTime, dur - time2quant,
-				\tempoClock, currentEnvironment.clock.tempo
-				// \multiplicationBus, multBus.asMap
+				\startTime: (dur - time2quant),
+				\tempoClock: currentEnvironment.clock.tempo
 			]
 		);
-		// if(loop.not, FreeSelfWhenDone.kr(synth));
-		// "play buffer init (%)".format(synth).warn;
 	}
 
 	stop {
-		synth.free;
-		synth = nil;
-		if(node.notNil) { node.free };
+		if(synth.notNil) {
+			synth.free;
+			synth = nil;
+		};
 		bus.set(0);
 	}
 
