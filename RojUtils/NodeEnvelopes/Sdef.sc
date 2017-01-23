@@ -9,11 +9,13 @@ Sdef {
 	var <layers;
 	var parentNode;
 	var <duration;
-	var <updatePlot;
+	// var <updatePlot;
+	var hasPlotWin;
 
 	*initClass {
 		library = MultiLevelIdentityDictionary.new;
 		controlRate = 44100 / 64;
+		// controlRate = 44100;
 		hasInitSynthDefs = false;
 	}
 
@@ -68,7 +70,7 @@ Sdef {
 				Out.kr(bus, buf);
 			}.asSynthDef;
 
-			controlRate = Server.default.sampleRate / Server.default.options.blockSize;
+			// controlRate = Server.default.sampleRate / Server.default.options.blockSize;
 			"\nSdef initialization of SynthDefs done. Control rate set on %".format(controlRate).postln;
 		};
 		hasInitSynthDefs = true;
@@ -76,7 +78,8 @@ Sdef {
 
 	init { |name|
 		this.key = name;
-		this.updatePlot = false;
+		// this.updatePlot = false;
+		hasPlotWin = false;
 
 		bus = nil;
 		buffer = Buffer.alloc( Server.default, 1 );
@@ -141,10 +144,12 @@ Sdef {
 				if(synth.notNil)
 				{
 					synth.set(
-						\startTime, duration - time2quant,
+						\startTime, (duration - time2quant),
 						\reset, 1
 					);
 				};
+
+				// "buffer \n\t beats: % \n\t duration: % \n\t t2q: % \n\t offset: %".format(clock.beats, duration, time2quant, clock.beats + (duration - time2quant)).postln;
 
 				/*
 				"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
@@ -156,7 +161,8 @@ Sdef {
 				*/
 			}
 		);
-		if(updatePlot) { this.plot };
+		// if(updatePlot) { this.plot };
+		this.updatePlot;
 	}
 
 	kr { ^BusPlug.for(bus)	}
@@ -165,6 +171,7 @@ Sdef {
 		if(nodeProxy.dependants.matchItem(this).notNil) {
 			nodeProxy.addDependant(this);
 			nodeProxy.map(controlName.asSymbol, BusPlug.for(bus));
+			parentNode = nodeProxy;
 		};
 		if(nodeProxy.monitor.isPlaying) { this.play };
 	}
@@ -201,9 +208,9 @@ Sdef {
 		);
 	}
 
-	stop { |time = 0|
+	stop { |time|
 		{
-			(time * currentEnvironment.clock.tempo).wait;
+			if(time.notNil) { (time * currentEnvironment.clock.tempo).wait; };
 			if(synth.notNil) {
 				synth.free;
 				synth = nil;
@@ -229,10 +236,47 @@ Sdef {
 		^txtPath;
 	}
 
-	plot {|update|
-		this.updatePlot = update;
-
+	plot {
 		if(this.signal.notNil)
+		{
+			var winName = "Sdef(%)".format(this.printName);
+			var windows = Window.allWindows;
+			var plotWin = nil;
+			var plotter;
+
+			windows.do({|oneW|
+				if(winName.asSymbol == oneW.name.asSymbol) {
+					hasPlotWin = true;
+					plotWin = oneW;
+				};
+			});
+
+			if(plotWin.isNil)
+			{
+				plotter = this.signal.plot(
+					name: winName.asSymbol,
+					bounds: Rect(700,680,500,300)
+				);
+				plotter.parent.onClose_({ hasPlotWin = false });
+				plotter.parent.alwaysOnTop_(true);
+				plotter.parent.view.background_(Color.new255(30,30,30)).alpha_(0.9);
+
+				plotter.setProperties (
+					\backgroundColor, Color.new255(30,30,30),
+					\plotColor, Color.new255(30,190,230),
+					\fontColor, Color.new255(90,90,90),
+					\gridColorX, Color.new255(60,60,60),
+					\gridColorY, Color.new255(60,60,60),
+					\gridLinePattern, FloatArray[2,4],
+				);
+				plotter.refresh;
+			}
+		}
+		{ "% signal is empty".format(this).warn; };
+	}
+
+	updatePlot {
+		if(hasPlotWin)
 		{
 			var winName = "Sdef(%)".format(this.printName);
 			var windows = Window.allWindows;
@@ -243,15 +287,7 @@ Sdef {
 				if(winName.asSymbol == oneW.name.asSymbol) { plotWin = oneW; };
 			});
 
-			if(plotWin.isNil)
-			{
-				plotter = this.signal.plot(
-					name: winName.asSymbol,
-					bounds: Rect(700,680,500,300)
-				);
-				plotter.parent.alwaysOnTop_(true);
-				plotter.parent.view.background_(Color.new255(30,30,30)).alpha_(0.9);
-			}
+			if(plotWin.notNil)
 			{
 				plotWin.view.children[0].close;
 				plotter = Plotter(
@@ -260,21 +296,17 @@ Sdef {
 				);
 				plotWin.view.children[0].bounds_(Rect(8,8,plotWin.view.bounds.width-16,plotWin.view.bounds.height-16));
 				plotter.value = this.signal;
-			};
-
-			plotter.domainSpecs = [[0,  super.class.time(this.signal.size), 0, 0, "", " s"]];
-			plotter.setProperties (
-				\backgroundColor, Color.new255(30,30,30),
-				\plotColor, Color.new255(30,190,230),
-				\fontColor, Color.new255(90,90,90),
-				\gridColorX, Color.new255(60,60,60),
-				\gridColorY, Color.new255(60,60,60),
-				\gridLinePattern, FloatArray[2,4],
-			);
-			plotter.refresh;
+				plotter.domainSpecs = [[0,  super.class.time(this.signal.size), 0, 0, "", " s"]];
+				plotter.setProperties (
+					\backgroundColor, Color.new255(30,30,30),
+					\plotColor, Color.new255(30,190,230),
+					\fontColor, Color.new255(90,90,90),
+					\gridColorX, Color.new255(60,60,60),
+					\gridColorY, Color.new255(60,60,60),
+					\gridLinePattern, FloatArray[2,4],
+				);
+				plotter.refresh;
+			}
 		}
-		{ "% signal is empty".format(this).warn; };
 	}
-
-	updatePlot_ {|bool|	if(bool.isKindOf(Boolean)) { updatePlot = bool } }
 }
