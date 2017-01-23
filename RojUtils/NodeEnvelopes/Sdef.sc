@@ -159,10 +159,10 @@ Sdef {
 				bufferFramesCnt
 				).postln;
 				*/
-			}
+				{ this.updatePlot; }.defer;
+							}
 		);
-		// if(updatePlot) { this.plot };
-		this.updatePlot;
+
 	}
 
 	kr { ^BusPlug.for(bus)	}
@@ -240,37 +240,23 @@ Sdef {
 		if(this.signal.notNil)
 		{
 			var winName = "Sdef(%)".format(this.printName);
-			var windows = Window.allWindows;
 			var plotWin = nil;
-			var plotter;
 
-			windows.do({|oneW|
-				if(winName.asSymbol == oneW.name.asSymbol) {
-					hasPlotWin = true;
-					plotWin = oneW;
-				};
-			});
+			Window.allWindows.do({|oneW| if(winName.asSymbol == oneW.name.asSymbol) { plotWin = oneW } });
 
 			if(plotWin.isNil)
 			{
-				plotter = this.signal.plot(
+				var plotter = this.signal.plot(
 					name: winName.asSymbol,
 					bounds: Rect(700,680,500,300)
 				);
-				plotter.parent.onClose_({ hasPlotWin = false });
 				plotter.parent.alwaysOnTop_(true);
 				plotter.parent.view.background_(Color.new255(30,30,30)).alpha_(0.9);
+				plotter.parent.onClose_({ hasPlotWin = false });
+				hasPlotWin = true;
+			};
 
-				plotter.setProperties (
-					\backgroundColor, Color.new255(30,30,30),
-					\plotColor, Color.new255(30,190,230),
-					\fontColor, Color.new255(90,90,90),
-					\gridColorX, Color.new255(60,60,60),
-					\gridColorY, Color.new255(60,60,60),
-					\gridLinePattern, FloatArray[2,4],
-				);
-				plotter.refresh;
-			}
+			this.updatePlot;
 		}
 		{ "% signal is empty".format(this).warn; };
 	}
@@ -283,9 +269,7 @@ Sdef {
 			var plotWin = nil;
 			var plotter;
 
-			windows.do({|oneW|
-				if(winName.asSymbol == oneW.name.asSymbol) { plotWin = oneW; };
-			});
+			Window.allWindows.do({|oneW| if(winName.asSymbol == oneW.name.asSymbol) { plotWin = oneW; }	});
 
 			if(plotWin.notNil)
 			{

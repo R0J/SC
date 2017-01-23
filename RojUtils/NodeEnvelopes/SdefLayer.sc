@@ -26,9 +26,15 @@ SdefLayer {
 
 	// sources //////////////////////////
 
-	env { |levels = #[0,1,0], times = #[0.15,0.85], curves = #[5,-3]|
+	env { |levels = #[0,1,0], times = #[0.15,0.85], curves = #[5,-3], dur = nil|
 		var envelope = Env(levels, times, curves);
 		signal = envelope.asSignal(envelope.duration * rate);
+		if(dur.notNil)
+		{
+			var difTime = dur - envelope.duration;
+			if(difTime > 0) { signal = signal ++ Signal.newClear((difTime * rate)+1).fill(levels[levels.size-1]) };
+			if(difTime < 0) { signal = signal + Signal.newClear(dur * rate) };
+		};
 		this.storeArguments(thisMethod, levels, times, curves);
 		this.update;
 	}
