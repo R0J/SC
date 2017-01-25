@@ -32,19 +32,33 @@ SdefLayer {
 			signal = Signal.newClear(dur * rate).fill(levels[levels.size-1]);
 			signal.overWrite(envelope.asSignal(envelope.duration * rate), 0)
 		}
-		{ signal = envelope.asSignal(envelope.duration * rate) };
+		{
+			signal = envelope.asSignal(envelope.duration * rate)
+		};
 		this.storeArguments(thisMethod, levels, times, curves, dur);
 		this.update;
 	}
 
-	level { |level = 1, time = 1|
-		signal = Signal.newClear(time * rate).fill(level);
-		this.storeArguments(thisMethod, level, time);
+	level { |level = #[1], time = #[1], dur = nil|
+		var times = time.asArray.wrapExtend(level.asArray.size);
+		var offset = 0;
+
+		if(dur.notNil)
+		{ signal = Signal.newClear(dur * rate).fill(level.asArray[level.asArray.size-1]) }
+		{ signal = Signal.newClear(times.sum * rate) };
+
+		level.asArray.do({|lev, i|
+			var sigSize = times[i] * rate;
+			signal.overWrite(Signal.newClear(sigSize).fill(lev), offset);
+			offset = offset + sigSize;
+		});
+
+		this.storeArguments(thisMethod, level, time, dur);
 		this.update;
 	}
 
-	ramp { |from = 1, to = 0, time = 1|
-		this.env([from, to], time, \lin);
+	ramp { |from = 1, to = 0, time = 1, dur = nil|
+		this.env([from, to], time, \lin, dur);
 	}
 
 	freq { |octave, degree|
