@@ -10,8 +10,7 @@ SdefLayer {
 	*new {|sDef, index| ^super.newCopyArgs(sDef, index).init }
 
 	*initClass {
-		rate = 44100 / 64;
-		// rate = 44100;
+		rate = 44100;
 	}
 
 	init {
@@ -28,14 +27,13 @@ SdefLayer {
 
 	env { |levels = #[0,1,0], times = #[0.15,0.85], curves = #[5,-3], dur = nil|
 		var envelope = Env(levels, times, curves);
-		signal = envelope.asSignal(envelope.duration * rate);
 		if(dur.notNil)
 		{
-			var difTime = dur - envelope.duration;
-			if(difTime > 0) { signal = signal ++ Signal.newClear((difTime * rate)+1).fill(levels[levels.size-1]) };
-			if(difTime < 0) { signal = signal + Signal.newClear(dur * rate) };
-		};
-		this.storeArguments(thisMethod, levels, times, curves);
+			signal = Signal.newClear(dur * rate).fill(levels[levels.size-1]);
+			signal.overWrite(envelope.asSignal(envelope.duration * rate), 0)
+		}
+		{ signal = envelope.asSignal(envelope.duration * rate) };
+		this.storeArguments(thisMethod, levels, times, curves, dur);
 		this.update;
 	}
 

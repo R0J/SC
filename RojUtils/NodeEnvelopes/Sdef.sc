@@ -1,7 +1,7 @@
 Sdef {
 
 	classvar <>library;
-	classvar controlRate;
+	classvar rate;
 	classvar hasInitSynthDefs, bufferSynthDef;
 
 	var <key, <path;
@@ -9,13 +9,11 @@ Sdef {
 	var <layers;
 	var parentNode;
 	var <duration;
-	// var <updatePlot;
 	var hasPlotWin;
 
 	*initClass {
 		library = MultiLevelIdentityDictionary.new;
-		controlRate = 44100 / 64;
-		// controlRate = 44100;
+		rate = 44100;
 		hasInitSynthDefs = false;
 	}
 
@@ -50,8 +48,8 @@ Sdef {
 
 	*printAll { this.library.postTree; ^nil; }
 
-	*frame { |time| ^controlRate * time }
-	*time { |frame| ^frame / controlRate }
+	*frame { |time| ^rate * time }
+	*time { |frame| ^frame / rate }
 
 	// init //////////////////////////
 
@@ -59,10 +57,10 @@ Sdef {
 		if(Server.default.serverRunning.not) { Server.default.onBootAdd({ this.initSynthDefs }) }
 		{
 			bufferSynthDef = { |bus, bufnum, startTime = 0|
-				var buf = PlayBuf.kr(
+				var buf = PlayBuf.ar(
 					numChannels: 1,
 					bufnum: bufnum,
-					startPos: startTime * controlRate,
+					startPos: startTime * rate,
 					rate: \tempoClock.kr(1),
 					trigger: \reset.tr,
 					loop: 1
@@ -71,14 +69,13 @@ Sdef {
 			}.asSynthDef;
 
 			// controlRate = Server.default.sampleRate / Server.default.options.blockSize;
-			"\nSdef initialization of SynthDefs done. Control rate set on %".format(controlRate).postln;
+			"\nSdef initialization of SynthDefs done. Control rate set on %".format(rate).postln;
 		};
 		hasInitSynthDefs = true;
 	}
 
 	init { |name|
 		this.key = name;
-		// this.updatePlot = false;
 		hasPlotWin = false;
 
 		bus = nil;
@@ -151,18 +148,17 @@ Sdef {
 
 				// "buffer \n\t beats: % \n\t duration: % \n\t t2q: % \n\t offset: %".format(clock.beats, duration, time2quant, clock.beats + (duration - time2quant)).postln;
 
-				/*
+/*
 				"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
-				bufferID,
-				dur,
-				(SystemClock.beats - startRenderTime),
-				bufferFramesCnt
+					bufferID,
+					duration,
+					(SystemClock.beats - startRenderTime),
+					buff.numFrames
 				).postln;
-				*/
+*/
 				{ this.updatePlot; }.defer;
-							}
+			}
 		);
-
 	}
 
 	kr { ^BusPlug.for(bus)	}
