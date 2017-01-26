@@ -61,8 +61,36 @@ SdefLayer {
 		this.env([from, to], time, \lin, dur);
 	}
 
-	freq { |octave, degree|
+	freq { |octave = #[3], degree = #[4], time = #[1], dur = nil|
+		var octaves = octave.asArray.wrapExtend(degree.asArray.size);
+		var times = time.asArray.wrapExtend(degree.asArray.size);
+		var offset = 0;
 
+		if(dur.notNil)
+		{ signal = Signal.newClear(dur * rate) }
+		{ signal = Signal.newClear(times.sum * rate) };
+
+		degree.asArray.do({|deg, i|
+			var note = deg.degreeToKey([0, 2, 4, 5, 7, 9, 11], 12);
+			var midNote = (note / 12 + octaves[i]) * 12;
+			var freq = midNote.midicps;
+			var sigSize = times[i] * rate;
+			signal.overWrite(Signal.newClear(sigSize).fill(freq), offset);
+			offset = offset + sigSize;
+			// "freq: % Hz, midiNote: %".format(freq, midNote).postln;
+			if(dur.notNil)
+			{
+				if(i == (degree.size-1))
+				{
+					sigSize = (dur - times[i]) * rate;
+					signal.overWrite(Signal.newClear(sigSize).fill(freq), offset);
+				}
+			}
+		});
+
+
+		this.storeArguments(thisMethod, octave, degree, time, dur);
+		this.update;
 	}
 
 	delete {

@@ -13,3 +13,14 @@ s.scope(8,0,rate:\control).view.bounds_(Rect(Window.availableBounds.width-330,Wi
 ~kick.sdef(\noise, 0).ramp(0.1,0,4)
 ~kick.sdef(\lpf, 0).env([1200,6400, 2200, 200], [0.005, 0.1, 0.17], [16, \step, -3], 4)
 ~kick.sdef(\amp).plot
+
+~note.play
+~note.vol_(0.01)
+~note.stop
+~note[0] = {SinOsc.ar(\freq.kr(60), mul:\amp.kr(0))}
+~note.sdef(\amp,0).env([0,1,0], [0.15, 0.85], [8, -4])
+~note.sdef(\freq, 0).freq(3,[3,7,3,4],[0.5,1.5])
+~note.sdef(\freq).plot
+
+(\octave: 3, \degree:4).play
+(\freq:440).play
