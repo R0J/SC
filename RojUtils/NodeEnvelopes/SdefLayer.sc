@@ -88,7 +88,6 @@ SdefLayer {
 			}
 		});
 
-
 		this.storeArguments(thisMethod, octave, degree, time, dur);
 		this.update;
 	}
@@ -209,8 +208,40 @@ SdefLayer {
 
 	}
 
-	fade { |fromTarget, toTarget|
+	fade { |targetFrom, targetTo, fadeTime = 1|
+		var layerFrom = sDef.layers.at(targetFrom);
+		var layerTo = sDef.layers.at(targetTo);
+		var fSize = fadeTime * rate;
+		// signal = Signal.newClear(fadeTime * rate);
 
+		case
+		{ layerFrom.size == layerTo.size }
+		{
+			var xFade = Signal.interpolation(fSize,0,1);
+			signal = Signal.fill(fSize, {|i|
+				var iModA = i % layerFrom.size;
+				var iModB = i % layerTo.size;
+				var from = layerFrom.signal[iModA]*(1-xFade[i]);
+				var to = layerTo.signal[iModB]*xFade[i];
+				// "x: % i: % || a: % || b: %".format(i, from, to).postln;
+				from + to
+			});
+			"ROVNO".warn;
+		}
+		{ layerFrom.size < layerTo.size }
+		{
+			"mensi".warn;
+		}
+		{ layerFrom.size > layerTo.size }
+		{
+			"vetsi".warn;
+		};
+
+		layerFrom.addParent(this);
+		layerTo.addParent(this);
+
+		this.storeArguments(thisMethod, targetFrom, targetTo, fadeTime);
+		this.update;
 	}
 
 	// references //////////////////////////

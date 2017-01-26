@@ -6,6 +6,7 @@ s.scope(8,0,rate:\control).view.bounds_(Rect(Window.availableBounds.width-330,Wi
 
 ~kick.play
 ~kick.stop(4)
+~kick.fadeTime = 4
 ~kick[0] = \kick
 ~kick[1] = \lpf
 ~kick.sdef(\amp,0).env([0.1,1,0.1], [0.005, 1.995], [8, -4], 4)
@@ -17,10 +18,14 @@ s.scope(8,0,rate:\control).view.bounds_(Rect(Window.availableBounds.width-330,Wi
 ~note.play
 ~note.vol_(0.01)
 ~note.stop
-~note[0] = {SinOsc.ar(\freq.kr(60), mul:\amp.kr(0))}
+~note[0] = {SinOsc.ar(\freq.kr(60)!2, mul:\amp.kr(0))}
 ~note.sdef(\amp,0).env([0,1,0], [0.15, 0.85], [8, -4])
+~note.sdef(\amp,1).env([0,1,0], [0.85, 0.15], [8, -4])
+~note.sdef(\amp, 2).fade(0,1,28)
+~note.sdef(\amp, 3).fade(1,0,8)
+~node.sdef(\amp, 4).chain(0,1)
 ~note.sdef(\freq, 0).freq(3,[3,7,3,4],[0.5,1.5])
-~note.sdef(\freq).plot
+~note.sdef(\amp).plot
 
 (\octave: 3, \degree:4).play
 (\freq:440).play

@@ -48,8 +48,8 @@ Sdef {
 
 	*printAll { this.library.postTree; ^nil; }
 
-	*frame { |time| ^rate * time }
-	*time { |frame| ^frame / rate }
+	*frame { |time| ^ rate * time }
+	*time { |frame| ^ frame / rate }
 
 	// init //////////////////////////
 
@@ -81,7 +81,7 @@ Sdef {
 		bus = nil;
 		buffer = Buffer.alloc( Server.default, 1 );
 		bufferID = buffer.bufnum;
-		synth = nil;
+				synth = nil;
 
 		layers = Order.new;
 		layers.put(0, SdefLayer(this, 0));
@@ -148,14 +148,15 @@ Sdef {
 
 				// "buffer \n\t beats: % \n\t duration: % \n\t t2q: % \n\t offset: %".format(clock.beats, duration, time2quant, clock.beats + (duration - time2quant)).postln;
 
-/*
+				/*
 				"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
-					bufferID,
-					duration,
-					(SystemClock.beats - startRenderTime),
-					buff.numFrames
+				bufferID,
+				duration,
+				(SystemClock.beats - startRenderTime),
+				buff.numFrames
 				).postln;
-*/
+				*/
+
 				{ this.updatePlot; }.defer;
 			}
 		);
@@ -177,7 +178,9 @@ Sdef {
 		case
 		{ what.asSymbol == \play } { this.play }
 		{ what.asSymbol == \stop } { this.stop(args[0]) }
-		{ what.asSymbol == \free } { this.stop(args[0]) };
+		{ what.asSymbol == \free } { this.stop(args[0]) }
+		// { what.asSymbol == \set } { }
+		;
 	}
 
 	play { |clock = nil|
