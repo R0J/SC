@@ -5,17 +5,19 @@ SdefLayer {
 	var sDef, <index;
 	var parents;
 	var selector, arguments;
-	var <signal;
+	var <signal, <duration;
 
 	*new {|sDef, index| ^super.newCopyArgs(sDef, index).init }
 
 	*initClass {
-		rate = 44100;
+		// rate = 44100;
+		rate = 44100 / 64;
 	}
 
 	init {
 		parents = Set.new;
 		signal = Signal.newClear(rate);
+		duration = 1;
 	}
 
 	storeArguments { |method ... args|
@@ -27,6 +29,8 @@ SdefLayer {
 
 	env { |levels = #[0,1,0], times = #[0.15,0.85], curves = #[5,-3], dur = nil|
 		var envelope = Env(levels, times, curves);
+		duration = dur ? envelope.duration;
+
 		if(dur.notNil)
 		{
 			signal = Signal.newClear(dur * rate).fill(levels[levels.size-1]);
@@ -42,6 +46,7 @@ SdefLayer {
 	level { |level = #[1], time = #[1], dur = nil|
 		var times = time.asArray.wrapExtend(level.asArray.size);
 		var offset = 0;
+		duration = dur ? times.sum;
 
 		if(dur.notNil)
 		{ signal = Signal.newClear(dur * rate).fill(level.asArray[level.asArray.size-1]) }
@@ -65,6 +70,7 @@ SdefLayer {
 		var octaves = octave.asArray.wrapExtend(degree.asArray.size);
 		var times = time.asArray.wrapExtend(degree.asArray.size);
 		var offset = 0;
+		duration = dur ? times.sum;
 
 		if(dur.notNil)
 		{ signal = Signal.newClear(dur * rate) }
@@ -98,7 +104,10 @@ SdefLayer {
 		});
 
 		if(index == 0)
-		{ signal = Signal.newClear(rate) }
+		{
+			signal = Signal.newClear(rate);
+			duration = 1;
+		}
 		{ sDef.layers.removeAt(index) };
 
 		this.update;
@@ -108,6 +117,8 @@ SdefLayer {
 
 	shift {|target, offset|
 		var layer = sDef.layers.at(target);
+		duration = layer.duration + offset;
+
 		if(layer.notNil)
 		{
 			var offSize = offset * rate;
@@ -121,6 +132,8 @@ SdefLayer {
 
 	dup { |target, n|
 		var layer = sDef.layers.at(target);
+		duration = layer.duration * n;
+
 		if(layer.notNil)
 		{
 			signal = Signal.new;
@@ -131,10 +144,12 @@ SdefLayer {
 		this.update;
 	}
 
-	dupTime { |target, time, targetDur|
-		var rest = time % targetDur;
-		var loopCnt = (time-rest)/targetDur;
+	dupTime { |target, time, targetDur = nil|
 		var layer = sDef.layers.at(target);
+		var rest = time % targetDur ? layer.duration;
+		var loopCnt = (time-rest)/targetDur;
+		duration = time;
+
 		if(layer.notNil)
 		{
 			signal = Signal.newClear(time * rate);
@@ -148,6 +163,8 @@ SdefLayer {
 
 	fixTime { |target, time|
 		var layer = sDef.layers.at(target);
+		duration = time;
+
 		if(layer.notNil)
 		{
 			signal = Signal.newClear(time * rate);
@@ -162,10 +179,13 @@ SdefLayer {
 
 	add { |...targets|
 		signal = Signal.new;
+		duration = 0;
+
 		targets.flatten.do({|index|
 			var layer = sDef.layers.at(index);
 			if(layer.notNil)
 			{
+				duration = duration + layer.duration;
 				if(layer.signal.size > signal.size) { signal = signal.extend(layer.signal.size, 0) };
 				signal.overDub(layer.signal, 0);
 				layer.addParent(this);
@@ -177,10 +197,13 @@ SdefLayer {
 
 	over { |...targets|
 		signal = Signal.new;
+		duration = 0;
+
 		targets.flatten.do({|index|
 			var layer = sDef.layers.at(index);
 			if(layer.notNil)
 			{
+				duration = duration + layer.duration;
 				if(layer.signal.size > signal.size) { signal = signal.extend(layer.signal.size, 0) };
 				signal.overWrite(layer.signal, 0);
 				layer.addParent(this);
@@ -192,10 +215,13 @@ SdefLayer {
 
 	chain { |...targets|
 		signal = Signal.new;
+		duration = 0;
+
 		targets.flatten.do({|index|
 			var layer = sDef.layers.at(index);
 			if(layer.notNil)
 			{
+				duration = duration + layer.duration;
 				signal = signal ++ layer.signal;
 				layer.addParent(this);
 			};
@@ -212,30 +238,17 @@ SdefLayer {
 		var layerFrom = sDef.layers.at(targetFrom);
 		var layerTo = sDef.layers.at(targetTo);
 		var fSize = fadeTime * rate;
-		// signal = Signal.newClear(fadeTime * rate);
+		var xFade = Array.interpolation(fSize,0,1);
+		duration = fadeTime;
 
-		case
-		{ layerFrom.size == layerTo.size }
-		{
-			var xFade = Signal.interpolation(fSize,0,1);
-			signal = Signal.fill(fSize, {|i|
-				var iModA = i % layerFrom.size;
-				var iModB = i % layerTo.size;
-				var from = layerFrom.signal[iModA]*(1-xFade[i]);
-				var to = layerTo.signal[iModB]*xFade[i];
-				// "x: % i: % || a: % || b: %".format(i, from, to).postln;
-				from + to
-			});
-			"ROVNO".warn;
-		}
-		{ layerFrom.size < layerTo.size }
-		{
-			"mensi".warn;
-		}
-		{ layerFrom.size > layerTo.size }
-		{
-			"vetsi".warn;
-		};
+		signal = Signal.fill(fSize, {|i|
+			var iModA = i % layerFrom.size;
+			var iModB = i % layerTo.size;
+			var from = layerFrom.signal[iModA]*(1-xFade[i]);
+			var to = layerTo.signal[iModB]*xFade[i];
+			// "x: % i: % || a: % || b: %".format(i, from, to).postln;
+			from + to
+		});
 
 		layerFrom.addParent(this);
 		layerTo.addParent(this);
@@ -261,10 +274,10 @@ SdefLayer {
 
 	// informations //////////////////////////
 
-	duration { ^signal.size / rate }
+	// duration { ^signal.size / rate }
 	size { ^signal.size }
 
-	printOn { |stream|	stream << this.class.name << "(id: " << index << " | dur: " << this.duration << ")"; }
+	printOn { |stream|	stream << this.class.name << "(id: " << index << " | dur: " << duration << ")"; }
 
 	plot { sDef.plot }
 

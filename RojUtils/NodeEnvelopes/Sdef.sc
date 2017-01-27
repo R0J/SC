@@ -8,12 +8,13 @@ Sdef {
 	var <bus, <buffer, bufferID, <synth;
 	var <layers;
 	var parentNode;
-	var <duration;
+	// var <duration;
 	var hasPlotWin;
 
 	*initClass {
 		library = MultiLevelIdentityDictionary.new;
-		rate = 44100;
+		// rate = 44100;
+		rate = 44100 / 64;
 		hasInitSynthDefs = false;
 	}
 
@@ -34,7 +35,7 @@ Sdef {
 			if(layer.isNil) {
 				layer = SdefLayer(sDef, index);
 				sDef.layers.put(index, layer);
-			}
+			};
 			^layer;
 		}
 		{ ^sDef }
@@ -57,7 +58,8 @@ Sdef {
 		if(Server.default.serverRunning.not) { Server.default.onBootAdd({ this.initSynthDefs }) }
 		{
 			bufferSynthDef = { |bus, bufnum, startTime = 0|
-				var buf = PlayBuf.ar(
+				// var buf = PlayBuf.ar(
+					var buf = PlayBuf.kr(
 					numChannels: 1,
 					bufnum: bufnum,
 					startPos: startTime * rate,
@@ -81,13 +83,13 @@ Sdef {
 		bus = nil;
 		buffer = Buffer.alloc( Server.default, 1 );
 		bufferID = buffer.bufnum;
-				synth = nil;
+		synth = nil;
 
 		layers = Order.new;
 		layers.put(0, SdefLayer(this, 0));
 
 		parentNode = nil;
-		duration = nil;
+		// duration = nil;
 	}
 
 	initBus {
@@ -120,10 +122,16 @@ Sdef {
 		if(lastIndex.isNil) { ^nil } { ^layers.at(lastIndex).signal };
 	}
 
+	duration {
+		var lastIndex = layers.lastIndex;
+		if(lastIndex.isNil) { ^nil } { ^layers.at(lastIndex).duration };
+	}
+
 	render {
 		var startRenderTime = SystemClock.beats;
 
-		duration = super.class.time(this.signal.size);
+		// duration = super.class.time(this.signal.size);
+
 
 		buffer = Buffer.alloc(
 			server: Server.default,
@@ -137,11 +145,11 @@ Sdef {
 			startFrame: 0,
 			action: {|buff|
 				var clock = currentEnvironment.clock;
-				var time2quant = clock.timeToNextBeat(duration);
+				var time2quant = clock.timeToNextBeat(this.duration);
 				if(synth.notNil)
 				{
 					synth.set(
-						\startTime, (duration - time2quant),
+						\startTime, (this.duration - time2quant),
 						\reset, 1
 					);
 				};
@@ -189,7 +197,7 @@ Sdef {
 		var group = RootNode(Server.default);
 		var time2quant;
 		if(clock.isNil) { clock = currentEnvironment.clock; };
-		time2quant = clock.timeToNextBeat(duration);
+		time2quant = clock.timeToNextBeat(this.duration);
 		if(parentNode.notNil) { group = parentNode.group };
 
 		if(synth.notNil) { synth.free };
@@ -279,7 +287,8 @@ Sdef {
 				);
 				plotWin.view.children[0].bounds_(Rect(8,8,plotWin.view.bounds.width-16,plotWin.view.bounds.height-16));
 				plotter.value = this.signal;
-				plotter.domainSpecs = [[0,  super.class.time(this.signal.size), 0, 0, "", " s"]];
+				// plotter.domainSpecs = [[0,  super.class.time(this.signal.size), 0, 0, "", " s"]];
+				plotter.domainSpecs = [[0, this.duration, 0, 0, "", " s"]];
 				plotter.setProperties (
 					\backgroundColor, Color.new255(30,30,30),
 					\plotColor, Color.new255(30,190,230),
