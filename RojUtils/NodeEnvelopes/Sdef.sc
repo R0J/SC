@@ -7,7 +7,7 @@ Sdef {
 	var <key, <path;
 	var <bus, <buffer, bufferID, <synth;
 	var <layers;
-	var parentNode;
+	var <parentNode;
 	// var <duration;
 	var hasPlotWin;
 
@@ -59,7 +59,7 @@ Sdef {
 		{
 			bufferSynthDef = { |bus, bufnum, startTime = 0|
 				// var buf = PlayBuf.ar(
-					var buf = PlayBuf.kr(
+				var buf = PlayBuf.kr(
 					numChannels: 1,
 					bufnum: bufnum,
 					startPos: startTime * rate,
@@ -103,6 +103,29 @@ Sdef {
 		{ bus = Bus.control(Server.default, 1) }
 	}
 
+	// controlAll //////////////////////////
+
+	*play {
+		library.leafDo({|path|
+			var sDef = library.atPath(path);
+			if(sDef.parentNode.notNil) {
+				if(sDef.parentNode.monitor.isPlaying.not)
+				{ sDef.parentNode.play }
+				// { sDef.p
+
+			};
+		})
+	}
+
+	*stop {
+		library.leafDo({|path|
+			var sDef = library.atPath(path);
+			if(sDef.parentNode.notNil) {
+				if(sDef.parentNode.monitor.isPlaying) { sDef.parentNode.stop }
+			};
+		});
+	}
+
 	// instance //////////////////////////
 
 	key_ {|name|
@@ -129,9 +152,6 @@ Sdef {
 
 	render {
 		var startRenderTime = SystemClock.beats;
-
-		// duration = super.class.time(this.signal.size);
-
 
 		buffer = Buffer.alloc(
 			server: Server.default,
@@ -213,6 +233,7 @@ Sdef {
 				\tempoClock: currentEnvironment.clock.tempo
 			]
 		);
+		"play".warn;
 	}
 
 	stop { |time|
@@ -222,7 +243,9 @@ Sdef {
 				synth.free;
 				synth = nil;
 			};
+			// if(parentNode.notNil) { parentNode.stop };
 			bus.set(0);
+			"stop".warn;
 		}.fork;
 	}
 
