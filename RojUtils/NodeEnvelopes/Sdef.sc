@@ -8,7 +8,7 @@ Sdef {
 	var <bus, <buffer, bufferID, <synth;
 	var <layers;
 	var <parentNode;
-	// var <duration;
+	var clock;
 	var hasPlotWin;
 
 	*initClass {
@@ -89,7 +89,10 @@ Sdef {
 		layers.put(0, SdefLayer(this, 0));
 
 		parentNode = nil;
-		// duration = nil;
+
+		if(currentEnvironment.isKindOf(ProxySpace))
+		{ clock = currentEnvironment.clock }
+		{ clock = TempoClock.default };
 	}
 
 	initBus {
@@ -105,7 +108,7 @@ Sdef {
 
 	// controlAll //////////////////////////
 
-	*play {
+	*play { |from = 0, to = nil|
 		library.leafDo({|path|
 			var sDef = library.atPath(path);
 			if(sDef.parentNode.notNil) {
@@ -121,6 +124,7 @@ Sdef {
 		library.leafDo({|path|
 			var sDef = library.atPath(path);
 			if(sDef.parentNode.notNil) {
+				// sDef.parentNode.removeDependant(this);
 				if(sDef.parentNode.monitor.isPlaying) { sDef.parentNode.stop }
 			};
 		});
@@ -198,27 +202,31 @@ Sdef {
 			nodeProxy.map(controlName.asSymbol, BusPlug.for(bus));
 			parentNode = nodeProxy;
 		};
-		if(nodeProxy.monitor.isPlaying) { this.play };
+		if(nodeProxy.monitor.isPlaying) {
+			var offsetTime = this.duration - clock.timeToNextBeat(this.duration);
+			this.play(offsetTime);
+		};
 	}
 
 	update { |from, what, args| // object dependency -> this is target when object.changed is called
 		// "\nSdef.update \n\tfrom:% \n\twhat:% \n\targs:%".format(from, what, args).postln;
+		var offsetTime = this.duration - clock.timeToNextBeat(this.duration);
 		case
-		{ what.asSymbol == \play } { this.play }
+		{ what.asSymbol == \play } { this.play(offsetTime) }
 		{ what.asSymbol == \stop } { this.stop(args[0]) }
 		{ what.asSymbol == \free } { this.stop(args[0]) }
 		// { what.asSymbol == \set } { }
 		;
 	}
 
-	play { |clock = nil|
+	play { |from, to|
 		var bufferFramesCnt = buffer.numFrames;
-		var dur = super.class.time(bufferFramesCnt);
-		var group = RootNode(Server.default);
-		var time2quant;
-		if(clock.isNil) { clock = currentEnvironment.clock; };
-		time2quant = clock.timeToNextBeat(this.duration);
-		if(parentNode.notNil) { group = parentNode.group };
+		var group = parentNode.group ? RootNode(Server.default);
+		// var time2quant = clock.timeToNextBeat(this.duration);
+		var startTime = from ? 0;
+		var endTime = to ? this.duration;
+
+		// if(parentNode.notNil) { group = parentNode.group };
 
 		if(synth.notNil) { synth.free };
 
@@ -229,8 +237,9 @@ Sdef {
 			[
 				\bus: bus,
 				\bufnum: buffer.bufnum,
-				\startTime: (dur - time2quant),
-				\tempoClock: currentEnvironment.clock.tempo
+				// \startTime: (this.duration - time2quant),
+				\startTime: startTime,
+				\tempoClock: clock.tempo
 			]
 		);
 		"play".warn;
@@ -238,7 +247,7 @@ Sdef {
 
 	stop { |time|
 		{
-			if(time.notNil) { (time * currentEnvironment.clock.tempo).wait; };
+			if(time.notNil) { (time * clock.tempo).wait; };
 			if(synth.notNil) {
 				synth.free;
 				synth = nil;
