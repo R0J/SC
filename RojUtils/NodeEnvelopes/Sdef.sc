@@ -106,30 +106,6 @@ Sdef {
 		{ bus = Bus.control(Server.default, 1) }
 	}
 
-	// controlAll //////////////////////////
-
-	*play { |from = 0, to = nil|
-		library.leafDo({|path|
-			var sDef = library.atPath(path);
-			if(sDef.parentNode.notNil) {
-				if(sDef.parentNode.monitor.isPlaying.not)
-				{ sDef.parentNode.play }
-				// { sDef.p
-
-			};
-		})
-	}
-
-	*stop {
-		library.leafDo({|path|
-			var sDef = library.atPath(path);
-			if(sDef.parentNode.notNil) {
-				// sDef.parentNode.removeDependant(this);
-				if(sDef.parentNode.monitor.isPlaying) { sDef.parentNode.stop }
-			};
-		});
-	}
-
 	// instance //////////////////////////
 
 	key_ {|name|
@@ -197,27 +173,83 @@ Sdef {
 	kr { ^BusPlug.for(bus)	}
 
 	setNode { |nodeProxy, controlName|
-		if(nodeProxy.dependants.matchItem(this).notNil) {
-			nodeProxy.addDependant(this);
-			nodeProxy.map(controlName.asSymbol, BusPlug.for(bus));
-			parentNode = nodeProxy;
-		};
+		parentNode = nodeProxy;
+		nodeProxy.map(controlName.asSymbol, BusPlug.for(bus));
+
 		if(nodeProxy.monitor.isPlaying) {
 			var offsetTime = this.duration - clock.timeToNextBeat(this.duration);
+			this.removeDependencyOnNode;
 			this.play(offsetTime);
 		};
+		this.addDependencyOnNode;
+	}
+
+	addDependencyOnNode {
+		if(parentNode.notNil)
+		{
+			if(parentNode.dependants.matchItem(this).not)
+			{
+				parentNode.addDependant(this);
+			}
+		}
+	}
+
+	removeDependencyOnNode {
+		if(parentNode.notNil)
+		{
+			if(parentNode.dependants.matchItem(this))
+			{
+				parentNode.removeDependant(this);
+			}
+		};
+		parentNode.dependants.postln;
 	}
 
 	update { |from, what, args| // object dependency -> this is target when object.changed is called
 		// "\nSdef.update \n\tfrom:% \n\twhat:% \n\targs:%".format(from, what, args).postln;
 		var offsetTime = this.duration - clock.timeToNextBeat(this.duration);
 		case
-		{ what.asSymbol == \play } { this.play(offsetTime) }
-		{ what.asSymbol == \stop } { this.stop(args[0]) }
-		{ what.asSymbol == \free } { this.stop(args[0]) }
+		{ what.asSymbol == \play } {  this.play(offsetTime); "update PLAY".warn; }
+		{ what.asSymbol == \stop } {  this.stop(args[0]);  "update STOP".warn; }
+		{ what.asSymbol == \free } {  this.stop(args[0]);  "update FREE".warn;  }
 		// { what.asSymbol == \set } { }
 		;
 	}
+
+	// controlAll //////////////////////////
+
+	*play { |from = 0, to = nil|
+		library.leafDo({|path|
+			var sDef = library.atPath(path);
+			sDef.removeDependencyOnNode;
+			if(sDef.parentNode.monitor.isPlaying.not) { sDef.parentNode.play };
+			sDef.play;
+			sDef.addDependencyOnNode;
+			/*
+			if(sDef.parentNode.notNil) {
+			if(sDef.parentNode.monitor.isPlaying.not)
+			{ sDef.parentNode.play }
+			// { sDef.p
+
+			};
+			*/
+		})
+	}
+
+	*stop {
+		library.leafDo({|path|
+			var sDef = library.atPath(path);
+			sDef.removeDependencyOnNode;
+			sDef.stop;
+			if(sDef.parentNode.monitor.isPlaying) { sDef.parentNode.stop };
+			// sDef.addDependencyOnNode;
+			// if(sDef.parentNode.notNil) {
+			// sDef.parentNode.removeDependant(this);
+			// if(sDef.parentNode.monitor.isPlaying) { sDef.parentNode.stop }
+			// };
+		});
+	}
+
 
 	play { |from, to|
 		var bufferFramesCnt = buffer.numFrames;
@@ -242,7 +274,7 @@ Sdef {
 				\tempoClock: clock.tempo
 			]
 		);
-		"play".warn;
+		"Sdef play".warn;
 	}
 
 	stop { |time|
@@ -254,7 +286,7 @@ Sdef {
 			};
 			// if(parentNode.notNil) { parentNode.stop };
 			bus.set(0);
-			"stop".warn;
+			"Sdef stop".warn;
 		}.fork;
 	}
 

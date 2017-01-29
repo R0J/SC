@@ -6,7 +6,7 @@ s.scope(8,0,rate:\control).view.bounds_(Rect(Window.availableBounds.width-330,Wi
 p.metro(4,8000)
 
 ~kick.play
-~kick.stop(4)
+~kick.stop(1)
 ~kick.fadeTime = 4
 ~kick[0] = \kick
 ~kick[1] = \lpf
@@ -15,7 +15,9 @@ p.metro(4,8000)
 ~kick.sdef(\noise, 0).ramp(0.1,0,4)
 ~kick.sdef(\lpf, 0).env([1200,6400, 2200, 200], [0.005, 0.1, 0.17], [16, \step, -3], 4)
 ~kick.sdef(\amp).plot
+
 ~kick.dependants
+~kick.sdef(\amp).parentNode
 
 Sdef.play
 Sdef.stop
@@ -32,9 +34,3 @@ Sdef.stop
 ~note.sdef(\amp, 5).chain(2,4,3)
 ~note.sdef(\freq, 0).freq(2,[3,7,3,4],14)
 ~note.sdef(\amp).plot
-
-
-~note.sdef(\amp).layers.at(1)
-
-(\octave: 3, \degree:4).play
-(\freq:440).play
