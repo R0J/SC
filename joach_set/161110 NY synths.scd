@@ -37,6 +37,8 @@ ProxySynthDef(\limiter, {
 	ReplaceOut.ar(bus, sig);
 }).store;
 
+ProxySynthDef(\volume, { ReplaceOut.ar( \out.kr, In.ar(\out.kr,2) * \vol.kr(1)) }).store;
+
 /*
 SynthDef(\darkCloud, { |vol = 0.9, amp = 0, /*gate = 1,*/ lpf = 180, poleFreq = 0.9|
 var env, tone;
