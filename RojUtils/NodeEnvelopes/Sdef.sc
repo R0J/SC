@@ -2,10 +2,11 @@ Sdef {
 
 	classvar <>library;
 	classvar rate;
-	classvar hasInitSynthDefs, bufferSynthDef;
+	classvar hasInitSynthDefs, bufferSynthDef, bufferSynthDef2;
 
 	var <key, <path;
 	var <bus, <buffer, bufferID, <synth;
+	var <buffers, <currentSynth, <releasedSynths;
 	var <layers;
 	var <parentNode;
 	var clock;
@@ -54,27 +55,7 @@ Sdef {
 
 	// init //////////////////////////
 
-	*initSynthDefs{
-		if(Server.default.serverRunning.not) { Server.default.onBootAdd({ this.initSynthDefs }) }
-		{
-			bufferSynthDef = { |bus, bufnum, startTime = 0|
-				// var buf = PlayBuf.ar(
-				var buf = PlayBuf.kr(
-					numChannels: 1,
-					bufnum: bufnum,
-					startPos: startTime * rate,
-					rate: \tempoClock.kr(1),
-					trigger: \reset.tr,
-					loop: 1
-				);
-				Out.kr(bus, buf);
-			}.asSynthDef;
 
-			// controlRate = Server.default.sampleRate / Server.default.options.blockSize;
-			"\nSdef initialization of SynthDefs done. Control rate set on %".format(rate).postln;
-		};
-		hasInitSynthDefs = true;
-	}
 
 	init { |name|
 		this.key = name;
@@ -84,6 +65,10 @@ Sdef {
 		buffer = Buffer.alloc( Server.default, 1 );
 		bufferID = buffer.bufnum;
 		synth = nil;
+
+		currentSynth = nil;
+		releasedSynths = Order.new;
+		buffers = Order.new;
 
 		layers = Order.new;
 		layers.put(0, SdefLayer(this, 0));
@@ -132,42 +117,158 @@ Sdef {
 
 	render {
 		var startRenderTime = SystemClock.beats;
+		var fTime = 8;
 
+		if(parentNode.notNil) { fTime = parentNode.fadeTime };
+
+		this.createCurrentSynth(fTime);
+
+		/*
 		buffer = Buffer.alloc(
-			server: Server.default,
-			numFrames: this.signal.size,
-			numChannels: 1,
-			bufnum: bufferID
+		server: Server.default,
+		numFrames: this.signal.size,
+		numChannels: 1,
+		// bufnum: bufferID
 		);
+
 
 		buffer.loadCollection(
+		collection: this.signal,
+		startFrame: 0,
+		action: {|buff|
+		var clock = currentEnvironment.clock;
+		var time2quant = clock.timeToNextBeat(this.duration);
+		if(synth.notNil)
+		{
+		synth.set(
+		\startTime, (this.duration - time2quant),
+		\reset, 1
+		);
+		};
+
+		// "buffer \n\t beats: % \n\t duration: % \n\t t2q: % \n\t offset: %".format(clock.beats, duration, time2quant, clock.beats + (duration - time2quant)).postln;
+
+		/*
+		"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
+		bufferID,
+		duration,
+		(SystemClock.beats - startRenderTime),
+		buff.numFrames
+		).postln;
+		*/
+
+		{ this.updatePlot; }.defer;
+		}
+		);
+		*/
+	}
+
+
+	*initSynthDefs{
+		if(Server.default.serverRunning.not) { Server.default.onBootAdd({ this.initSynthDefs }) }
+		{
+			/*
+			bufferSynthDef = { |bus, bufnum, startTime = 0|
+				// var buf = PlayBuf.ar(
+				var buf = PlayBuf.kr(
+					numChannels: 1,
+					bufnum: bufnum,
+					startPos: startTime * rate,
+					rate: \tempoClock.kr(1),
+					trigger: \reset.tr,
+					loop: 1
+				);
+				Out.kr(bus, buf);
+			}.asSynthDef;
+*/
+			bufferSynthDef2 = { |bus, bufnum, startTime = 0, multFrom = 0, multTo = 0, fTime = 0, tempo = 1|
+				var buf, fIn, fOut, mult;
+				buf = PlayBuf.kr(
+					numChannels: 1,
+					bufnum: bufnum,
+					startPos: startTime * rate,
+					rate: tempo,
+					trigger: \reset.tr,
+					loop: 1
+				);
+
+				mult = EnvGen.kr(
+					envelope: Env([ multFrom, multTo ], fTime, \lin),
+					gate: \mult.tr(0),
+					timeScale: tempo.reciprocal,
+					doneAction: 0
+				);
+
+				XOut.kr(bus, mult, buf);
+			}.asSynthDef;
+
+			// controlRate = Server.default.sampleRate / Server.default.options.blockSize;
+			"\nSdef initialization of SynthDefs done. Control rate set on %".format(rate).postln;
+		};
+		hasInitSynthDefs = true;
+	}
+
+	createCurrentSynth { |fTime|
+		var buf, syn;
+		var group = parentNode.group ? RootNode(Server.default);
+		var time2quant = clock.timeToNextBeat(this.duration);
+
+		buf = Buffer.alloc(
+			server: Server.default,
+			numFrames: this.signal.size,
+			numChannels: 1
+		);
+
+		buf.loadCollection(
 			collection: this.signal,
 			startFrame: 0,
-			action: {|buff|
-				var clock = currentEnvironment.clock;
-				var time2quant = clock.timeToNextBeat(this.duration);
-				if(synth.notNil)
-				{
-					synth.set(
-						\startTime, (this.duration - time2quant),
-						\reset, 1
-					);
-				};
-
-				// "buffer \n\t beats: % \n\t duration: % \n\t t2q: % \n\t offset: %".format(clock.beats, duration, time2quant, clock.beats + (duration - time2quant)).postln;
-
-				/*
-				"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
-				bufferID,
-				duration,
-				(SystemClock.beats - startRenderTime),
-				buff.numFrames
-				).postln;
-				*/
-
-				{ this.updatePlot; }.defer;
-			}
+			action: {|buff| { this.updatePlot; }.defer }
 		);
+
+		if (currentSynth.notNil) {
+			var id = currentSynth.nodeID;
+			releasedSynths.put(id, currentSynth);
+			releasedSynths.postln;
+			releasedSynths.do({|oldSynth|
+				oldSynth.set(
+					\startTime, (this.duration - time2quant),
+					\reset, 1,
+					\mult, 1,
+					\multFrom, 1,
+					\multTo, 0,
+					\fTime, fTime,
+					\tempo, currentEnvironment.clock.tempo
+				);
+				{
+					fTime.wait;
+					oldSynth.free;
+				}.fork;
+			})
+		};
+
+		bufferSynthDef2.name_("Sdef(%)".format(this.printName));
+		currentSynth = bufferSynthDef2.play(
+			target: group,
+			args:
+			[
+				\bus: bus,
+				\bufnum: buf.bufnum,
+				\startTime: (this.duration - time2quant),
+				\reset: 1,
+				\mult: 1,
+				\multFrom: 0,
+				\multTo: 1,
+				\fTime: fTime,
+				\tempo: currentEnvironment.clock.tempo
+			]
+		);
+
+		currentSynth.onFree({|freeSynth|
+			var id = freeSynth.nodeID;
+			// "%.free DONE".format(freeSynth).warn;
+			releasedSynths.removeAt(id);
+			// releasedSynths.postln;
+		});
 	}
 
 	kr { ^BusPlug.for(bus)	}
@@ -259,22 +360,23 @@ Sdef {
 		var endTime = to ? this.duration;
 
 		// if(parentNode.notNil) { group = parentNode.group };
-
+		/*
 		if(synth.notNil) { synth.free };
 
 		bufferSynthDef.name_("Sdef(%)".format(this.printName));
 		synth =	bufferSynthDef.play(
-			target: group,
-			args:
-			[
-				\bus: bus,
-				\bufnum: buffer.bufnum,
-				// \startTime: (this.duration - time2quant),
-				\startTime: startTime,
-				\tempoClock: clock.tempo
-			]
+		target: group,
+		args:
+		[
+		\bus: bus,
+		\bufnum: buffer.bufnum,
+		// \startTime: (this.duration - time2quant),
+		\startTime: startTime,
+		\tempoClock: clock.tempo
+		]
 		);
 		"Sdef play".warn;
+		*/
 	}
 
 	stop { |time|

@@ -6,12 +6,12 @@ s.scope(8,0,rate:\control).view.bounds_(Rect(Window.availableBounds.width-330,Wi
 p.metro(4,8000)
 
 ~kick.play
-~kick.stop(1)
-~kick.fadeTime = 4
+~kick.stop(10)
+~kick.fadeTime = 8
 ~kick[0] = \kick
 ~kick[1] = \lpf
 ~kick[2] = \volume
-~kick.sdef(\amp,0).env([0,1,0], [0.005, 1.995], [8, -4], 2)
+~kick.sdef(\amp, 0).env([0,1,0], [0.005, 1.995], [8, -4], 2)
 ~kick.sdef(\fplus, 0).env([0,6400, 200, 0], [0.01, 0.009, 0.17], [16, \step, -3], 1)
 ~kick.sdef(\noise, 0).ramp(0.1,0,4)
 ~kick.sdef(\lpf, 0).env([1200,6400, 2200, 200], [0.005, 0.1, 0.17], [16, \step, -3], 16)
