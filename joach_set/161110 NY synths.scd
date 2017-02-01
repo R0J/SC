@@ -1,7 +1,7 @@
 (
 // INSTRUMENS ///////////////////////////////////////////
 
-ProxySynthDef(\kick, { |amp = 0.1, freq = 63, fplus = 0, noise = 0.6|
+ProxySynthDef(\kick, { |amp = 0, freq = 63, fplus = 0, noise = 0.6|
 	var bus = \out.kr;
 	var num = 4;
 	var sig = Mix.fill(num,{|i|

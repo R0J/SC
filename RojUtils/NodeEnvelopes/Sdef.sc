@@ -6,7 +6,8 @@ Sdef {
 
 	var <key, <path;
 	var <bus;
-	var <buffers, <currentSynth, <releasedSynths;
+	var <currentBuffer, <releasedBuffers;
+	var <currentSynth, <releasedSynths;
 	var <layers;
 	var <parentNode;
 	var clock;
@@ -64,7 +65,8 @@ Sdef {
 		bus = nil;
 		currentSynth = nil;
 		releasedSynths = Order.new;
-		buffers = Order.new;
+		currentBuffer = nil;
+		releasedBuffers = Order.new;
 
 		layers = Order.new;
 		layers.put(0, SdefLayer(this, 0));
@@ -112,8 +114,7 @@ Sdef {
 	}
 
 	render {
-		// var startRenderTime = SystemClock.beats;
-		var fTime = 8;
+		var fTime = 0;
 		if(parentNode.notNil) {	fTime = parentNode.fadeTime };
 		if(parentNode.monitor.isPlaying) { this.fadeInSynth(fTime) };
 	}
@@ -150,20 +151,20 @@ Sdef {
 	}
 
 	fadeInSynth { |fTime, startTime = nil|
-		var buf, syn;
 		var group = parentNode.group ? RootNode(Server.default);
 		var time2quant = clock.timeToNextBeat(this.duration);
 		var sTime = startTime ? (this.duration - time2quant);
 		var loop = 1;
+
 		if(startTime.notNil) { loop = 0 };
 
-		buf = Buffer.alloc(
+		currentBuffer = Buffer.alloc(
 			server: Server.default,
 			numFrames: this.signal.size,
 			numChannels: 1
 		);
 
-		buf.loadCollection(
+		currentBuffer.loadCollection(
 			collection: this.signal,
 			startFrame: 0,
 			action: {|buff| { this.updatePlot; }.defer }
@@ -177,7 +178,7 @@ Sdef {
 			args:
 			[
 				\bus: bus,
-				\bufnum: buf.bufnum,
+				\bufnum: currentBuffer.bufnum,
 				\startTime: sTime,
 				\reset: 1,
 				\multTrig: 1,
@@ -192,15 +193,18 @@ Sdef {
 		currentSynth.onFree({|freeSynth|
 			var id = freeSynth.nodeID;
 			releasedSynths.removeAt(id);
+			releasedBuffers.removeAt(id);
+			// Buffer.cachedBuffersDo(Server.default, {|a| a.postln });
+			// releasedBuffers.postln;
 			// releasedSynths.postln;
 			// "% DELETED".format(freeSynth).warn;
 		});
-
 	}
 
 	fadeOutSynth { |fTime = 0|
 		if (currentSynth.notNil) {
 			var id = currentSynth.nodeID;
+			releasedBuffers.put(id, currentBuffer);
 			releasedSynths.put(id, currentSynth);
 			releasedSynths.do({|oldSynth|
 				oldSynth.set(
@@ -245,7 +249,6 @@ Sdef {
 				parentNode.removeDependant(this);
 			}
 		};
-		// parentNode.dependants.postln;
 	}
 
 	update { |from, what, args| // object dependency -> this is target when object.changed is called
@@ -263,26 +266,26 @@ Sdef {
 	*play { |from = nil, to = nil|
 		library.leafDo({|path|
 			var sDef = library.atPath(path);
-			// var tempFadeTime = sDef.parentNode.fadeTime;
-			// sDef.parentNode.fadeTime = time;
-
 			sDef.removeDependencyOnNode;
+
 			if(sDef.parentNode.monitor.isPlaying.not) { sDef.parentNode.play };
-			// sDef.play(0);
+
 			sDef.fadeInSynth(0, from);
-			sDef.addDependencyOnNode;
 
-			// sDef.parentNode.fadeTime = tempFadeTime;
+			if(from.notNil)
+			{
+				var dur;
+				if(to.notNil)
+				{ dur = to - from }
+				{ dur = sDef.duration - from };
 
-
-			/*
-			if(sDef.parentNode.notNil) {
-			if(sDef.parentNode.monitor.isPlaying.not)
-			{ sDef.parentNode.play }
-			// { sDef.p
-
+				{
+					dur.wait;
+					sDef.parentNode.stop;
+				}.fork;
 			};
-			*/
+
+			sDef.addDependencyOnNode;
 		})
 	}
 
