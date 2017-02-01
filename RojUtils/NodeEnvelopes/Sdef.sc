@@ -2,10 +2,10 @@ Sdef {
 
 	classvar <>library;
 	classvar rate;
-	classvar hasInitSynthDefs, bufferSynthDef, bufferSynthDef2;
+	classvar hasInitSynthDefs, bufferSynthDef;
 
 	var <key, <path;
-	var <bus, <buffer, bufferID, <synth;
+	var <bus;
 	var <buffers, <currentSynth, <releasedSynths;
 	var <layers;
 	var <parentNode;
@@ -62,10 +62,6 @@ Sdef {
 		hasPlotWin = false;
 
 		bus = nil;
-		buffer = Buffer.alloc( Server.default, 1 );
-		bufferID = buffer.bufnum;
-		synth = nil;
-
 		currentSynth = nil;
 		releasedSynths = Order.new;
 		buffers = Order.new;
@@ -116,73 +112,18 @@ Sdef {
 	}
 
 	render {
-		var startRenderTime = SystemClock.beats;
+		// var startRenderTime = SystemClock.beats;
 		var fTime = 8;
-
-		if(parentNode.notNil) { fTime = parentNode.fadeTime };
-
-		this.createCurrentSynth(fTime);
-
-		/*
-		buffer = Buffer.alloc(
-		server: Server.default,
-		numFrames: this.signal.size,
-		numChannels: 1,
-		// bufnum: bufferID
-		);
-
-
-		buffer.loadCollection(
-		collection: this.signal,
-		startFrame: 0,
-		action: {|buff|
-		var clock = currentEnvironment.clock;
-		var time2quant = clock.timeToNextBeat(this.duration);
-		if(synth.notNil)
-		{
-		synth.set(
-		\startTime, (this.duration - time2quant),
-		\reset, 1
-		);
-		};
-
-		// "buffer \n\t beats: % \n\t duration: % \n\t t2q: % \n\t offset: %".format(clock.beats, duration, time2quant, clock.beats + (duration - time2quant)).postln;
-
-		/*
-		"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
-		bufferID,
-		duration,
-		(SystemClock.beats - startRenderTime),
-		buff.numFrames
-		).postln;
-		*/
-
-		{ this.updatePlot; }.defer;
-		}
-		);
-		*/
+		if(parentNode.notNil) {	fTime = parentNode.fadeTime };
+		if(parentNode.monitor.isPlaying) { this.fadeInSynth(fTime) };
 	}
 
 
 	*initSynthDefs{
 		if(Server.default.serverRunning.not) { Server.default.onBootAdd({ this.initSynthDefs }) }
 		{
-			/*
-			bufferSynthDef = { |bus, bufnum, startTime = 0|
-				// var buf = PlayBuf.ar(
-				var buf = PlayBuf.kr(
-					numChannels: 1,
-					bufnum: bufnum,
-					startPos: startTime * rate,
-					rate: \tempoClock.kr(1),
-					trigger: \reset.tr,
-					loop: 1
-				);
-				Out.kr(bus, buf);
-			}.asSynthDef;
-*/
-			bufferSynthDef2 = { |bus, bufnum, startTime = 0, multFrom = 0, multTo = 0, fTime = 0, tempo = 1|
-				var buf, fIn, fOut, mult;
+			bufferSynthDef = { |bus, bufnum, startTime = 0, multFrom = 0, multTo = 0, fTime = 0, tempo = 1|
+				var buf, mult;
 				buf = PlayBuf.kr(
 					numChannels: 1,
 					bufnum: bufnum,
@@ -194,7 +135,7 @@ Sdef {
 
 				mult = EnvGen.kr(
 					envelope: Env([ multFrom, multTo ], fTime, \lin),
-					gate: \mult.tr(0),
+					gate: \multTrig.tr(0),
 					timeScale: tempo.reciprocal,
 					doneAction: 0
 				);
@@ -208,7 +149,7 @@ Sdef {
 		hasInitSynthDefs = true;
 	}
 
-	createCurrentSynth { |fTime|
+	fadeInSynth { |fTime|
 		var buf, syn;
 		var group = parentNode.group ? RootNode(Server.default);
 		var time2quant = clock.timeToNextBeat(this.duration);
@@ -225,29 +166,11 @@ Sdef {
 			action: {|buff| { this.updatePlot; }.defer }
 		);
 
-		if (currentSynth.notNil) {
-			var id = currentSynth.nodeID;
-			releasedSynths.put(id, currentSynth);
-			releasedSynths.postln;
-			releasedSynths.do({|oldSynth|
-				oldSynth.set(
-					\startTime, (this.duration - time2quant),
-					\reset, 1,
-					\mult, 1,
-					\multFrom, 1,
-					\multTo, 0,
-					\fTime, fTime,
-					\tempo, currentEnvironment.clock.tempo
-				);
-				{
-					fTime.wait;
-					oldSynth.free;
-				}.fork;
-			})
-		};
+		this.fadeOutSynth(fTime);
 
-		bufferSynthDef2.name_("Sdef(%)".format(this.printName));
-		currentSynth = bufferSynthDef2.play(
+		// {
+		bufferSynthDef.name_("Sdef(%)".format(this.printName));
+		currentSynth = bufferSynthDef.play(
 			target: group,
 			args:
 			[
@@ -255,20 +178,42 @@ Sdef {
 				\bufnum: buf.bufnum,
 				\startTime: (this.duration - time2quant),
 				\reset: 1,
-				\mult: 1,
+				\multTrig: 1,
 				\multFrom: 0,
 				\multTo: 1,
-				\fTime: fTime,
-				\tempo: currentEnvironment.clock.tempo
+				\fTime: (fTime * clock.tempo),
+				\tempo, clock.tempo
 			]
 		);
 
 		currentSynth.onFree({|freeSynth|
 			var id = freeSynth.nodeID;
-			// "%.free DONE".format(freeSynth).warn;
 			releasedSynths.removeAt(id);
 			// releasedSynths.postln;
+			// "% DELETED".format(freeSynth).warn;
 		});
+
+	}
+
+	fadeOutSynth { |fTime = 0|
+		if (currentSynth.notNil) {
+			var id = currentSynth.nodeID;
+			releasedSynths.put(id, currentSynth);
+			releasedSynths.do({|oldSynth|
+				oldSynth.set(
+					\multTrig, 1,
+					\multFrom, 1,
+					\multTo, 0,
+					\fTime, (fTime * clock.tempo),
+					\tempo, clock.tempo
+				);
+				{
+					(fTime * clock.tempo).wait;
+					oldSynth.free;
+				}.fork;
+			});
+			currentSynth = nil;
+		};
 	}
 
 	kr { ^BusPlug.for(bus)	}
@@ -276,12 +221,6 @@ Sdef {
 	setNode { |nodeProxy, controlName|
 		parentNode = nodeProxy;
 		nodeProxy.map(controlName.asSymbol, BusPlug.for(bus));
-
-		if(nodeProxy.monitor.isPlaying) {
-			var offsetTime = this.duration - clock.timeToNextBeat(this.duration);
-			this.removeDependencyOnNode;
-			this.play(offsetTime);
-		};
 		this.addDependencyOnNode;
 	}
 
@@ -303,14 +242,14 @@ Sdef {
 				parentNode.removeDependant(this);
 			}
 		};
-		parentNode.dependants.postln;
+		// parentNode.dependants.postln;
 	}
 
 	update { |from, what, args| // object dependency -> this is target when object.changed is called
+		// var offsetTime = this.duration - clock.timeToNextBeat(this.duration);
 		// "\nSdef.update \n\tfrom:% \n\twhat:% \n\targs:%".format(from, what, args).postln;
-		var offsetTime = this.duration - clock.timeToNextBeat(this.duration);
 		case
-		{ what.asSymbol == \play } {  this.play(offsetTime); "update PLAY".warn; }
+		{ what.asSymbol == \play } {  this.play(from.fadeTime); "update PLAY".warn; }
 		{ what.asSymbol == \stop } {  this.stop(args[0]);  "update STOP".warn; }
 		{ what.asSymbol == \free } {  this.stop(args[0]);  "update FREE".warn;  }
 		// { what.asSymbol == \set } { }
@@ -352,12 +291,13 @@ Sdef {
 	}
 
 
-	play { |from, to|
-		var bufferFramesCnt = buffer.numFrames;
-		var group = parentNode.group ? RootNode(Server.default);
+	play { |time|
+		this.fadeInSynth(time)
+		// var bufferFramesCnt = buffer.numFrames;
+		// var group = parentNode.group ? RootNode(Server.default);
 		// var time2quant = clock.timeToNextBeat(this.duration);
-		var startTime = from ? 0;
-		var endTime = to ? this.duration;
+		// var startTime = from ? 0;
+		// var endTime = to ? this.duration;
 
 		// if(parentNode.notNil) { group = parentNode.group };
 		/*
@@ -381,14 +321,16 @@ Sdef {
 
 	stop { |time|
 		{
+			this.fadeOutSynth(time);
 			if(time.notNil) { (time * clock.tempo).wait; };
-			if(synth.notNil) {
-				synth.free;
-				synth = nil;
-			};
+			// if(synth.notNil) {
+			// synth.free;
+			// synth = nil;
+			// };
 			// if(parentNode.notNil) { parentNode.stop };
+			// if(currentSynth.notNil) { currentSynth
 			bus.set(0);
-			"Sdef stop".warn;
+			// "Sdef stop".warn;
 		}.fork;
 	}
 
