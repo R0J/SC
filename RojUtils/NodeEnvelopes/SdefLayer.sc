@@ -258,6 +258,44 @@ SdefLayer {
 		this.update;
 	}
 
+	// signal operations //////////////////////////
+
+	*prSigChain { |...arrSig|
+		var sig = Signal.new;
+		arrSig.do({ |oneSig| if(oneSig.isKindOf(Collection)) { sig = sig ++ oneSig } });
+		if(sig.isEmpty.not)	{ ^sig } { ^nil };
+	}
+
+	*prSigOffset { |sig, offsetSize, fillByFirst = true|
+		if(sig.isKindOf(Collection))
+		{
+			var insertedSignal;
+			if(fillByFirst)
+			{ insertedSignal = Signal.fill(offsetSize, { sig.at(0) }) }
+			{ insertedSignal = Signal.newClear(offsetSize) };
+			^Signal.newFrom(insertedSignal ++ sig);
+		}
+		{ ^nil }
+	}
+
+	*prSigExtend { |sig, extendSize, fillByLast = true|
+		if(sig.isKindOf(Collection))
+		{
+			var insertedSignal;
+			if(fillByLast)
+			{ insertedSignal = Signal.fill(extendSize, { sig.at(sig.size-1) }) }
+			{ insertedSignal = Signal.newClear(extendSize) };
+			^Signal.newFrom(sig ++ insertedSignal);
+		}
+		{ ^nil }
+	}
+
+	*prSigWrapAt { |sig, wrapSize|
+		if(sig.isKindOf(Collection))
+		{ ^Signal.fill( wrapSize, {|i| sig.wrapAt(i % wrapSize) }) }
+		{ ^nil }
+	}
+
 	// references //////////////////////////
 
 	perform { this.performList(selector, arguments)	}
@@ -275,7 +313,6 @@ SdefLayer {
 
 	// informations //////////////////////////
 
-	// duration { ^signal.size / rate }
 	size { ^signal.size }
 
 	printOn { |stream|	stream << this.class.name << "(id: " << index << " | dur: " << duration << ")"; }
