@@ -12,6 +12,7 @@ SdefLayer {
 	*initClass {
 		// rate = 44100;
 		rate = 44100 / 64;
+		// rate = ControlRate.ir;
 	}
 
 	init {

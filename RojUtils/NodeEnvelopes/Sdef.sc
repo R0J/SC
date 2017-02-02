@@ -1,7 +1,6 @@
 Sdef {
 
 	classvar <>library;
-	classvar rate;
 	classvar hasInitSynthDefs, bufferSynthDef;
 
 	var <key, <path;
@@ -15,8 +14,6 @@ Sdef {
 
 	*initClass {
 		library = MultiLevelIdentityDictionary.new;
-		// rate = 44100;
-		rate = 44100 / 64;
 		hasInitSynthDefs = false;
 	}
 
@@ -51,12 +48,7 @@ Sdef {
 
 	*printAll { this.library.postTree; ^nil; }
 
-	*frame { |time| ^ rate * time }
-	*time { |frame| ^ frame / rate }
-
 	// init //////////////////////////
-
-
 
 	init { |name|
 		this.key = name;
@@ -119,7 +111,6 @@ Sdef {
 		if(parentNode.monitor.isPlaying) { this.fadeInSynth(fTime) };
 	}
 
-
 	*initSynthDefs{
 		if(Server.default.serverRunning.not) { Server.default.onBootAdd({ this.initSynthDefs }) }
 		{
@@ -128,7 +119,7 @@ Sdef {
 				buf = PlayBuf.kr(
 					numChannels: 1,
 					bufnum: bufnum,
-					startPos: startTime * rate,
+					startPos: startTime * ControlRate.ir,
 					rate: tempo,
 					trigger: \reset.tr,
 					loop: loop
@@ -143,9 +134,7 @@ Sdef {
 
 				XOut.kr(bus, mult, buf);
 			}.asSynthDef;
-
-			// controlRate = Server.default.sampleRate / Server.default.options.blockSize;
-			"\nSdef initialization of SynthDefs done. Control rate set on %".format(rate).postln;
+			// "\nSdef initialization of SynthDefs done.".postln;
 		};
 		hasInitSynthDefs = true;
 	}
@@ -255,8 +244,8 @@ Sdef {
 		// "\nSdef.update \n\tfrom:% \n\twhat:% \n\targs:%".format(from, what, args).postln;
 		case
 		{ what.asSymbol == \play } {  this.play(from.fadeTime); "update PLAY".warn; }
-		{ what.asSymbol == \stop } {  this.stop(from.fadeTime); "update STOP".warn; }
-		{ what.asSymbol == \free } {  this.stop(from.fadeTime); "update FREE".warn; }
+		{ what.asSymbol == \stop } {  this.stop(args[0]); "update STOP".warn; }
+		{ what.asSymbol == \free } {  this.stop(args[0]); "update FREE".warn; }
 		// { what.asSymbol == \set } { }
 		;
 	}
@@ -270,7 +259,7 @@ Sdef {
 
 			if(sDef.parentNode.monitor.isPlaying.not) { sDef.parentNode.play };
 
-			sDef.fadeInSynth(0, from);
+			sDef.fadeInSynth(0.2, from);
 
 			if(from.notNil)
 			{
@@ -281,7 +270,7 @@ Sdef {
 
 				{
 					dur.wait;
-					sDef.parentNode.stop;
+					sDef.parentNode.stop(0.2);
 				}.fork;
 			};
 
@@ -293,18 +282,18 @@ Sdef {
 		library.leafDo({|path|
 			var sDef = library.atPath(path);
 			sDef.removeDependencyOnNode;
-			if(sDef.parentNode.monitor.isPlaying) { sDef.parentNode.stop };
-			sDef.stop(0);
+			if(sDef.parentNode.monitor.isPlaying) { sDef.parentNode.stop(0.2) };
+			sDef.stop(0.2);
 			sDef.addDependencyOnNode;
 		});
 	}
 
 
-	play { |time|
+	play { |time = 0|
 		this.fadeInSynth(time)
 	}
 
-	stop { |time|
+	stop { |time = 0|
 		this.fadeOutSynth(time);
 		if(time.notNil) {
 			{
