@@ -1,18 +1,19 @@
 Sdef {
 
 	classvar <>library;
-	classvar controlRate;
 	classvar hasInitSynthDefs, bufferSynthDef;
 
 	var <key, <path;
-	var <bus, <buffer, bufferID, <synth;
+	var <bus;
+	var <currentBuffer, <releasedBuffers;
+	var <currentSynth, <releasedSynths;
 	var <layers;
-	var node;
-	var <updatePlot;
+	var <parentNode;
+	var clock;
+	var hasPlotWin;
 
 	*initClass {
 		library = MultiLevelIdentityDictionary.new;
-		controlRate = 44100 / 64;
 		hasInitSynthDefs = false;
 	}
 
@@ -33,7 +34,7 @@ Sdef {
 			if(layer.isNil) {
 				layer = SdefLayer(sDef, index);
 				sDef.layers.put(index, layer);
-			}
+			};
 			^layer;
 		}
 		{ ^sDef }
@@ -47,42 +48,26 @@ Sdef {
 
 	*printAll { this.library.postTree; ^nil; }
 
-	*frame { |time| ^controlRate * time }
-	*time { |frame| ^frame / controlRate }
-
 	// init //////////////////////////
-
-	*initSynthDefs{
-		if(Server.default.serverRunning.not) { Server.default.onBootAdd({ this.initSynthDefs }) }
-		{
-			bufferSynthDef = { |bus, bufnum, startTime = 0|
-				var buf = PlayBuf.kr(
-					numChannels: 1,
-					bufnum: bufnum,
-					startPos: startTime * controlRate,
-					rate: \tempoClock.kr(1),
-					loop: 1
-				);
-				Out.kr(bus, buf);
-			}.asSynthDef;
-
-			controlRate = Server.default.sampleRate / Server.default.options.blockSize;
-			"\nSdef initialization of SynthDefs done. Control rate set on %".format(controlRate).postln;
-		};
-		hasInitSynthDefs = true;
-	}
 
 	init { |name|
 		this.key = name;
-		this.updatePlot = false;
+		hasPlotWin = false;
 
 		bus = nil;
-		buffer = Buffer.alloc( Server.default, 1 );
-		bufferID = buffer.bufnum;
-		synth = nil;
+		currentSynth = nil;
+		releasedSynths = Order.new;
+		currentBuffer = nil;
+		releasedBuffers = Order.new;
 
 		layers = Order.new;
 		layers.put(0, SdefLayer(this, 0));
+
+		parentNode = nil;
+
+		if(currentEnvironment.isKindOf(ProxySpace))
+		{ clock = currentEnvironment.clock }
+		{ clock = TempoClock.default };
 	}
 
 	initBus {
@@ -99,7 +84,6 @@ Sdef {
 	// instance //////////////////////////
 
 	key_ {|name|
-		"rename def from % to %".format(key, name).postln;
 		if(name.notNil)
 		{
 			key = name;
@@ -116,95 +100,220 @@ Sdef {
 		if(lastIndex.isNil) { ^nil } { ^layers.at(lastIndex).signal };
 	}
 
-	update {
-		// "%.UPDATE".format(this).postln;
-		this.render;
-		if(updatePlot) { this.plot }
+	duration {
+		var lastIndex = layers.lastIndex;
+		if(lastIndex.isNil) { ^nil } { ^layers.at(lastIndex).duration };
 	}
 
 	render {
-		var startRenderTime = SystemClock.beats;
+		var fTime = 0;
+		if(parentNode.notNil) {	fTime = parentNode.fadeTime };
+		if(parentNode.monitor.isPlaying) { this.fadeInSynth(fTime) };
+	}
 
-		buffer = Buffer.alloc(
+	*initSynthDefs{
+		if(Server.default.serverRunning.not) { Server.default.onBootAdd({ this.initSynthDefs }) }
+		{
+			bufferSynthDef = { |bus, bufnum, startTime = 0, multFrom = 0, multTo = 0, fTime = 0, tempo = 1, loop = 1|
+				var buf, mult;
+				buf = PlayBuf.kr(
+					numChannels: 1,
+					bufnum: bufnum,
+					startPos: startTime * ControlRate.ir,
+					rate: tempo,
+					trigger: \reset.tr,
+					loop: loop
+				);
+
+				mult = EnvGen.kr(
+					envelope: Env([ multFrom, multTo ], fTime, \lin),
+					gate: \multTrig.tr(0),
+					timeScale: tempo.reciprocal,
+					doneAction: 0
+				);
+
+				XOut.kr(bus, mult, buf);
+			}.asSynthDef;
+			// "\nSdef initialization of SynthDefs done.".postln;
+		};
+		hasInitSynthDefs = true;
+	}
+
+	fadeInSynth { |fTime, startTime = nil|
+		var group = parentNode.group ? RootNode(Server.default);
+		var time2quant = clock.timeToNextBeat(this.duration);
+		var sTime = startTime ? (this.duration - time2quant);
+		var loop = 1;
+
+		if(startTime.notNil) { loop = 0 };
+
+		currentBuffer = Buffer.alloc(
 			server: Server.default,
 			numFrames: this.signal.size,
-			numChannels: 1,
-			bufnum: bufferID
+			numChannels: 1
 		);
 
-		"render buffer: % , frames: %".format(buffer, buffer.numFrames).warn;
-		buffer.loadCollection(
+		currentBuffer.loadCollection(
 			collection: this.signal,
 			startFrame: 0,
-			action: {|buff|
-				var bufferFramesCnt = buff.numFrames;
-				var dur = super.class.time(bufferFramesCnt);
-				"Rendering of buffer ID(%) done \n\t- buffer duration: % sec \n\t- render time: % sec \n\t- frame count: %".format(
-					bufferID,
-					dur,
-					(SystemClock.beats - startRenderTime),
-					bufferFramesCnt
-				).postln;
-			}
+			action: {|buff| { this.updatePlot; }.defer }
 		);
+
+		this.fadeOutSynth(fTime);
+
+		bufferSynthDef.name_("Sdef(%)".format(this.printName));
+		currentSynth = bufferSynthDef.play(
+			target: group,
+			args:
+			[
+				\bus: bus,
+				\bufnum: currentBuffer.bufnum,
+				\startTime: sTime,
+				\reset: 1,
+				\multTrig: 1,
+				\multFrom: 0,
+				\multTo: 1,
+				\fTime: (fTime * clock.tempo),
+				\tempo: clock.tempo,
+				\loop: loop
+			]
+		);
+
+		currentSynth.onFree({|freeSynth|
+			var id = freeSynth.nodeID;
+			releasedSynths.removeAt(id);
+			releasedBuffers.removeAt(id);
+			// Buffer.cachedBuffersDo(Server.default, {|a| a.postln });
+			// releasedBuffers.postln;
+			// releasedSynths.postln;
+			// "% DELETED".format(freeSynth).warn;
+		});
+	}
+
+	fadeOutSynth { |fTime = 0|
+		if (currentSynth.notNil) {
+			var id = currentSynth.nodeID;
+			releasedBuffers.put(id, currentBuffer);
+			releasedSynths.put(id, currentSynth);
+			releasedSynths.do({|oldSynth|
+				oldSynth.set(
+					\multTrig, 1,
+					\multFrom, 1,
+					\multTo, 0,
+					\fTime, (fTime * clock.tempo),
+					\tempo, clock.tempo
+				);
+				{
+					(fTime * clock.tempo).wait;
+					oldSynth.free;
+				}.fork;
+			});
+			currentSynth = nil;
+		};
 	}
 
 	kr { ^BusPlug.for(bus)	}
 
-	map { |nodeProxy|
-		node = nodeProxy;
-		/*
-		nodeProxy.postln;
-		nodeProxy.envirKey.postln;
-		nodeProxy.controlNames.postln;
-
-		nodeProxy.objects.do({ |synthDefControl, i|
-			"synthDefControl: %, i: %".format(synthDefControl, i).postln;
-			"synthDef: %".format(synthDefControl.synthDef).postln;
-			"asDefName: %".format(synthDefControl.asDefName).postln;
-			"ProxySynthDef: %".format(synthDefControl.synthDef).postln;
-		})
-		*/
+	setNode { |nodeProxy, controlName|
+		parentNode = nodeProxy;
+		nodeProxy.map(controlName.asSymbol, BusPlug.for(bus));
+		this.addDependencyOnNode;
 	}
 
-	play { |clock = nil|
-		var bufferFramesCnt = buffer.numFrames;
-		var dur = super.class.time(bufferFramesCnt);
+	addDependencyOnNode {
+		if(parentNode.notNil)
+		{
+			if(parentNode.dependants.matchItem(this).not)
+			{
+				parentNode.addDependant(this);
+			}
+		}
+	}
 
-		var time2quant;
-		if(clock.isNil) { clock = currentEnvironment.clock; };
-		time2quant = clock.timeToNextBeat(dur);
-
-		if(synth.notNil) { synth.free };
-
-		// ("nodePlay: " + node).postln;
-		if(node.notNil) {
-			node.initMonitor(1);
-			node.play
+	removeDependencyOnNode {
+		if(parentNode.notNil)
+		{
+			if(parentNode.dependants.matchItem(this))
+			{
+				parentNode.removeDependant(this);
+			}
 		};
-		// "play buffer: % || bus: % || t2q: %".format(buffer, bus, time2quant).warn;
-
-		bufferSynthDef.name_("Sdef(%)".format(this.printName));
-		synth =	bufferSynthDef.play(
-			target: RootNode(Server.default),
-			args:
-			[
-				\bus: bus,
-				\bufnum: buffer.bufnum,
-				\startTime, dur - time2quant,
-				\tempoClock, currentEnvironment.clock.tempo
-				// \multiplicationBus, multBus.asMap
-			]
-		);
-		// if(loop.not, FreeSelfWhenDone.kr(synth));
-		// "play buffer init (%)".format(synth).warn;
 	}
 
-	stop {
-		synth.free;
-		synth = nil;
-		if(node.notNil) { node.free };
-		bus.set(0);
+	update { |from, what, args| // object dependency -> this is target when object.changed is called
+		// "\nSdef.update \n\tfrom:% \n\twhat:% \n\targs:%".format(from, what, args).postln;
+		case
+		{ what.asSymbol == \play } {  this.play(from.fadeTime); /*"update PLAY".warn;*/ }
+		{ what.asSymbol == \stop } {  this.stop(args[0]); /*"update STOP".warn;*/ }
+		{ what.asSymbol == \free } {  this.stop(args[0]); /*"update FREE".warn;*/ }
+		// { what.asSymbol == \set } { }
+		;
+	}
+
+	// controlAll //////////////////////////
+
+	*play { |from = nil, to = nil|
+		library.leafDo({|path|
+			var sDef = library.atPath(path);
+			sDef.removeDependencyOnNode;
+
+			if(sDef.parentNode.monitor.isPlaying.not) { sDef.parentNode.play };
+
+			sDef.fadeInSynth(0.2, from);
+
+			if(from.notNil)
+			{
+				var dur;
+				if(to.notNil)
+				{ dur = to - from }
+				{ dur = sDef.duration - from };
+
+				{
+					dur.wait;
+					sDef.parentNode.stop(0.2);
+				}.fork;
+			};
+
+			sDef.addDependencyOnNode;
+		})
+	}
+
+	*stop {|time|
+		library.leafDo({|path|
+			var sDef = library.atPath(path);
+			sDef.removeDependencyOnNode;
+			if(sDef.parentNode.monitor.isPlaying) { sDef.parentNode.stop(0.2) };
+			sDef.stop(0.2);
+			sDef.addDependencyOnNode;
+		});
+	}
+
+
+	play { |time = 0|
+		this.fadeInSynth(time)
+	}
+
+	stop { |time = 0|
+		this.fadeOutSynth(time);
+		if(time.notNil) {
+			{
+				(time * clock.tempo).wait;
+				bus.set(0);
+			}.fork;
+		};
+	}
+
+	free { |time = 0|
+		this.removeDependencyOnNode;
+		this.fadeOutSynth(time);
+		if(time.notNil) {
+			{
+				(time * clock.tempo).wait;
+				bus.set(0);
+				if(parentNode.notNil) { parentNode.unset(key) };
+				library.removeEmptyAt(path);
+			}.fork;
+		};
 	}
 
 	// informations //////////////////////////
@@ -224,29 +333,42 @@ Sdef {
 		^txtPath;
 	}
 
-	plot {|update|
-		this.updatePlot = update;
-
+	plot {
 		if(this.signal.notNil)
+		{
+			var winName = "Sdef(%)".format(this.printName);
+			var plotWin = nil;
+
+			Window.allWindows.do({|oneW| if(winName.asSymbol == oneW.name.asSymbol) { plotWin = oneW } });
+
+			if(plotWin.isNil)
+			{
+				var plotter = this.signal.plot(
+					name: winName.asSymbol,
+					bounds: Rect(700,680,500,300)
+				);
+				plotter.parent.alwaysOnTop_(true);
+				plotter.parent.view.background_(Color.new255(30,30,30)).alpha_(0.9);
+				plotter.parent.onClose_({ hasPlotWin = false });
+				hasPlotWin = true;
+			};
+
+			this.updatePlot;
+		}
+		{ "% signal is empty".format(this).warn; };
+	}
+
+	updatePlot {
+		if(hasPlotWin)
 		{
 			var winName = "Sdef(%)".format(this.printName);
 			var windows = Window.allWindows;
 			var plotWin = nil;
 			var plotter;
 
-			windows.do({|oneW|
-				if(winName.asSymbol == oneW.name.asSymbol) { plotWin = oneW; };
-			});
+			Window.allWindows.do({|oneW| if(winName.asSymbol == oneW.name.asSymbol) { plotWin = oneW; }	});
 
-			if(plotWin.isNil)
-			{
-				plotter = this.signal.plot(
-					name: winName.asSymbol,
-					bounds: Rect(700,680,500,300)
-				);
-				plotter.parent.alwaysOnTop_(true);
-				plotter.parent.view.background_(Color.new255(30,30,30)).alpha_(0.9);
-			}
+			if(plotWin.notNil)
 			{
 				plotWin.view.children[0].close;
 				plotter = Plotter(
@@ -255,21 +377,18 @@ Sdef {
 				);
 				plotWin.view.children[0].bounds_(Rect(8,8,plotWin.view.bounds.width-16,plotWin.view.bounds.height-16));
 				plotter.value = this.signal;
-			};
-
-			plotter.domainSpecs = [[0,  super.class.time(this.signal.size), 0, 0, "", " s"]];
-			plotter.setProperties (
-				\backgroundColor, Color.new255(30,30,30),
-				\plotColor, Color.new255(30,190,230),
-				\fontColor, Color.new255(90,90,90),
-				\gridColorX, Color.new255(60,60,60),
-				\gridColorY, Color.new255(60,60,60),
-				\gridLinePattern, FloatArray[2,4],
-			);
-			plotter.refresh;
+				// plotter.domainSpecs = [[0,  super.class.time(this.signal.size), 0, 0, "", " s"]];
+				plotter.domainSpecs = [[0, this.duration, 0, 0, "", " s"]];
+				plotter.setProperties (
+					\backgroundColor, Color.new255(30,30,30),
+					\plotColor, Color.new255(30,190,230),
+					\fontColor, Color.new255(90,90,90),
+					\gridColorX, Color.new255(60,60,60),
+					\gridColorY, Color.new255(60,60,60),
+					\gridLinePattern, FloatArray[2,4],
+				);
+				plotter.refresh;
+			}
 		}
-		{ "% signal is empty".format(this).warn; };
 	}
-
-	updatePlot_ {|bool|	if(bool.isKindOf(Boolean)) { updatePlot = bool } }
 }

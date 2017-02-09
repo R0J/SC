@@ -1,13 +1,14 @@
 (
 // INSTRUMENS ///////////////////////////////////////////
 
-ProxySynthDef(\kick, { |amp = 0.1, freq = 63, fplus = 0, noise = 0.6|
+ProxySynthDef(\kick, { |amp = 0, freq = 63, fplus = 0, noise = 0|
 	var bus = \out.kr;
 	var num = 4;
 	var sig = Mix.fill(num,{|i|
 		SinOsc.ar(
 			freq: freq!2 + fplus,
-			phase: amp**(200+(i/200))*8pi
+			// phase: amp**(200+(i/200))*8pi,
+			mul: num.reciprocal
 		)
 	});
 	var noiseGen = BrownNoise.ar(noise);
@@ -25,9 +26,10 @@ ProxySynthDef(\lpf, { |lpf = 600|
 	ReplaceOut.ar(bus, sig);
 }).store;
 
-ProxySynthDef(\stereo, { |stereo = 0|
+ProxySynthDef(\pan, { |pan = 0|
 	var bus = \out.kr;
-	var sig = Splay.ar(In.ar(bus,2), 0, center: stereo);
+	var sig = Pan2.ar(In.ar(bus), pan);
+	// var sig = Splay.ar(In.ar(bus,2), 0, center: stereo);
 	ReplaceOut.ar(bus, sig);
 }).store;
 
@@ -36,6 +38,8 @@ ProxySynthDef(\limiter, {
 	var sig = Limiter.ar(In.ar(bus,2), 1, 0.1);
 	ReplaceOut.ar(bus, sig);
 }).store;
+
+ProxySynthDef(\volume, { ReplaceOut.ar( \out.kr, In.ar(\out.kr,2) * \vol.kr(1)) }).store;
 
 /*
 SynthDef(\darkCloud, { |vol = 0.9, amp = 0, /*gate = 1,*/ lpf = 180, poleFreq = 0.9|

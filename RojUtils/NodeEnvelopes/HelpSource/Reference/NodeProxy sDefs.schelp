@@ -1,0 +1,36 @@
+title:: Sdefs and NodeProxy
+summary:: indexed layer of signal
+categories:: Libraries>RojUtils
+related:: Classes/Signal
+
+description::
+SdefLayer is a one layer of Sdef. Each layer store one signal.
+code::
+p = NetProxy.push
+(
+s.plotTreeView(interval: 0.05, parent: Window.new(name:\plotTree, bounds:Rect(Window.availableBounds.width-330,Window.availableBounds.height-910,300,500)).front.alpha_(0.5).alwaysOnTop_(true));
+s.scope(8,0,rate:\control).view.bounds_(Rect(Window.availableBounds.width-330,Window.availableBounds.height-370,300,300)).alpha_(0.5).alwaysOnTop_(true);
+)
+p.metro(4)
+
+~node.play
+~node[0] = { SinOsc.ar(\freq.kr(60)!2 + \fplus.kr, mul: \amp.kr) };
+~node[1] = \filter -> { |in| GVerb.ar(in, 10, 2, mul:0.5) };
+~node[2] = \filter -> { |in| LPF.ar(in, \lpf.kr(400)) };
+
+~node.sdef(\amp, 0).env([0,1,0], [1.25,2.75], [8, -8]);
+~node.sdef(\amp, 1).env([0,0.2,0], [0.25,1.75], [8, -8]);
+~node.sdef(\amp, 2).chain(0,0,0,1,1)
+~node.sdef(\amp).plot(true)
+
+~node.sdef(\fplus, 0).env([0,400,0], [0.05,0.25], [18, -8]);
+~node.sdef(\fplus, 1).fixTime(0, 2)
+~node.sdef(\fplus).plot(true)
+// ////////////////////////////////
+
+Sdef([\node,\amp]).play
+Sdef([\node,\fplus]).play
+
+::
+This example show how to get access to SdefLayer instance stored at index of Sdef.
+
