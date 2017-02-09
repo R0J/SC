@@ -26,9 +26,9 @@ ProxySynthDef(\lpf, { |lpf = 600|
 	ReplaceOut.ar(bus, sig);
 }).store;
 
-ProxySynthDef(\stereo, { |stereo = 0|
+ProxySynthDef(\pan, { |pan = 0|
 	var bus = \out.kr;
-	var sig = Pan2.ar(In.ar(bus), \pan.kr(0));
+	var sig = Pan2.ar(In.ar(bus), pan);
 	// var sig = Splay.ar(In.ar(bus,2), 0, center: stereo);
 	ReplaceOut.ar(bus, sig);
 }).store;
