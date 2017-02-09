@@ -243,9 +243,9 @@ Sdef {
 	update { |from, what, args| // object dependency -> this is target when object.changed is called
 		// "\nSdef.update \n\tfrom:% \n\twhat:% \n\targs:%".format(from, what, args).postln;
 		case
-		{ what.asSymbol == \play } {  this.play(from.fadeTime); "update PLAY".warn; }
-		{ what.asSymbol == \stop } {  this.stop(args[0]); "update STOP".warn; }
-		{ what.asSymbol == \free } {  this.stop(args[0]); "update FREE".warn; }
+		{ what.asSymbol == \play } {  this.play(from.fadeTime); /*"update PLAY".warn;*/ }
+		{ what.asSymbol == \stop } {  this.stop(args[0]); /*"update STOP".warn;*/ }
+		{ what.asSymbol == \free } {  this.stop(args[0]); /*"update FREE".warn;*/ }
 		// { what.asSymbol == \set } { }
 		;
 	}
@@ -299,6 +299,19 @@ Sdef {
 			{
 				(time * clock.tempo).wait;
 				bus.set(0);
+			}.fork;
+		};
+	}
+
+	free { |time = 0|
+		this.removeDependencyOnNode;
+		this.fadeOutSynth(time);
+		if(time.notNil) {
+			{
+				(time * clock.tempo).wait;
+				bus.set(0);
+				if(parentNode.notNil) { parentNode.unset(key) };
+				library.removeEmptyAt(path);
 			}.fork;
 		};
 	}
