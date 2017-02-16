@@ -67,7 +67,7 @@ ProxySynthDef(\var, {
 	var sig, env;
 	env=EnvGen.kr(Env([0,1,0],[0.4,0.001],\welch),timeScale:sustain,doneAction:2);
 	sig=Clip.ar(Wrap.ar(VarSaw.ar([1,8])*LFSaw.ar(freq),-0.7,0.7),-0.5,0.5);
-	sig=Mix.ar(sig);
+	//sig=Mix.ar(sig);
 	sig=sig*env*amp;
 
 }).add;
@@ -262,12 +262,12 @@ ProxySynthDef(\mel, {
 	arg  sustain,  amp;
 	var sig, env, fenv;
 
-	env=EnvGen.kr(Env([0,1,0],[0.01,0.5]),timeScale:sustain,doneAction:2);
-	sig=LFSaw.ar([\freq.kr,\freq.kr.lag(0.2),\freq.kr.lag(0.4)]).lag([0.02,0.04]);
-	sig=sig*LFPulse.ar([13,15]);
-	sig=LPF.ar(sig,1800);
+	env=EnvGen.kr(Env.perc(0.01,0.2),timeScale:sustain,doneAction:2);
+	sig=LFSaw.ar([\freq.kr,\freq.kr.lag(0.2),\freq.kr.lag(0.4)]).lag([0.002,0.04]);
+	sig=sig*LFPulse.ar([3/5,5])+HPF.ar(WhiteNoise.ar(\noise.kr),[4500,6000]);
+	sig=LPF.ar(sig,3800);
 	sig=sig*env*amp;
-	sig=Mix.ar(sig);
+
 }).add;
 
 
