@@ -62,6 +62,17 @@ ProxySynthDef(\bow, {
 }).add;
 
 
+ProxySynthDef(\snakes, {
+	arg  sustain,  amp, pan;
+	var sig, env;
+	env=EnvGen.kr(Env([0,1,0],[1,0.001],\welch),timeScale:sustain,doneAction:2);
+	sig=BPF.ar(WhiteNoise.ar(0.5!2)*LFSaw.kr(\f2.kr),\freq.kr+[1000,600,400,800],LFSaw.kr(1/32).range(0.02,1),mul:0.1);
+	sig=sig*env*amp;
+
+}).add;
+
+
+
 ProxySynthDef(\var, {
 	arg  sustain,  amp, dec, freq;
 	var sig, env;
@@ -86,7 +97,7 @@ ProxySynthDef(\cheap, {
 
 
 ProxySynthDef(\onion, {
-	arg sustain, gate=1, amp, freq, f2, fsaw;
+	arg sustain, gate=1, amp, freq,  fsaw;
 	var sig, env, fenv, penv, nenv;
 
 	env=EnvGen.kr(Env([0,1,0.2,1,0],[0.1,0.2,0.6,0.1],\welch),gate,timeScale:sustain,doneAction:2);
@@ -304,8 +315,22 @@ ProxySynthDef(\aural, {
 	sig=SinOsc.ar(\freq.kr+LFNoise0.ar([100,160]).range(2,40).round(2));
 	sig=sig+BPF.ar(PinkNoise.ar([0.4,0.6]),\freq.kr,0.1);
 	sig=sig*env*amp;
-	sig=Mix.ar(sig);
+	sig=Splay.ar(sig);
 }).add;
+
+
+ProxySynthDef(\trutru, {
+	arg  sustain,  amp;
+	var sig, env, fenv;
+
+	env=EnvGen.kr(Env([0,1,0.5,0.1,1,0],[0.01,0.1,0.01,0.5,0.01]),timeScale:sustain,doneAction:2);
+	sig=LFSaw.ar(\freq.kr+fib(12).reciprocal)*VarSaw.ar([2,3]);
+	sig=sig+BPF.ar(GrayNoise.ar([0.8,0.9]),\freq.kr,rq:(LFSaw.kr(4)*LFSaw.kr([0.25,0.125])).range(0.004,2));
+	sig=sig*env*amp;
+	sig=Splay.ar(sig);
+}).add;
+
+
 
 
 //LFPulse.ar(fenv,0,0.5,add:-0.5)+

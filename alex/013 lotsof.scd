@@ -26,7 +26,7 @@ p.gui;
 	\amp, 2,
 	\legato, 0.4,
 	\pan, 0,
-	\freq, [45,47]+20,
+	\freq, [45,47]+10,
 	\dur, Pseq([Rest(3),1],inf),
 );
 ~kick1sec[3]=\filter->{arg in; Limiter.ar(LPF.ar(in,\lpf4.kr(220,2)),0.4)};
@@ -55,6 +55,9 @@ p.gui;
 ~kick3sec[24]=\filter->{arg in; Limiter.ar(LPF.ar(in,\lpf4.kr(260,2)),0.2)};
 )
 
+
+
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////tss
 ~tss808long.clear;
 ~tss808long.stop(fadeTime:40);
@@ -72,6 +75,9 @@ p.gui;
 ););
 ~tss808long[6]=\filter->{arg ts; Limiter.ar(GVerb.ar(ts,20,1,mul:0.8,add:ts*2),0.9)};
 ~tss808long[7]=nil;
+
+
+
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////tsss
@@ -129,6 +135,33 @@ p.gui;
 
 
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////aggressive melody
+~trutru.clear;
+
+~trutru.stop(freeTime:10);
+(
+~trutru.play(vol:0.3, fadeTime:4, numChannels:2);
+~trutru.quant_(16);)
+(~trutru[0]=Pbind(
+	\instrument,\trutru,
+	\amp, 6,
+	\legato, 0.2,
+	\octave, Prand([Pn(2,2),[3,1],Pn(3,4)],inf)+2,
+	\degree, [2,4,8,2,6],
+	\strum, 0.2,
+	\dur, 8,
+);)
+(
+~trutru[3]=\filter->{arg in; Limiter.ar(LPF.ar(in,SinOsc.kr(1/64).range(3800,1620)),0.7)};
+//~trutru[4]=\filter->{arg in; Limiter.ar(GVerb.ar(in,8,[4,6],mul:SinOsc.kr(1/64).range(0.1,0.4))+in,0.7)};
+~trutru[8]=\filter->{arg in; HPF.ar(in,1000)};
+~trutru[12]=\filter->{arg in; in*Decay2.kr(LFSaw.kr(1).range(0.01,0.6),4,0.01)};
+~trutru[13]=\filter->{arg in; Limiter.ar(in, 0.7)};
+~trutru[14]=\filter->{arg in; GVerb.ar(in,40,[2,1],inputbw:0.8,drylevel:0.2,mul:SinOsc.kr(1/32).range(0.1,0.2))+(in/5)};
+)
+
+~trutru[4]=nil;
+
 
 
 
@@ -138,7 +171,7 @@ p.gui;
 ~mel01.stop(freeTime:60);
 
 (
-~mel01.play(vol:0.3, fadeTime:4, numChannels:2,);
+~mel01.play(vol:0.6, fadeTime:4, numChannels:2,);
 ~mel01.quant_(16);
 );
 (~mel01[0]=Pbind(
@@ -148,8 +181,8 @@ p.gui;
 	\octave, Prand([4,6,5],inf),
 	\degree, [4,2,8,6],
 	\strum, 0.5,
-	\noise, Prand([Pn(0.8,13),Pn(0.1,13*3),Pn(0.2,13),Pn(1,26)],inf),
-	\dur, Pseq([0.25!8,Rest(2)].flatten,inf),
+	\noise, Prand([Pn(0.8,13),Pn(0.5,13*3),Pn(0.2,13),Pn(1,26)],inf),
+	\dur, Pseq([Rest(2),0.25!8].flatten,inf),
 );
 ~mel01[3]=\filter->{arg in; Limiter.ar(LPF.ar(in,\lpf3.kr(200,2)),0.7)};
 ~mel01[4]=\set->Pbind(\args, [\lpf3], \dur,16,\lpf3, Pseq([820,600,400,1200,400,600,820],inf));
@@ -159,7 +192,63 @@ p.gui;
 
 
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////melody twoo
 
+~mel2.clear;
+~mel2.stop(freeTime:60);
+
+(
+~mel2.play(vol:0.2, fadeTime:4, numChannels:2,);
+~mel2.quant_(16);
+);
+(~mel2[0]=Pbind(
+	\instrument, \mel,
+	\amp, 3,
+	\legato, 0.7,
+	\octave, Pseq([4,6,5,8,6,4,2,2,4,8,4,3],inf),
+	\degree, Pseq([4,6,5,8,6,4,2,2,4,8,2,8],inf),
+	\noise, Pseq([Pn(0.5,12),Pn(0.05,24),Pn(0.2,12),Pn(0.9,24)],inf),
+	\dur, 0.25,
+);
+
+//~mel2[3]=\filter->{arg in; Limiter.ar(LPF.ar(in,\lpf3.kr(200,2)),0.7)};
+//~mel2[4]=\set->Pbind(\args, [\lpf3], \dur,16,\lpf3, Pseq([820,600,400,1200,400,600,820],inf));
+~mel2[5]=\filter->{arg in; GVerb.ar(in,[50,40],[2,4],mul:0.1,maxroomsize:200)+(in*2)};
+)
+~mel2[5]=nil;
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////MELODY THREE
+
+~mel3.clear;
+~mel3.stop(freeTime:60);
+
+(
+~mel3.play(vol:0.2, fadeTime:4, numChannels:2,);
+~mel3.quant_(16);
+);
+(~mel3[0]=Pbind(
+	\instrument, \mel,
+	\amp, Pseq([ 0,0,0.4,1,  1,1,0,1,  0,1,1, 0,  0,0.2,0.3,1],inf)+1,
+	\legato, 0.7,
+	\octave, Pseq(
+		[
+		Pseq([4,6,5,8, 6,4,2,7, 4,8,4,3, 4,8,4,3],4),
+		Pseq([4,6,5,8, 6,4,2,3, 4,8,4,3, 4,8,4,3],2),
+		Pseq([4,6,5,8, 6,4,2,7, 4,8,4,3, 4,8,8,3],4)
+		]
+		,inf),
+
+	\degree, Pseq([4,6,5,8, 6,4,2,7, 4,8,2,8, 4,8,2,8],inf),
+	\noise, Pseq([Pn(0.5,16),Pn(0.05,32),Pn(0.2,16),Pn(0.9,32)],inf),
+	\dur, 0.25,
+);
+
+//~mel3[3]=\filter->{arg in; Limiter.ar(LPF.ar(in,\lpf3.kr(200,2)),0.7)};
+//~mel3[4]=\set->Pbind(\args, [\lpf3], \dur,16,\lpf3, Pseq([820,600,400,1200,400,600,820],inf));
+~mel3[5]=\filter->{arg in; GVerb.ar(in,[50,40],[2,4],mul:0.1,maxroomsize:200)+(in*2)};
+)
+~mel3[5]=nil;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////impcont
 ~imps.clear;
@@ -176,8 +265,6 @@ p.gui;
 	\den,Prand([30,18,24],inf),
 	\dur, 16,
 );
-
-
 ~imps[3]=\filter->{arg in; Limiter.ar(LPF.ar(in,\lpf3.kr(2000,2)),0.7)};
 ~imps[4]=\set->Pbind(\args, [\lpf3], \dur,4,\lpf3, Pseq([820,600,400,1200,400,600,820]+200,inf));
 ~imps[5]=\filter->{arg in; GVerb.ar(in,[180,120],[4,6],mul:0.8,maxroomsize:200)+in};
@@ -249,14 +336,14 @@ p.gui;
 ~aural1.stop(fadeTime:60);
 (
 ~aural1.play(vol:0.041, fadeTime:4, numChannels:2);
-~aural1.quant_(4);)
+~aural1.quant_(16);)
 (~aural1[0]=Pbind(
 	\instrument, \aural,
 	\amp,Prand([0.8,0.4,0.6],inf)/8,
 	\legato, 0.2,
-	\octave, Prand([[5,6],[4,3],[5,4],[3,6]],inf)+Prand([(-2),(-1),2,1],inf),
+	\octave, Prand([[5,6],[4,3],[5,4],[3,6]],inf)-2,
 	\degree, Prand([[1,5],[4,6],[6,2],[2,4],[2,6],[8,2]],inf),
-	\dur, Pseq([Pn(8,20),Pn(2,20),Pn(4,20)],inf),
+	\dur, Pseq([Pn(8,20),Pn(4,20)],inf),
 );)
 (
 ~aural1[5]=\filter->{arg in; GVerb.ar(in,[40,60],[18,14],mul:0.4)+in};
@@ -265,20 +352,7 @@ p.gui;
 // ~aural1[7]=nil;
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+p.gui;
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////THIS IS FINE
@@ -292,13 +366,13 @@ p.gui;
 (~tum01[0]=Pbind(
 	\instrument, \tum,
 	\amp,Pseq([
-		Pseq([ 0,0,0.4,1,  1,1,0,1,  0,1,1, 0,  0,0,0,1],2),
+		Pseq([ 0,0,0.4,1,  1,1,0,1,  0,1,1, 0,    0,  0,0,1],2),
 		Pseq([ 0,0,0.4,1,  1,1,0,1,  0,1,1, 0.5,  0,0.5,0,1],2)
 	],inf),
 	\octave,Prand([Pn(2,64),Pn(3,64)],inf),
 	\degree, 1,
 	\dur, 0.25,
-	\rq, 0.02,//Pseq([Pn(0.2,64),Pn(0.02,64),Pn(1,64)],inf),
+	\rq,0.01,
 	\sustain, 6,
 
 );
@@ -308,14 +382,11 @@ p.gui;
 ~tum01[14]=\set->Pbind(\args, [\lpf6], \dur, 16, \lpf6, Pseq([400,240,440,280],inf));
 
 );
-~tum01[13]=nil;
+~tum01[14]=nil;
 
 
-//Pseq([ 1,0,0.4,1,  1,0.4,0,1,  0,1, 1, 0,  0,0,0,1],2),
-	//	Pseq([ 1,0,0.6,1,  1,0.6,0,1,  0,0.5,1,0,  0,0,0,1],2),
-		//Pseq([ 1, 1, 1,1,  1,0.6,0,1,  0,0.5,1,1,  0,0,0,1],2),
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 ~rhmdrum.clear;
