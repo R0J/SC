@@ -61,10 +61,10 @@
 	\strum, 0.15,//Pseq([Pn(0.15,11),Pn(0.1,22)],inf),
 
 );
-)
-~cheap[4]=\filter->{arg in; CheapVerb.ar(in,4)};
-~cheap[5]=\filter->{arg in; SinOsc.kr(1/64).range(0.4,0.7)*in};
 
+~cheap[4]=\filter->{arg in; CheapVerb.ar(in,0.4)};
+~cheap[5]=\filter->{arg in; SinOsc.kr(1/64).range(0.4,0.7)*in};
+)
 ~cheap[4]=nil;
 
 
@@ -106,15 +106,20 @@
 ~bowcont.quant_(4);)
 (~bowcont[0]=Pbind(
 	\instrument, \bow,
-	\dur, Pseq([6,Rest(2)],inf),
+	\dur, Pseq([2,Rest(2)],inf),
 	\legato, 2,
 	\octave, Pseq([[3,1],[4,1],[2,3],[1,2],[4,2]],inf),
 	\degree, [2,1],
 	\amp, 0.8,
 );)
 (
-~bowcont[3]=\filter->{arg in; LPF.ar(in,\lpf6.kr(400))+(in*0.01)};
-~bowcont[7]=\set->Pbind(\args, [\lpf6], \dur,12, \lpf6, Pseq([600,800,200],inf)+200);
-~bowcont[30]=\filter->{arg in; GVerb.ar(in,[80,60],[6,4],maxroomsize:120,add:in,mul:0.2)+in};
-~bowcont[32]=\filter->{arg in; Limiter.ar(in,0.7)};
+
+~bowcont[30]=\filter->{arg in; GVerb.ar(in,[2,2],[16,14],maxroomsize:120,add:in,mul:0.2)+in};
+~bowcont[32]=\filter->{arg in; FreeVerb.ar(in, room:4,damp:0.5)};
+~bowcont[35]=\filter->{arg in; Limiter.ar(in,0.7)};
+
+~bowcont[37]=\filter->{arg in; LPF.ar(in,3200)};
+
 )
+
+~bowcont[7]=nil;
