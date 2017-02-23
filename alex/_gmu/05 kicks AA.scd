@@ -25,23 +25,27 @@ p.gui;
 ~kick1sec.stop(freeTime:10);
 (
 ~kick1sec.play(vol:1, fadeTime:4, numChannels:2);
-~kick1sec.quant=16;
+~kick1sec.quant=1;
 )
 (~kick1sec[0]=Pbind(
 	\instrument, \kick,
-	\amp, 2,
-	\legato, 1,
+	\amp, 0.7,
+	\legato, 0.5,
 	\pan, 0,
 	\freq, [45,47]+10,
-	\dur,Pseq([Rest(3),1],inf),
+	\dur,1,
 );
-~kick1sec[3]=\filter->{arg in; Limiter.ar(LPF.ar(in,\lpf4.kr(320,2)),0.4)};
+~kick1sec[2]=\filter->{arg in; Limiter.ar(LPF.ar(in,\lpf4.kr(320,2)),0.4)};
+
 ~kick1sec[4]=\filter->{arg in; Limiter.ar(GVerb.ar(in,40,[2,1],mul:0.2)+in,0.7)};
 //~kick1sec[8]=\filter->{arg in; HPF.ar(in,5)};
+~kick1sec[5]=\filter->{arg in; Compander.ar(in,thresh:0.2,slopeBelow:1.5,slopeAbove:1.1)};
+
+
 
 )
 
-
+~kick1sec[7]=nil;
 
 p.gui;
 
