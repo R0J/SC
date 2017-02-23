@@ -44,12 +44,12 @@
 ~tsshorsy.quant=16;)
 (~tsshorsy[0]=Pbind(
 	\instrument, \tss808,
-	\amp,Pseq([1,0.1,1,1],inf),
-	\dur,0.25,
-	\legato,1,
+	\amp,1,
+	\dur,2,
+	\legato,0.1,
 	\hpf,Pseq([Pn(8000,64),Pn(8000,64),Pn(9200,64), Pn(14000,16),Pn(2200,16)],inf),
 
 );
-~tsshorsy[6]=\filter->{arg ts; Limiter.ar(GVerb.ar(ts,20,1,mul:0.8,add:ts*2),0.9)};
+~tsshorsy[6]=\filter->{arg ts; Limiter.ar(GVerb.ar(ts,20,4,mul:0.8,add:ts*2),0.9)};
 )
 ~tsshorsy[7]=nil;

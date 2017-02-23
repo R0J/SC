@@ -24,28 +24,29 @@ p.gui;
 
 ~kick1sec.stop(freeTime:10);
 (
-~kick1sec.play(vol:1, fadeTime:4, numChannels:2);
+~kick1sec.play(vol:1.5, fadeTime:4, numChannels:2);
 ~kick1sec.quant=1;
 )
 (~kick1sec[0]=Pbind(
 	\instrument, \kick,
-	\amp, 0.7,
-	\legato, 0.5,
+	\amp, 3,
+	\legato, 0.4,
 	\pan, 0,
-	\freq, [45,47]+10,
-	\dur,1,
+	\freq, [45,47]-5,
+	\dur,Pseq([0.5,1,Rest(0.5)],inf),
 );
-~kick1sec[2]=\filter->{arg in; Limiter.ar(LPF.ar(in,\lpf4.kr(320,2)),0.4)};
+~kick1sec[2]=\filter->{arg in; Limiter.ar(LPF.ar(in,\lpf4.kr(220,2)),0.4)};
 
-~kick1sec[4]=\filter->{arg in; Limiter.ar(GVerb.ar(in,40,[2,1],mul:0.2)+in,0.7)};
+//~kick1sec[4]=\filter->{arg in; Limiter.ar(GVerb.ar(in,40,[0.2,0.1],mul:0.2)+in,0.7)};
 //~kick1sec[8]=\filter->{arg in; HPF.ar(in,5)};
-~kick1sec[5]=\filter->{arg in; Compander.ar(in,thresh:0.2,slopeBelow:1.5,slopeAbove:1.1)};
+~kick1sec[5]=\filter->{arg in; Compander.ar(in,thresh:0.2,slopeBelow:0.1,slopeAbove:1,relaxTime:0.01)};
+//~kick1sec[6]=\filter-> {arg in; Clip.ar(in,-0.4,0.4)};
 
 
 
 )
 
-~kick1sec[7]=nil;
+~kick1sec[4]=nil;
 
 p.gui;
 
@@ -63,28 +64,27 @@ p.gui;
 	\amp,Pseq([
 		//Pseq([ 0,0,0,0,  0,0,0,1,  0,1,1, 0,    0,  0,0,1],2),
 
-		Pseq([ 0,0.2,0.4,1,    1,1,0,1,  0,1,1, 0,    0,0, 0.8,1],2)+0.1,
-		Pseq([ 0,  0,0.4,1,    1,1,0,1,  0,1,1, 0,    0,0,   0,1],2)+0.1,
+		Pseq([ 0,0.2,0.4,1,    1,1,0,1,  0,1,1, 0,    0,0, 0.8,1],2),
+		Pseq([ 0,  0,0.4,1,    1,1,0,1,  0,1,1, 0,    0,0,   0,1],2),
 		Pseq([ 0,  0,0.4,1,    1,1,0,1,  0,1,1, 0.5,  0,0.5, 0,1],4),
 	],inf),                                                                /////////ADD HERE AMP FOR ALL THE TIME BEAT
-	\freq, 65,
+	\freq, 265,
 	\pan, Pseq([-1,0,1],inf),
 	\dur, 0.25,
 	\rq,0.01,
-	\sustain, 1,
+	\sustain, 0.4,
 
 );
-~tum01[6]=\filter->{arg in; GVerb.ar(in,roomsize:20,revtime:0.2,mul:0.1)+(in*2)};
-~tum01[12]=\filter->{arg in; HPF.ar(in, SinOsc.ar(1/64).range(60,80))};
-~tum01[13]=\filter->{arg in; LPF.ar(in, \lpf6.kr(800))};
-~tum01[14]=\set->Pbind(\args, [\lpf6], \dur, 64, \lpf6, Pseq([480,340,540,680],inf));
-~tum01[15]=\filter->{arg in; Normalizer.ar(in,1)};
+~tum01[6]=\filter->{arg in; GVerb.ar(in,roomsize:180,revtime:6,mul:0.02)+(in*2)};
+~tum01[12]=\filter->{arg in; HPF.ar(in,\hp4.kr)};
+~tum01[14]=\set->Pbind(\args, [\hp4], \dur, 64, \hp4, Pseq([180,340,240,80]+800,inf));
 
 ~tum01[22]=\filter->{arg in; Limiter.ar(in, 0.7)};
 ~tum01[100]=\filter->{arg in; Compander.ar(in, ~kick1sec.ar, 0.1, 1, 0.1) };
 
 );
 ~tum01[6]=nil;
+~tum01[34]=\filter->{arg in; LPF.ar(in,800)};
 
 
 
