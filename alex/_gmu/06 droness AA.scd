@@ -8,7 +8,7 @@
 ~combdrone.clear;
 ~combdrone.stop(freeTime:10);
 (
-~combdrone.play(vol:0.01, fadeTime:4, numChannels:2);
+~combdrone.play(vol:0.0051, fadeTime:4, numChannels:2);
 ~combdrone.quant=16;)
 (~combdrone[0]=Pbind(
 	\instrument, \string,

@@ -51,7 +51,11 @@
 ~mel01.stop(freeTime:60);
 
 (
+<<<<<<< HEAD
 ~mel01.play(vol:0.01, fadeTime:4, numChannels:2,);
+=======
+~mel01.play(vol:0.1, fadeTime:4, numChannels:2,);
+>>>>>>> master
 ~mel01.quant_(16);
 );
 (~mel01[0]=Pbind(

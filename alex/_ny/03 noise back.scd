@@ -55,7 +55,7 @@
 	\instrument, \cheap,
 	\dur,Pseq([Pseq([2,[0.25!7,-0.25,0.25,0.1,-1].flatten,1].convertRhythm)],inf),
 	\dec, 2,
-	\octave, [4,2],
+	\octave, [4,2]+2,
 	\degree, [4,2],
 	\amp, 0.2,
 	\strum, 0.15,//Pseq([Pn(0.15,11),Pn(0.1,22)],inf),

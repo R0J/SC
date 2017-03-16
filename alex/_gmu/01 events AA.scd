@@ -20,7 +20,11 @@ p.gui;
 ~leaky.clear;
 ~leaky.stop(fadeTime:10);
 (
+<<<<<<< HEAD
 ~leaky.play(vol:0.05, numChannels:2);
+=======
+~leaky.play(vol:0.3, numChannels:2);
+>>>>>>> master
 ~leaky.quant=16;)
 (
 ~leaky[0]=Pbind(
@@ -30,7 +34,7 @@ p.gui;
 	\degree, [2,9,1,-3],
 	\strum, 0.2,
 	\amp, 0.2,
-	\legato, 0.02,
+	\legato, 0.04,
 );
 
 ~leaky[4]=\filter->{arg in; GVerb.ar(in,40,8,mul:SinOsc.kr(2).range(0.2,0.9),add:in)+in};
@@ -101,7 +105,11 @@ p.gui;
 ~imps.stop(freeTime:20);
 
 (
+<<<<<<< HEAD
 ~imps.play(vol:0.04, fadeTime:4, numChannels:2);
+=======
+~imps.play(vol:0.7, fadeTime:4, numChannels:2);
+>>>>>>> master
 ~imps.quant=16;);
 (~imps[0]=Pbind(
 	\instrument, \imp,
