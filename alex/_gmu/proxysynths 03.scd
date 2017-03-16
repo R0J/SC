@@ -30,6 +30,18 @@ ProxySynthDef(\leaky, {
 }).add;
 
 
+ProxySynthDef(\ping, {
+	arg  sustain,  amp, pan, freq;
+	var sig, env;
+	env=EnvGen.kr(Env([0,1,0],[0.001,0.1],\welch),timeScale:sustain,doneAction:2);
+	sig=SinOsc.ar(freq!2+fib(12).reciprocal);
+	sig=Mix.ar(sig);
+	sig=sig*env*amp;
+	sig=Pan2.ar(sig,pan);
+
+
+}).add;
+
 ProxySynthDef(\bow, {
 	arg  sustain,  amp, pan, freq;
 	var sig, env;
@@ -60,7 +72,6 @@ ProxySynthDef(\cheap, {
 	env=EnvGen.kr(Env([0,1,0],[0.4,0.001],\welch),timeScale:sustain,doneAction:2);
 	sig=SinOsc.ar(freq+fib(10).reciprocal,add:GrayNoise.ar(0.1)*LFSaw.kr(0.5));
 	sig=CheapVerb.ar(sig,decayTime:dec);
-	sig=Mix.ar(sig);
 	sig=sig*env*amp;
 
 }).add;
@@ -168,21 +179,16 @@ ProxySynthDef(\noiserand, {
 }).add;
 
 
-// ProxySynthDef(\rrr2, {
-// 	arg  sustain,  amp, pan, lag;
-// 	var sig, env, lenv, fenv;
-//
-// 	lenv=EnvGen.kr(Env([lag, lag+0.02, lag+0.05],[0.01,4]),timeScale:sustain);
-// 	env=EnvGen.kr(Env([0,1,0],[0.5,2]),timeScale:sustain,doneAction:2);
-// 	fenv=EnvGen.kr(Env([4,6,2,3]/5*\freq.kr,[4,[0.2,5,1],1].convertRhythm),timeScale:sustain,doneAction:2);
-//
-// 	sig=LFSaw.ar([fenv, fenv+[1,2,3,5,8].reciprocal]).lag([0.01,0.02]);
-// 	sig=CompanderD.ar(Pan2.ar(sig,SinOsc.ar(0.25/2)));
-// 	sig=Limiter.ar(sig,0.5);
-// 	sig=sig*env*amp;
-// 	sig=Mix.ar(sig);
-// }).add;
-//
+ProxySynthDef( \acid , {  arg  freq=440, wave=0, ctf=100, res=0.2,
+	sus=0, dec=1.0, env=1000, gate=0, amp=0.2, sustain=1;
+	var  filEnv, volEnv, waves;
+
+	volEnv =  EnvGen.ar( Env.new([10e-10, 1, 1, 10e-10], [0.01, sus, dec],  'exp' ),timeScale:sustain, doneAction:2);
+	filEnv =  EnvGen .ar( Env.new([10e-10, 1, 10e-10], [0.01, dec],  'exp'),timeScale:sustain,doneAction:2);
+
+	waves = [Saw.ar(freq, volEnv), Pulse.ar(freq, 0.5, volEnv)];
+	RLPF.ar(Select.ar(wave, waves), ctf + (filEnv * env), res).dup * amp;
+}).add;
 
 
 ProxySynthDef(\oto, {

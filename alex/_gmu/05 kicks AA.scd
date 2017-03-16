@@ -16,6 +16,28 @@ p.clock.tempo = 127/60;
 )
 p.gui;
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////kick group
+~acid.clear;
+
+~acid.stop(freeTime:10);
+(
+~acid.play(vol:0.4, fadeTime:4, numChannels:2);
+~acid.quant=16;
+)
+(~acid[0]=Pbind(
+	\instrument, \acid,
+	\dur,Pseq([Rest(0.1),3,0.2,0.7],inf),
+	\amp,Pseq([Rest(0.1),1,0.4,0.7],inf),
+	\sustain, 0.6,
+	\freq, 440
+	);
+
+~acid[4]=\filter->{arg in; Limiter.ar(GVerb.ar(in,40,1,mul:0.2)+in,0.7)};
+~acid[8]=\filter->{arg in; HPF.ar(in,30)};
+
+)
+
+~acid[4]=nil;
 
 
 
@@ -25,19 +47,20 @@ p.gui;
 ~kick1sec.stop(freeTime:10);
 (
 ~kick1sec.play(vol:1.5, fadeTime:4, numChannels:2);
-~kick1sec.quant=1;
+~kick1sec.quant=16;
 )
 (~kick1sec[0]=Pbind(
 	\instrument, \kick,
 	\amp, 3,
-	\legato, 0.4,
+	\legato, 0.1,
 	\pan, 0,
-	\freq, [45,47]-5,
-	\dur,4,//Pseq([0.5,1,Rest(0.5)],inf),
+	\top, 40,
+	\freq, 50,
+	\dur,1,
 );
 ~kick1sec[2]=\filter->{arg in; Limiter.ar(LPF.ar(in,\lpf4.kr(220,2)),0.4)};
 
-//~kick1sec[4]=\filter->{arg in; Limiter.ar(GVerb.ar(in,40,[0.2,0.1],mul:0.2)+in,0.7)};
+~kick1sec[4]=\filter->{arg in; Limiter.ar(GVerb.ar(in,40,[0.2,0.1],mul:0.2)+in,0.7)};
 //~kick1sec[8]=\filter->{arg in; HPF.ar(in,5)};
 ~kick1sec[5]=\filter->{arg in; Compander.ar(in,thresh:0.2,slopeBelow:0.1,slopeAbove:1,relaxTime:0.01)};
 //~kick1sec[6]=\filter-> {arg in; Clip.ar(in,-0.4,0.4)};
@@ -87,7 +110,7 @@ p.gui;
 
 (
 ~tum01.quant=16;
-~tum01.play(vol:0.8, fadeTime:4, numChannels:2);)
+~tum01.play(vol:0.02, fadeTime:4, numChannels:2);)
 (~tum01[0]=Pbind(
 	\instrument, \tum,
 	\amp,Pseq([
@@ -97,7 +120,7 @@ p.gui;
 		Pseq([ 0,  0,0.4,1,    1,1,0,1,  0,1,1, 0,    0,0,   0,1],2),
 		Pseq([ 0,  0,0.4,1,    1,1,0,1,  0,1,1, 0.5,  0,0.5, 0,1],4),
 	],inf),                                                                /////////ADD HERE AMP FOR ALL THE TIME BEAT
-	\freq, 265,
+	\freq, 165,
 	\pan, Pseq([-1,0,1],inf),
 	\dur, 0.25,
 	\rq,0.01,

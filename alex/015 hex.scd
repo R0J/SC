@@ -21,12 +21,12 @@ ProxySynthDef(\ww, {
 }).add;
 )
 
-
+p.gui;
 ~ww.clear;
 ~ww.stop(freeTime:60);
 
 (
-~ww.play(vol:0.03, fadeTime:4, numChannels:2,);
+~ww.play(vol:0.003, fadeTime:4, numChannels:2,);
 ~ww.quant_(1);
 );
 (~ww[0]=Pbind(
@@ -50,4 +50,34 @@ ProxySynthDef(\ww, {
 
 )
 ~ww[3]=nil;
+
+
+~ping.clear;
+~ping.stop(freeTime:60);
+
+(
+~ping.play(vol:0.2, fadeTime:4, numChannels:2,);
+~ping.quant_(1);
+);
+(~ping[0]=Pbind(
+	\instrument, \ping,
+	\amp, 0.5,
+	\pan, Prand([1,(-1),0,0.4,(-0.2), (-0.08), 0.36],inf),
+	\octave,Pseq([6,7,5],inf),
+	\degree, [7,5],
+	\strum, Pseq([2,0.1,0.8],inf),
+	\legato,0.2,
+	\dur,8,
+);
+)
+(
+~ping[5]=\filter->{arg in; GVerb.ar(in,[50,60],[8,6],mul:0.2,maxroomsize:200)+(in*2)};
+~ping[8]=\filter->{arg in; CompanderD.ar(in,1,0.8,0.2)};
+~ping[9]=\filter->{arg in; HPF.ar(in,60)};
+~ping[10]=\filter->{arg in; CombN.ar(in,14,4,40)};
+~ping[11]=\filter->{arg in; RLPF.ar(in,SinOsc.kr(1/64).range(1800,2800),SinOsc.kr(1/64).range(0.01,1))};
+~ping[38]=\filter->{arg in; Limiter.ar(in,2)};
+
+)
+~ping[3]=nil;
 

@@ -29,7 +29,7 @@ p.gui;
 	\degree, [2,9,1,-3],
 	\strum, 0.2,
 	\amp, 0.2,
-	\legato, 0.02,
+	\legato, 0.04,
 );
 
 ~leaky[4]=\filter->{arg in; GVerb.ar(in,40,8,mul:SinOsc.kr(2).range(0.2,0.9),add:in)+in};
