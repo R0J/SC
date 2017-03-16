@@ -30,13 +30,13 @@ p.gui;
 (~kick1sec[0]=Pbind(
 	\instrument, \kick,
 	\amp, 2,
-	\legato, 1,
+	\legato, 0.5,
 	\pan, 0,
 	\freq, [45,47]+10,
-	\dur,Pseq([Rest(3),1],inf),
+	\dur,1,//Pseq([Rest(3),1],inf),
 );
-~kick1sec[3]=\filter->{arg in; Limiter.ar(LPF.ar(in,\lpf4.kr(320,2)),0.4)};
-~kick1sec[4]=\filter->{arg in; Limiter.ar(GVerb.ar(in,40,[2,1],mul:0.2)+in,0.7)};
+~kick1sec[33]=\filter->{arg in; Limiter.ar(LPF.ar(in,\lpf4.kr(220,2)),0.4)};
+~kick1sec[44]=\filter->{arg in; Limiter.ar(GVerb.ar(in,40,[2,1],mul:0.2)+in,0.7)};
 //~kick1sec[8]=\filter->{arg in; HPF.ar(in,5)};
 
 )
@@ -45,6 +45,30 @@ p.gui;
 
 p.gui;
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////cut bass
+~cutbass.clear;
+
+~cutbass.stop(freeTime:10);
+(
+~cutbass.play(vol:0.5, fadeTime:4, numChannels:2);
+~cutbass.quant=16;
+)
+(~cutbass[0]=Pbind(
+	\instrument, \cutbass,
+	\amp, 1,
+	\legato, 1,
+	\pan, 0,
+	\freq, 40,
+	\dur,Pseq([Rest(2),1],inf),
+);
+//~cutbass[44]=\filter->{arg in; Limiter.ar(GVerb.ar(in,40,[2,1],mul:0.2)+in,0.7)};
+//~cutbass[8]=\filter->{arg in; HPF.ar(in,5)};
+
+)
+
+
+
+p.gui;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////THIS IS FINE
 
@@ -53,34 +77,30 @@ p.gui;
 
 (
 ~tum01.quant=16;
-~tum01.play(vol:0.8, fadeTime:4, numChannels:2);)
+~tum01.play(vol:0.05, fadeTime:4, numChannels:2);)
 (~tum01[0]=Pbind(
-	\instrument, \tum,
+	\instrument, \kick,
 	\amp,Pseq([
-		//Pseq([ 0,0,0,0,  0,0,0,1,  0,1,1, 0,    0,  0,0,1],2),
+		Pseq([ 0,0.2,0.4,1,    1,1,0,1,  0,1,1, 0,    0,0, 0.8,1],2),
+		Pseq([ 0,  0,0.4,1,    1,1,0,1,  0,1,1, 0,    1,1,   0,1],2)+0.1,
 
-		Pseq([ 0,0.2,0.4,1,    1,1,0,1,  0,1,1, 0,    0,0, 0.8,1],2)+0.1,
-		Pseq([ 0,  0,0.4,1,    1,1,0,1,  0,1,1, 0,    0,0,   0,1],2)+0.1,
-		Pseq([ 0,  0,0.4,1,    1,1,0,1,  0,1,1, 0.5,  0,0.5, 0,1],4),
 	],inf),                                                                /////////ADD HERE AMP FOR ALL THE TIME BEAT
-	\freq, 65,
+	\freq, 65+Prand([Pn(20,64),Pn(10,64),Pn(40,64)],inf),
 	\pan, Pseq([-1,0,1],inf),
 	\dur, 0.25,
-	\rq,0.01,
-	\sustain, 1,
-
+	\rq,0.001,
+	\top, 20,
+	\legato, 0.2,
 );
-~tum01[6]=\filter->{arg in; GVerb.ar(in,roomsize:20,revtime:0.2,mul:0.1)+(in*2)};
-~tum01[12]=\filter->{arg in; HPF.ar(in, SinOsc.ar(1/64).range(60,80))};
-~tum01[13]=\filter->{arg in; LPF.ar(in, \lpf6.kr(800))};
-~tum01[14]=\set->Pbind(\args, [\lpf6], \dur, 64, \lpf6, Pseq([480,340,540,680],inf));
-~tum01[15]=\filter->{arg in; Normalizer.ar(in,1)};
+~tum01[76]=\filter->{arg in; Limiter.ar(GVerb.ar(in,30,mul:0.2,add:in*0.9),0.8)};
+~tum01[77]=\filter->{arg in; HPF.ar(in,SinOsc.kr(1/32).range(40,60))};
+~tum01[78]=\filter->{arg in; LPF.ar(in,SinOsc.kr(1/64).range(2800,700))};)
 
-~tum01[22]=\filter->{arg in; Limiter.ar(in, 0.7)};
+~tum01[68]=\filter->{arg in; Limiter.ar(in, 0.7)};
 ~tum01[100]=\filter->{arg in; Compander.ar(in, ~kick1sec.ar, 0.1, 1, 0.1) };
 
 );
-~tum01[6]=nil;
+~tum01[60]=nil;
 
 
 
@@ -90,22 +110,25 @@ p.gui;
 ~rhmdrum.clear;
 ~rhmdrum.stop(fadeTime:40);
 (
-~rhmdrum.play(vol:0.4, fadeTime:4, numChannels:2);
-~rhmdrum.quant_(16);)
+~rhmdrum.play(vol:0.3, fadeTime:4, numChannels:2);
+~rhmdrum.quant=16;)
 (~rhmdrum[0]=Pbind(
 	\instrument, \kick,
-	\amp,1,
-	\freq, [44,45]+20,
-	\dur, Pseq([Pseq([4,[0.1!4,-1,0.1,-0.1,0.1!3,-0.1].flatten,3].convertRhythm),
-		Pseq([4,[0.1!4,-1,0.1,0.1,0.1!3,-0.1].flatten,3].convertRhythm)
+	\amp,Pseq([
+		//Pseq([ 0,0,0,0,  0,0,0,1,  0,1,1, 0,    0,  0,0,1],2),
+		Pseq([ 0,  0,0.4,1,    1,1,0,1,  0,1,1, 0,    0,0,   0,1],2),
+		Pseq([ 0,  0,0.4,1,    1,1,0,1,  0,1,1, 0.5,  0,0.5, 0,1],4),
 	],inf),
-	\top, 40,
+	\freq, [44,45]+20,
+	\dur, 0.2,
+	\rq, 0.01,
+	\top, 20,
 
 );
-~rhmdrum[6]=\filter->{arg in; Limiter.ar(GVerb.ar(in,30,mul:0.2,add:in*0.9),0.8)};
-~rhmdrum[7]=\filter->{arg in; HPF.ar(in,SinOsc.kr(1/32).range(40,60))};
-~rhmdrum[8]=\filter->{arg in; LPF.ar(in,SinOsc.kr(1/64).range(2800,200))};)
-~rhmdrum[6]=nil;
+~rhmdrum[76]=\filter->{arg in; Limiter.ar(GVerb.ar(in,30,0.2,mul:0.2,add:in*0.9),0.8)};
+~rhmdrum[77]=\filter->{arg in; HPF.ar(in,SinOsc.kr(1/32).range(40,20))};
+~rhmdrum[78]=\filter->{arg in; LPF.ar(in,SinOsc.kr(1/64).range(800,200))};)
+~rhmdrum[78]=nil;
 
 
 p.gui;
