@@ -10,15 +10,17 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////MELODY THREE
 
 ~mel3.clear;
-~mel3.stop(freeTime:60);
+~mel3.stop(freeTime:20
+
+);
 
 (
-~mel3.play(vol:0.2, fadeTime:4, numChannels:2,);
+~mel3.play(vol:0.01, fadeTime:4, numChannels:2,);
 ~mel3.quant=16;
 );
 (~mel3[0]=Pbind(
 	\instrument, \mel,
-	\amp, Pseq([ 0,0,0.4,1,  1,1,0,1,  0,1,1, 0,  0,0.2,0.3,1],inf)+1,
+	\amp, 0.5,//Pseq([ 0,0,0.4,1,  1,1,0,1,  0,1,1,0.5,  0,0.2,0.3,1],inf),
 	\legato, 1.5,
 	\octave, Pseq([
 		Pseq([4,6,5,8, 6,4,2,7, 4,8,4,3, 4,8,8,3],4),
@@ -34,10 +36,10 @@
 
 //~mel3[3]=\filter->{arg in; Limiter.ar(LPF.ar(in,\lpf3.kr(200,2)),0.7)};
 //~mel3[4]=\set->Pbind(\args, [\lpf3], \dur,16,\lpf3, Pseq([820,600,400,1200,400,600,820],inf));
-~mel3[5]=\filter->{arg in; GVerb.ar(in,[50,40],[2,4],mul:0.1,maxroomsize:200)+(in*2)};
+~mel3[5]=\filter->{arg in; GVerb.ar(in,[50,40],[8,10],mul:0.1,maxroomsize:200)+(in*2)};
+//~mel3[7]=\filter-> {arg in; CombN.ar(in,2,0.1,0.2)};
+~mel3[8]=\filter->{arg in; LPF.ar(in, 3200)};
 )
-~mel3[6]=\filter->{arg in; HPF.ar(in, 20)};
-
 ~mel3[5]=nil;
 
 
@@ -49,7 +51,11 @@
 ~mel01.stop(freeTime:60);
 
 (
+<<<<<<< HEAD
+~mel01.play(vol:0.01, fadeTime:4, numChannels:2,);
+=======
 ~mel01.play(vol:0.1, fadeTime:4, numChannels:2,);
+>>>>>>> master
 ~mel01.quant_(16);
 );
 (~mel01[0]=Pbind(
@@ -69,5 +75,40 @@
 ~mel01[5]=nil;
 
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////lpfpulse
 
+(
+ProxySynthDef(\pulselpf, {
+	arg  sustain,  amp, pan, freq;
+	var sig, env;
+	env=EnvGen.kr(Env([0,1,1,0],[0.01,8,0.01],\welch),timeScale:sustain,doneAction:2);
+	sig=LFPulse.ar(65)*LFSaw.ar([1/16,1/25]);
+	sig=BPF.ar(sig,(LFSaw.kr(8/4)*LFPulse.kr(3/4)).range(460,4),LFNoise2.kr(2).range(0.001,4),8);
+	//sig=Normalizer.ar(sig,8);
+	//sig=HPF.ar(sig,2);
+	sig=Limiter.ar(sig,0.4);
+	sig=sig*env*amp;
+}).add;
+)
+
+
+~lpfpulse.clear;
+~lpfpulse.stop(freeTime:60);
+
+(
+~lpfpulse.play(vol:0.4, fadeTime:4, numChannels:2,);
+~lpfpulse.quant_(16);
+);
+(~lpfpulse[0]=Pbind(
+	\instrument, \pulselpf,
+	\amp, 1,
+	//\legato, 0.5,
+	\freq, 40,
+	\dur, 7,
+);
+~lpfpulse[3]=\filter->{arg in; Limiter.ar(0.7)};
+//~lpfpulse[4]=\set->Pbind(\args, [\lpf3], \dur,16,\lpf3, Pseq([820,600,400,1200,400,600,820],inf));
+//~lpfpulse[5]=\filter->{arg in; GVerb.ar(in,[50,40],[8,6],mul:0.2,maxroomsize:200)+(in*2)};
+)
+~lpfpulse[5]=nil;
 

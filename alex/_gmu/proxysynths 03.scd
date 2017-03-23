@@ -18,6 +18,52 @@ ProxySynthDef(\string, {
 }).add;
 
 
+ProxySynthDef(\pulselpf, {
+	arg  sustain,  amp, pan, freq;
+	var sig, env;
+	env=EnvGen.kr(Env([0,1,1,0],[0.01,8,0.01],\welch),timeScale:sustain,doneAction:2);
+	sig=LFPulse.ar(65);
+	sig=BPF.ar(sig,(LFSaw.kr(4)*LFPulse.kr(1.5)).range(freq,freq+500),LFNoise2.kr(2).range(0.001,2),4);
+
+	sig=HPF.ar(sig,800);
+	sig=Limiter.ar(sig!2,0.7);
+	sig=sig*env*amp;
+}).add;
+
+
+ProxySynthDef(\pulselpf, {
+	arg  sustain,  amp, pan, freq;
+	var sig, env, fenv;
+	env=EnvGen.kr(Env([0,1,1,0],[0.01,8,0.01],\welch),timeScale:sustain,doneAction:2);
+	fenv=EnvGen.kr(Env([freq,freq*8,freq],[0.001,0.01],\welch),timeScale:sustain,doneAction:2);
+
+	sig=LFPulse.ar(65);
+	sig=BPF.ar(sig,freq:(LFSaw.kr(4)*LFPulse.kr(1.5)).range(fenv,fenv+500),rq:LFNoise2.kr(2).range(0.001,2),mul:4);
+
+	sig=HPF.ar(sig,800);
+	sig=Limiter.ar(sig!2,0.7);
+	sig=sig*env*amp;
+}).add;
+
+
+ProxySynthDef(\noisek, {
+	arg  sustain,  amp, pan, freq, panpos=1;
+	var sig, env, feedback=0.7, local, feedenv, renv;
+
+	env=EnvGen.kr(Env([0,1,0],[2,0.01],[\welch,\exp]),timeScale:sustain,doneAction:2);
+	renv=EnvGen.kr(Env([0.01,5,0.01],[0.8,0.3],[\welch,\lin]),timeScale:sustain,doneAction:2);
+	feedenv=EnvGen.kr(Env(levels:[0.1,0.01,0.1],times:[0.1,0.01]),timeScale:sustain,doneAction:2);
+
+	sig=WhiteNoise.ar(LFNoise0.kr(10).range(0.1,0.8))*env;
+	local=LocalIn.ar(2)+sig.dup;
+	local=AllpassN.ar(local,0.4, feedenv,SinOsc.kr(1/16).range(0.5,4));
+	LocalOut.ar(local*feedback);
+	local=LPF.ar(sig+local,800,mul:1);
+	local=BPF.ar(Limiter.ar(local), freq,rq:0.1)+(local*0.2)*10;
+	sig=Mix.ar(sig);
+	local=Pan2.ar(Mix.new(local),SinOsc.kr(panpos));
+}).add;
+
 ProxySynthDef(\leaky, {
 	arg  sustain,  amp, pan, freq;
 	var sig, env;
@@ -27,6 +73,15 @@ ProxySynthDef(\leaky, {
 	sig=sig*env*amp;
 	sig=Mix.ar(sig);
 
+}).add;
+
+ProxySynthDef(\cutbass, {
+	arg  sustain,  amp;
+	var sig, env;
+
+	env=EnvGen.kr(Env([0,1,1,0],[0,pi/4,0],curve:\lin),timeScale:sustain,doneAction:2);
+	sig=SinOsc.ar(\freq.kr!2);
+	sig=sig*env*amp;
 }).add;
 
 

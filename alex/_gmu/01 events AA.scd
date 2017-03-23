@@ -18,8 +18,13 @@ p.gui;
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// LEAKY NOISE
 
 ~leaky.clear;
+~leaky.stop(fadeTime:10);
 (
+<<<<<<< HEAD
+~leaky.play(vol:0.05, numChannels:2);
+=======
 ~leaky.play(vol:0.3, numChannels:2);
+>>>>>>> master
 ~leaky.quant=16;)
 (
 ~leaky[0]=Pbind(
@@ -43,7 +48,7 @@ p.gui;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// ONION 32
 
 ~onion.clear;
-~onion.stop(fadeTime:30);
+~onion.stop(fadeTime:4);
 (
 ~onion.play(vol:0.02, fadeTime:4, numChannels:2);
 ~onion.quant=16;)
@@ -70,42 +75,47 @@ p.gui;
 ~sweepnoise.clear;
 ~sweepnoise.stop(fadeTime:20);
 (
-~sweepnoise.play(vol:0.03, fadeTime:4, numChannels:2);
-~sweepnoise.quant=16;)
+~sweepnoise.play(vol:0.08, fadeTime:4, numChannels:2);
+~sweepnoise.quant=4;)
 (
 ~sweepnoise[0]=Pbind(
 	\instrument, \noisek,
 	\dur,Prand([64,32],inf),
 	\sustain, Prand([2,3,1,4,],inf),
-	\octave,9,//Prand([4,6,3,8],inf),
+	\octave,Prand([4,6,3,8],inf),
 	\degree, [2,6],
 	\panpos, Pseq([-1,1],inf),
 	\amp, 4,
 );
-~sweepnoise[3]=\filter->{arg in; LPF.ar(in,\lpf6.kr(400))+(in*0.8)};
-~sweepnoise[7]=\set->Pbind(\args, [\lpf6], \dur,16, \lpf6, Pseq([600,800,200],inf));
+~sweepnoise[98]=\filter->{arg in; LPF.ar(in,\lpf6.kr(400))+(in*0.8)};
+~sweepnoise[99]=\set->Pbind(\args, [\lpf6], \dur,16, \lpf6, Pseq([600,800,200],inf));
 
 
-~sweepnoise[30]=\filter->{arg in; GVerb.ar(in,[80,60],[4,6],maxroomsize:120,add:in,mul:0.8)+in};
-~sweepnoise[35]=\filter->{arg in; HPF.ar(in,200)};
-~sweepnoise[32]=nil;
+~sweepnoise[101]=\filter->{arg in; GVerb.ar(in,[80,60],[4,6],maxroomsize:120,add:in,mul:0.8)+in};
+~sweepnoise[102]=\filter->{arg in; HPF.ar(in,200)};
 )
+~sweepnoise[101]=nil;
+
 
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// IMP SHORT  16sec/ 0.4 legato
 
 ~imps.clear;
-~imps.stop(freeTime:60);
+~imps.stop(freeTime:20);
 
 (
+<<<<<<< HEAD
+~imps.play(vol:0.04, fadeTime:4, numChannels:2);
+=======
 ~imps.play(vol:0.7, fadeTime:4, numChannels:2);
+>>>>>>> master
 ~imps.quant=16;);
 (~imps[0]=Pbind(
 	\instrument, \imp,
 	\amp, 3,
 	\legato, Pseq([0.1,0.2],inf),
-	\den,Prand([30,18,24],inf),
+	\den,Prand([8,22,15,12,24],inf),
 	\dur, 32,
 );
 
@@ -121,7 +131,7 @@ p.gui;
 
 ////////////////////////////hmmmmm
 ~dis4.stop;
-~dis4.play(vol:0.001, fadeTime:2, numChannels:2).quant_(2);
+~dis4.play(vol:0.004, fadeTime:2, numChannels:2).quant_(2);
 (
 ~dis4[0]={
 	var sig, env, fenv, noise;
