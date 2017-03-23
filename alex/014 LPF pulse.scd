@@ -22,10 +22,11 @@ s.boot;
 };
 ~test[30]=\filter->{arg in; GVerb.ar(in,120,[7,12],mul:0.5,add:in)};
 ~test[31]=\filter->{arg in; HPF.ar(in,400)};
-~test[35]=\filter->{arg in; LPF.ar(in,\lpf.kr(1400,4))};
+~test[35]=\filter->{arg in; LPF.ar(in,SinOsc.kr(1/64).range(1200,2000))};
 ~test[59]=\filter->{arg in; Compander.ar(in, ~kick1sec.ar, 0.8, 1, 0.1) };
 ~test[62]=\filter->{arg in; in*SinOsc.ar([1/16,1/8]).range(0.1,0.8)};
 
 )
 ~test.quant=16;
-~test.play(vol:0.06);
+~test.play(vol:0.14);
+~test.clear;
